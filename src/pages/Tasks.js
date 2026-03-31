@@ -17,7 +17,7 @@ const URG_STYLE = {
   low:    { bg: '#0a1e14', color: '#6ee7b7' },
 }
 
-export default function Tasks({ onAddTask }) {
+export default function Tasks({ onAddTask, onEditTask }) {
   const [tasks, setTasks] = useState([])
   const [filter, setFilter] = useState('all')
   const [search, setSearch] = useState('')
@@ -115,8 +115,8 @@ export default function Tasks({ onAddTask }) {
                     const urg = URG_STYLE[task.urgency] || URG_STYLE.medium
                     const isOverdue = task.due_date < today && !task.completed
                     return (
-                      <div key={task.id} style={{ display: 'flex', alignItems: 'center', gap: 11, padding: '11px 14px', background: '#161618', border: '1px solid #242428', borderRadius: 12, opacity: task.completed ? 0.38 : 1 }}>
-                        <div className={`check-circle${task.completed ? ' checked' : ''}`} onClick={() => toggleTask(task)}>
+                      <div key={task.id} onClick={() => onEditTask(task)} style={{ display: 'flex', alignItems: 'center', gap: 11, padding: '11px 14px', background: '#161618', border: '1px solid #242428', borderRadius: 12, opacity: task.completed ? 0.38 : 1, cursor: 'pointer' }}>
+                        <div className={`check-circle${task.completed ? ' checked' : ''}`} onClick={e => { e.stopPropagation(); toggleTask(task) }}>
                           {task.completed && <svg width="10" height="10" viewBox="0 0 10 10"><polyline points="1.5,5 4,7.5 8.5,2.5" stroke="white" strokeWidth="1.8" fill="none" strokeLinecap="round"/></svg>}
                         </div>
                         <div style={{ flex: 1, minWidth: 0 }}>

@@ -6,7 +6,7 @@ const SECTOR_COLORS = {
   'personal growth': '#f59e0b', family: '#ec4899', hobbies: '#a78bfa',
 }
 
-export default function Home({ onAddTask }) {
+export default function Home({ onAddTask, onEditTask }) {
   const [tasks, setTasks] = useState([])
   const [habits, setHabits] = useState([])
   const [rolledOver, setRolledOver] = useState(0)
@@ -85,11 +85,11 @@ export default function Home({ onAddTask }) {
           </div>
         )}
         {tasks.map(task => (
-          <div key={task.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', background: '#161618', border: '1px solid #242428', borderRadius: 12, opacity: task.completed ? 0.4 : 1, transition: 'opacity 0.2s' }}>
+          <div key={task.id} onClick={() => onEditTask(task)} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', background: '#161618', border: '1px solid #242428', borderRadius: 12, opacity: task.completed ? 0.4 : 1, transition: 'opacity 0.2s', cursor: 'pointer' }}>
             <span style={{ fontFamily: "'DM Mono'", fontSize: 11, color: '#555', minWidth: 50 }}>{task.time_block || '—'}</span>
             <div style={{ width: 8, height: 8, borderRadius: '50%', background: SECTOR_COLORS[task.sector?.toLowerCase()] || '#555', flexShrink: 0 }} />
             <span style={{ fontSize: 14, color: '#d4d2cc', flex: 1 }}>{task.name}</span>
-            <div className={`check-circle${task.completed ? ' checked' : ''}`} onClick={() => toggleTask(task)}>
+            <div className={`check-circle${task.completed ? ' checked' : ''}`} onClick={e => { e.stopPropagation(); toggleTask(task) }}>
               {task.completed && <svg width="10" height="10" viewBox="0 0 10 10"><polyline points="1.5,5 4,7.5 8.5,2.5" stroke="white" strokeWidth="1.8" fill="none" strokeLinecap="round"/></svg>}
             </div>
           </div>
