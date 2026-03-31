@@ -123,7 +123,8 @@ export default function Tasks({ onAddTask, onEditTask }) {
                           <div style={{ fontSize: 14, color: '#d4d2cc' }}>{task.name}</div>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 3, flexWrap: 'wrap' }}>
                             {task.time_block && <span style={{ fontFamily: "'DM Mono'", fontSize: 11, color: '#555' }}>{task.time_block}</span>}
-                            <span style={{ fontFamily: "'DM Mono'", fontSize: 11, color: isOverdue ? '#f87171' : '#555' }}>{isOverdue ? `${task.due_date} — overdue` : task.due_date}</span>
+                            {task.start_date && <span style={{ fontFamily: "'DM Mono'", fontSize: 11, color: '#888' }}>Do: {task.start_date}</span>}
+                            {task.due_date && <span style={{ fontFamily: "'DM Mono'", fontSize: 11, color: isOverdue ? '#f87171' : '#555' }}>{isOverdue ? `Due: ${task.due_date} ⚠` : `Deadline: ${task.due_date}`}</span>}
                             <span style={{ fontSize: 10, fontWeight: 600, padding: '2px 7px', borderRadius: 6, background: urg.bg, color: urg.color }}>{task.urgency}</span>
                             {task.projects && <span style={{ fontSize: 11, color: '#d4520f' }}>{task.projects.name} →</span>}
                           </div>

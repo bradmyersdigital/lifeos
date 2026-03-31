@@ -163,7 +163,7 @@ export default function TaskModal({ mode, onClose, onSaved, task }) {
     const payload = {
       name: name.trim(), urgency: urgency.toLowerCase(), sector,
       time_block: timeString, due_date: dueDate,
-      start_date: mode === 'scheduled' ? startDate : today,
+      start_date: startDate,
       project_id: projectId || null, note_id: noteId || null, notes_text: notesText,
     }
     if (isEdit) {
@@ -232,26 +232,24 @@ export default function TaskModal({ mode, onClose, onSaved, task }) {
           <div style={{ textAlign: 'center', fontFamily: "'DM Mono'", fontSize: 14, color: '#d4520f', marginTop: 8, fontWeight: 600 }}>{timeString}</div>
         </div>
 
+        <div className="field">
+          <div className="field-label">Sector</div>
+          <select value={sector} onChange={e => setSector(e.target.value)}>
+            <option value="">Select...</option>
+            {SECTORS.map(s => <option key={s}>{s}</option>)}
+          </select>
+        </div>
+
         <div className="field-row">
           <div className="field">
-            <div className="field-label">Sector</div>
-            <select value={sector} onChange={e => setSector(e.target.value)}>
-              <option value="">Select...</option>
-              {SECTORS.map(s => <option key={s}>{s}</option>)}
-            </select>
+            <div className="field-label">Do on</div>
+            <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} />
           </div>
           <div className="field">
-            <div className="field-label">Due date</div>
+            <div className="field-label">Deadline</div>
             <input type="date" value={dueDate} onChange={e => setDueDate(e.target.value)} />
           </div>
         </div>
-
-        {!isEdit && mode === 'scheduled' && (
-          <div className="field">
-            <div className="field-label">Start date</div>
-            <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} />
-          </div>
-        )}
 
         <div className="field">
           <div className="field-label">Link to project</div>
