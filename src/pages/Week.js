@@ -7,7 +7,7 @@ const SECTOR_COLORS = {
   'personal growth': '#f59e0b', family: '#ec4899', hobbies: '#a78bfa',
 }
 
-export default function Week({ onAddTask }) {
+export default function Week({ onAddTask, onEditTask }) {
   const [tasks, setTasks] = useState([])
   const [activeFilter, setActiveFilter] = useState('all')
 
@@ -78,13 +78,16 @@ export default function Week({ onAddTask }) {
               ? <div style={{ padding: '10px 14px', fontSize: 13, color: '#2a2a2a', border: '1px dashed #1e1e24', borderRadius: 10, textAlign: 'center' }}>—</div>
               : <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
                   {dayTasks.map(task => (
-                    <div key={task.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 12px', background: '#161618', border: '1px solid #1e1e24', borderRadius: 10 }}>
+                    <div key={task.id} onClick={() => onEditTask(task)} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 12px', background: '#161618', border: '1px solid #1e1e24', borderRadius: 10, cursor: 'pointer', transition: 'border-color 0.15s' }}>
                       <div style={{ width: 7, height: 7, borderRadius: '50%', background: SECTOR_COLORS[task.sector?.toLowerCase()] || '#555', flexShrink: 0 }} />
                       <div style={{ flex: 1 }}>
-                        <div style={{ fontSize: 13, color: '#d4d2cc' }}>{task.name}</div>
+                        <div style={{ fontSize: 13, color: task.completed ? '#444' : '#d4d2cc', textDecoration: task.completed ? 'line-through' : 'none' }}>{task.name}</div>
                         {task.projects && <div style={{ fontSize: 11, color: '#d4520f', marginTop: 2 }}>{task.projects.name} →</div>}
                       </div>
-                      {task.time_block && <div style={{ fontFamily: "'DM Mono'", fontSize: 11, color: '#555' }}>{task.time_block}</div>}
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 3 }}>
+                        {task.time_block && <div style={{ fontFamily: "'DM Mono'", fontSize: 11, color: '#555' }}>{task.time_block}</div>}
+                        <div style={{ fontSize: 10, color: '#333' }}>tap to edit</div>
+                      </div>
                     </div>
                   ))}
                 </div>
