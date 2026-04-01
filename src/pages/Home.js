@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 
 const SECTOR_COLORS = {
@@ -18,6 +19,7 @@ const URG_STYLE = {
 const DAY_NAMES = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun']
 
 export default function Home({ onAddTask, onEditTask }) {
+  const navigate = useNavigate()
   const [tasks, setTasks] = useState([])
   const [projects, setProjects] = useState([])
   const [habits, setHabits] = useState([])
@@ -189,7 +191,7 @@ export default function Home({ onAddTask, onEditTask }) {
             const dayTasks = weekTasks.filter(t => t.start_date === date)
             const d = new Date(date)
             return (
-              <div key={date} style={{ background: isToday ? '#1e1208' : '#161618', border: `1px solid ${isToday ? '#7a3410' : '#242428'}`, borderRadius: 10, padding: '8px 4px', textAlign: 'center' }}>
+              <div key={date} onClick={() => navigate('/week')} style={{ background: isToday ? '#1e1208' : '#161618', border: `1px solid ${isToday ? '#7a3410' : '#242428'}`, borderRadius: 10, padding: '8px 4px', textAlign: 'center', cursor: 'pointer', transition: 'border-color 0.15s' }}>
                 <div style={{ fontSize: 9, color: isToday ? '#d4520f' : '#555', fontWeight: 600, textTransform: 'uppercase', marginBottom: 3 }}>{DAY_NAMES[i]}</div>
                 <div style={{ fontSize: 15, fontWeight: 500, color: isToday ? '#e8823a' : '#888', marginBottom: 4 }}>{d.getDate()}</div>
                 {dayTasks.slice(0, 3).map((t, ti) => (
