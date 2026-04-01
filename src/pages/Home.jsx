@@ -24,6 +24,9 @@ export default function Home({ onAddTask, onEditTask }) {
   const [projects, setProjects] = useState([])
   const [habits, setHabits] = useState([])
   const [habitLogs, setHabitLogs] = useState([])
+  const [sectors, setSectors] = useState([])
+  const [editSector, setEditSector] = useState(null)
+  const [sectorIcon, setSectorIcon] = useState('')
   const [weekTasks, setWeekTasks] = useState([])
 
   const today = new Date()
@@ -57,6 +60,10 @@ export default function Home({ onAddTask, onEditTask }) {
     supabase.from('habits').select('*')
       .then(({ data }) => setHabits(data || []))
 
+    // sectors
+    supabase.from('sectors').select('*').order('name')
+      .then(({ data }) => setSectors(data || []))
+
     // habit logs this week
     supabase.from('habit_logs').select('*')
       .gte('completed_date', weekDates[0])
@@ -80,6 +87,24 @@ export default function Home({ onAddTask, onEditTask }) {
   const focusTask = urgentTasks[0] || tasks.find(t => !t.completed)
   const rolledOver = tasks.filter(t => t.rolled_over).length
   const doneHabitsToday = habits.filter(h => habitLogs.some(l => l.habit_id === h.id && l.completed_date === todayStr)).length
+
+  const toggleHabit = async (habit) => {
+    const logged = habitLogs.some(l => l.habit_id === habit.id && l.completed_date === todayStr)
+    if (logged) {
+      await supabase.from('habit_logs').delete().eq('habit_id', habit.id).eq('completed_date', todayStr)
+      setHabitLogs(prev => prev.filter(l => !(l.habit_id === habit.id && l.completed_date === todayStr)))
+    } else {
+      const { data } = await supabase.from('habit_logs').insert({ habit_id: habit.id, completed_date: todayStr }).select().single()
+      if (data) setHabitLogs(prev => [...prev, data])
+    }
+  }
+
+  const saveSectorIcon = async (sector) => {
+    await supabase.from('sectors').update({ icon: sectorIcon }).eq('id', sector.id)
+    setSectors(prev => prev.map(s => s.id === sector.id ? { ...s, icon: sectorIcon } : s))
+    setEditSector(null)
+    setSectorIcon('')
+  }
 
   const getProjectPct = (p) => {
     const t = p.tasks || []
@@ -248,11 +273,11 @@ export default function Home({ onAddTask, onEditTask }) {
           {habits.slice(0, 4).map(h => {
             const done = habitLogs.some(l => l.habit_id === h.id && l.completed_date === todayStr)
             return (
-              <div key={h.id} style={{ background: '#161618', border: `1px solid ${done ? '#1a3a2a' : '#242428'}`, borderRadius: 12, padding: 12, display: 'flex', alignItems: 'center', gap: 10 }}>
-                <div style={{ width: 30, height: 30, background: '#1e1e22', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14 }}>{h.icon}</div>
-                <span style={{ fontSize: 13, color: '#c0bdb7', flex: 1 }}>{h.name}</span>
-                <div style={{ width: 18, height: 18, borderRadius: '50%', background: done ? '#16a34a' : 'transparent', border: `1.5px solid ${done ? '#16a34a' : '#333'}`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  {done && <svg width="9" height="9" viewBox="0 0 9 9"><polyline points="1,4.5 3.5,7 8,2" stroke="white" strokeWidth="1.5" fill="none" strokeLinecap="round"/></svg>}
+              <div key={h.id} onClick={() => toggleHabit(h)} style={{ background: '#161618', border: `1px solid ${done ? '#1a3a2a' : '#242428'}`, borderRadius: 12, padding: 12, display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', transition: 'border-color 0.15s' }}>
+                <div style={{ width: 30, height: 30, background: done ? '#0a2a1a' : '#1e1e22', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14 }}>{h.icon}</div>
+                <span style={{ fontSize: 13, color: done ? '#6ee7b7' : '#c0bdb7', flex: 1 }}>{h.name}</span>
+                <div style={{ width: 22, height: 22, borderRadius: '50%', background: done ? '#16a34a' : 'transparent', border: `1.5px solid ${done ? '#16a34a' : '#333'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, transition: 'all 0.2s' }}>
+                  {done && <svg width="10" height="10" viewBox="0 0 10 10"><polyline points="1.5,5 4,7.5 8.5,2.5" stroke="white" strokeWidth="1.8" fill="none" strokeLinecap="round"/></svg>}
                 </div>
               </div>
             )
@@ -262,16 +287,57 @@ export default function Home({ onAddTask, onEditTask }) {
 
       {/* Sectors */}
       <div className="section-label">Sectors</div>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5,1fr)', gap: 8, marginBottom: 8 }}>
-        {[['Business','business'],['Health','health'],['Growth','personal growth'],['Hobbies','hobbies'],['Notes','']].map(([label, key]) => (
-          <div key={label} style={{ background: '#161618', border: '1px solid #242428', borderRadius: 14, padding: '12px 8px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5, cursor: 'pointer' }}>
-            <div style={{ width: 32, height: 32, borderRadius: 9, background: key ? (SECTOR_COLORS[key] + '22') : '#1e1e22', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14 }}>
-              {SECTOR_ICONS[key] || '📝'}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 8, marginBottom: 8 }}>
+        {sectors.length > 0 ? sectors.map(s => (
+          <div key={s.id} style={{ background: '#161618', border: '1px solid #242428', borderRadius: 14, padding: '12px 8px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5, position: 'relative' }}>
+            <div style={{ fontSize: 28, marginBottom: 2 }}>{s.icon}</div>
+            <div style={{ fontSize: 11, color: '#777', fontWeight: 500, textAlign: 'center' }}>{s.name}</div>
+            <div onClick={() => { setEditSector(s); setSectorIcon(s.icon) }} style={{ position: 'absolute', top: 6, right: 6, width: 20, height: 20, borderRadius: 6, background: '#1e1e24', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+              <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M7 1.5L8.5 3L3.5 8H2V6.5L7 1.5Z" stroke="#666" strokeWidth="1.2" fill="none" strokeLinecap="round" strokeLinejoin="round"/></svg>
             </div>
-            <div style={{ fontSize: 11, color: '#777', fontWeight: 500 }}>{label}</div>
+          </div>
+        )) : ['Business','Real Estate','Health','Personal Growth','Hobbies','Family'].map(name => (
+          <div key={name} style={{ background: '#161618', border: '1px solid #242428', borderRadius: 14, padding: '12px 8px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5 }}>
+            <div style={{ fontSize: 24 }}>📁</div>
+            <div style={{ fontSize: 11, color: '#777', fontWeight: 500, textAlign: 'center' }}>{name}</div>
           </div>
         ))}
       </div>
+
+      {/* Sector icon editor */}
+      {editSector && (
+        <div className="modal-overlay" onClick={e => e.target === e.currentTarget && setEditSector(null)}>
+          <div className="modal-sheet">
+            <div className="modal-handle" />
+            <div className="modal-title">
+              Edit {editSector.name} icon
+              <div className="modal-close" onClick={() => setEditSector(null)}>×</div>
+            </div>
+            <div style={{ textAlign: 'center', fontSize: 48, marginBottom: 16 }}>{sectorIcon}</div>
+            <div className="field">
+              <div className="field-label">Tap an emoji or type one</div>
+              <input
+                type="text"
+                value={sectorIcon}
+                onChange={e => setSectorIcon(e.target.value)}
+                placeholder="Paste or type an emoji..."
+                style={{ fontSize: 24, textAlign: 'center' }}
+              />
+            </div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 18, justifyContent: 'center' }}>
+              {['💼','🏠','🏃','📚','🎨','❤️','💰','🌱','⚡','🎯','🔥','✨','🎵','🏋️','🧠','💡','🌍','🚀','📝','🎮'].map(e => (
+                <div key={e} onClick={() => setSectorIcon(e)} style={{ width: 40, height: 40, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, background: sectorIcon === e ? '#1e1208' : '#161618', border: `1px solid ${sectorIcon === e ? '#7a3410' : '#242428'}`, borderRadius: 10, cursor: 'pointer' }}>
+                  {e}
+                </div>
+              ))}
+            </div>
+            <div style={{ display: 'flex', gap: 10 }}>
+              <button className="btn-ghost" style={{ flex: 1 }} onClick={() => setEditSector(null)}>Cancel</button>
+              <button className="btn-primary" style={{ flex: 2 }} onClick={() => saveSectorIcon(editSector)}>Save icon</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
