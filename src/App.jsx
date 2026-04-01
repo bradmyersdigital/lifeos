@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { BrowserRouter, Routes, Route, useNavigate, useLocation } from 'react-router-dom'
 import Home from './pages/Home'
 import Week from './pages/Week'
@@ -24,6 +24,24 @@ function Shell() {
   const location = useLocation()
   const [taskModal, setTaskModal] = useState(null)
   const [refreshKey, setRefreshKey] = useState(0)
+
+  // Lock body scroll when any modal is open
+  useEffect(() => {
+    if (taskModal) {
+      document.body.style.overflow = 'hidden'
+      document.body.style.position = 'fixed'
+      document.body.style.width = '100%'
+    } else {
+      document.body.style.overflow = ''
+      document.body.style.position = ''
+      document.body.style.width = ''
+    }
+    return () => {
+      document.body.style.overflow = ''
+      document.body.style.position = ''
+      document.body.style.width = ''
+    }
+  }, [taskModal])
 
   const openAdd = (mode) => setTaskModal({ mode, task: null })
   const openEdit = (task) => setTaskModal({ mode: 'scheduled', task })

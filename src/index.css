@@ -205,6 +205,8 @@ body {
   display: flex;
   align-items: flex-end;
   justify-content: center;
+  overscroll-behavior: none;
+  touch-action: none;
 }
 .modal-sheet {
   background: #1a1a1e;
@@ -217,6 +219,8 @@ body {
   overflow-y: auto;
   overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  touch-action: pan-y;
 }
 .modal-handle {
   width: 36px; height: 4px;
