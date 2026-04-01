@@ -107,7 +107,6 @@ export default function Home({ onAddTask, onEditTask }) {
   const [habitLogs, setHabitLogs] = useState([])
   const [weekTasks, setWeekTasks] = useState([])
   const [sectors, setSectors] = useState([])
-  const [sectorModal, setSectorModal] = useState(null) // null | 'new' | sector object
 
   const today = new Date()
   const todayStr = today.toISOString().split('T')[0]
@@ -328,38 +327,23 @@ export default function Home({ onAddTask, onEditTask }) {
       <div style={{ marginBottom: 8 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
           <div className="section-label" style={{ margin: 0 }}>Sectors</div>
-          <div onClick={() => setSectorModal('new')} style={{ display: 'flex', alignItems: 'center', gap: 5, background: '#1e1208', border: '1px solid #7a3410', borderRadius: 8, padding: '5px 10px', cursor: 'pointer', fontSize: 12, color: '#d4520f', fontWeight: 500 }}>
-            <svg width="11" height="11" viewBox="0 0 11 11" fill="none"><line x1="5.5" y1="1" x2="5.5" y2="10" stroke="#d4520f" strokeWidth="1.6" strokeLinecap="round"/><line x1="1" y1="5.5" x2="10" y2="5.5" stroke="#d4520f" strokeWidth="1.6" strokeLinecap="round"/></svg>
-            Add
-          </div>
+          <div onClick={() => navigate('/sectors')} style={{ fontSize: 12, color: '#555', cursor: 'pointer' }}>Manage →</div>
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 8 }}>
           {sectors.map(s => (
-            <div key={s.id} style={{ background: '#161618', border: '1px solid #242428', borderRadius: 14, padding: '14px 8px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, position: 'relative', cursor: 'pointer' }}>
+            <div key={s.id} onClick={() => navigate('/sectors')} style={{ background: '#161618', border: '1px solid #242428', borderRadius: 14, padding: '14px 8px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, cursor: 'pointer', transition: 'border-color 0.15s' }}>
               <div style={{ fontSize: 30 }}>{s.icon}</div>
               <div style={{ fontSize: 11, color: '#888', fontWeight: 500, textAlign: 'center' }}>{s.name}</div>
-              <div onClick={e => { e.stopPropagation(); setSectorModal(s) }} style={{ position: 'absolute', top: 6, right: 6, width: 22, height: 22, borderRadius: 6, background: '#1e1e24', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
-                <svg width="11" height="11" viewBox="0 0 11 11" fill="none"><path d="M8 1.5L9.5 3L4 8.5H2.5V7L8 1.5Z" stroke="#666" strokeWidth="1.2" fill="none" strokeLinecap="round" strokeLinejoin="round"/></svg>
-              </div>
             </div>
           ))}
           {sectors.length === 0 && ['Business','Real Estate','Health','Personal Growth','Hobbies','Family'].map(n => (
-            <div key={n} style={{ background: '#161618', border: '1px solid #242428', borderRadius: 14, padding: '14px 8px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
+            <div key={n} onClick={() => navigate('/sectors')} style={{ background: '#161618', border: '1px solid #242428', borderRadius: 14, padding: '14px 8px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
               <div style={{ fontSize: 28 }}>📁</div>
               <div style={{ fontSize: 11, color: '#888', fontWeight: 500, textAlign: 'center' }}>{n}</div>
             </div>
           ))}
         </div>
       </div>
-
-      {/* Sector modal */}
-      {sectorModal && (
-        <SectorModal
-          sector={sectorModal === 'new' ? null : sectorModal}
-          onClose={() => setSectorModal(null)}
-          onSaved={loadAll}
-        />
-      )}
     </div>
   )
 }
