@@ -213,8 +213,10 @@ body {
   padding: 20px 20px calc(20px + var(--safe-bottom));
   width: 100%;
   max-width: 820px;
-  max-height: 90vh;
+  max-height: 82vh;
   overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
 }
 .modal-handle {
   width: 36px; height: 4px;
