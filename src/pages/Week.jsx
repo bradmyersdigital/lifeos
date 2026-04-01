@@ -82,8 +82,30 @@ export default function Week({ onAddTask, onEditTask }) {
 
   const SECTORS = ['all','business','real estate','health','personal growth','family','hobbies']
 
-  const tasksForDay = date => tasks.filter(t => t.start_date === date && (activeFilter === 'all' || t.sector?.toLowerCase() === activeFilter))
-  const eventsForDay = date => events.filter(e => e.start_date === date && (activeFilter === 'all' || e.sector?.toLowerCase() === activeFilter))
+  const timeToMins = t => {
+    if (!t) return 999
+    const m = t.match(/(\d{1,2}):(\d{2})\s*(AM|PM)/i)
+    if (!m) return 999
+    let h = parseInt(m[1]), min = parseInt(m[2])
+    if (m[3].toUpperCase() === 'PM' && h !== 12) h += 12
+    if (m[3].toUpperCase() === 'AM' && h === 12) h = 0
+    return h * 60 + min
+  }
+  const tasksForDay = date => tasks
+    .filter(t => t.start_date === date && (activeFilter === 'all' || t.sector?.toLowerCase() === activeFilter))
+    .sort((a, b) => timeToMins(a.time_block) - timeToMins(b.time_block))
+  const eventsForDay = date => events
+    .filter(e => e.start_date === date && (activeFilter === 'all' || e.sector?.toLowerCase() === activeFilter))
+    .sort((a, b) => timeToMins(a.start_time) - timeToMins(b.start_time))
+  const allItemsForDay = date => {
+    const t = tasksForDay(date).map(x => ({ ...x, _type: 'task' }))
+    const e = eventsForDay(date).map(x => ({ ...x, _type: 'event' }))
+    return [...t, ...e].sort((a, b) => {
+      const at = a._type === 'task' ? timeToMins(a.time_block) : timeToMins(a.start_time)
+      const bt = b._type === 'task' ? timeToMins(b.time_block) : timeToMins(b.start_time)
+      return at - bt
+    })
+  }
 
   const openDaySheet = (date) => {
     setDaySheet({ date, tasks: tasksForDay(date), events: eventsForDay(date) })
@@ -156,9 +178,8 @@ export default function Week({ onAddTask, onEditTask }) {
 
       {/* WEEK VIEW */}
       {!loading && view === 'week' && weekDates.map((date, i) => {
-        const dt = tasksForDay(date)
-        const de = eventsForDay(date)
-        const total = dt.length + de.length
+        const items = allItemsForDay(date)
+        const total = items.length
         const isToday = date === todayStr
         const isPast = date < todayStr
         const d = new Date(date + 'T00:00:00')
@@ -173,24 +194,23 @@ export default function Week({ onAddTask, onEditTask }) {
             {total === 0
               ? <div onClick={() => openDaySheet(date)} style={{ padding: '10px 14px', fontSize: 13, color: '#2a2a2a', border: '1px dashed #1e1e24', borderRadius: 10, textAlign: 'center', cursor: 'pointer' }}>Tap to add</div>
               : <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                  {de.map(ev => (
-                    <div key={ev.id} onClick={() => setEventModal({ event: ev, date: ev.start_date })} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', background: '#0c1a2e', border: '1px solid #1a3a5c', borderRadius: 12, cursor: 'pointer' }}>
+                  {items.map(item => item._type === 'event' ? (
+                    <div key={item.id} onClick={() => setEventModal({ event: item, date: item.start_date })} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', background: '#0c1a2e', border: '1px solid #1a3a5c', borderRadius: 12, cursor: 'pointer' }}>
                       <svg width="12" height="12" viewBox="0 0 12 12" fill="none" style={{ flexShrink: 0 }}><circle cx="6" cy="6" r="5" stroke="#3b82f6" strokeWidth="1.3"/><polyline points="6,3 6,6 8,7.5" stroke="#3b82f6" strokeWidth="1.3" strokeLinecap="round"/></svg>
                       <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontSize: 14, color: '#93c5fd', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{ev.title}</div>
-                        {ev.location && <div style={{ fontSize: 11, color: '#1e5a8c', marginTop: 2 }}>📍 {ev.location}</div>}
+                        <div style={{ fontSize: 14, color: '#93c5fd', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.title}</div>
+                        {item.location && <div style={{ fontSize: 11, color: '#1e5a8c', marginTop: 2 }}>📍 {item.location}</div>}
                       </div>
-                      {(ev.start_time || ev.end_time) && <div style={{ fontFamily: "'DM Mono'", fontSize: 11, color: '#1e5a8c', flexShrink: 0, textAlign: 'right' }}>{ev.start_time}{ev.end_time ? ` → ${ev.end_time}` : ''}</div>}
+                      <div style={{ fontFamily: "'DM Mono'", fontSize: 11, color: '#1e5a8c', flexShrink: 0, textAlign: 'right' }}>{item.start_time}{item.end_time ? ` → ${item.end_time}` : ''}</div>
                     </div>
-                  ))}
-                  {dt.map(task => (
-                    <div key={task.id} onClick={() => onEditTask(task)} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', background: '#161618', border: '1px solid #1e1e24', borderRadius: 12, cursor: 'pointer', opacity: task.completed ? 0.5 : 1 }}>
-                      <div style={{ width: 7, height: 7, borderRadius: '50%', background: SECTOR_COLORS[task.sector?.toLowerCase()] || '#555', flexShrink: 0 }} />
+                  ) : (
+                    <div key={item.id} onClick={() => onEditTask(item)} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', background: '#161618', border: '1px solid #1e1e24', borderRadius: 12, cursor: 'pointer', opacity: item.completed ? 0.5 : 1 }}>
+                      <div style={{ width: 7, height: 7, borderRadius: '50%', background: SECTOR_COLORS[item.sector?.toLowerCase()] || '#555', flexShrink: 0 }} />
                       <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontSize: 14, color: task.completed ? '#555' : '#d4d2cc', textDecoration: task.completed ? 'line-through' : 'none', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{task.name}</div>
-                        {task.projects && <div style={{ fontSize: 11, color: '#d4520f', marginTop: 2 }}>{task.projects.name} →</div>}
+                        <div style={{ fontSize: 14, color: item.completed ? '#555' : '#d4d2cc', textDecoration: item.completed ? 'line-through' : 'none', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.name}</div>
+                        {item.projects && <div style={{ fontSize: 11, color: '#d4520f', marginTop: 2 }}>{item.projects.name} →</div>}
                       </div>
-                      {task.time_block && <div style={{ fontFamily: "'DM Mono'", fontSize: 11, color: '#555', flexShrink: 0 }}>{task.time_block}</div>}
+                      {item.time_block && <div style={{ fontFamily: "'DM Mono'", fontSize: 11, color: '#555', flexShrink: 0 }}>{item.time_block}</div>}
                     </div>
                   ))}
                 </div>

@@ -106,6 +106,8 @@ export default function Home({ onAddTask, onEditTask }) {
   const [habits, setHabits] = useState([])
   const [habitLogs, setHabitLogs] = useState([])
   const [weekTasks, setWeekTasks] = useState([])
+  const [todayEvents, setTodayEvents] = useState([])
+  const [weekEvents, setWeekEvents] = useState([])
   const [sectors, setSectors] = useState([])
 
   const today = new Date()
@@ -132,6 +134,10 @@ export default function Home({ onAddTask, onEditTask }) {
     supabase.from('habit_logs').select('*').gte('completed_date', weekDates[0]).then(({ data }) => setHabitLogs(data || []))
     supabase.from('tasks').select('*').gte('start_date', weekDates[0]).lte('start_date', weekDates[6]).then(({ data }) => setWeekTasks(data || []))
     supabase.from('sectors').select('*').order('name').then(({ data }) => setSectors(data || []))
+    supabase.from('events').select('*').eq('start_date', todayStr).order('start_time')
+      .then(({ data }) => setTodayEvents(data || []))
+    supabase.from('events').select('*').gte('start_date', todayStr).lte('start_date', weekDates[6]).order('start_date').order('start_time')
+      .then(({ data }) => setWeekEvents(data || []))
   }
 
   const toggleTask = async (task) => {
@@ -156,6 +162,24 @@ export default function Home({ onAddTask, onEditTask }) {
     if (!t.length) return 0
     return Math.round(t.filter(x => x.completed).length / t.length * 100)
   }
+
+  const timeToMins = t => {
+    if (!t) return 999
+    const m = t.match(/(\d{1,2}):(\d{2})\s*(AM|PM)/i)
+    if (!m) return 999
+    let h = parseInt(m[1]), min = parseInt(m[2])
+    if (m[3].toUpperCase() === 'PM' && h !== 12) h += 12
+    if (m[3].toUpperCase() === 'AM' && h === 12) h = 0
+    return h * 60 + min
+  }
+  const todayAllItems = [
+    ...tasks.map(t => ({ ...t, _type: 'task' })),
+    ...todayEvents.map(e => ({ ...e, _type: 'event' }))
+  ].sort((a, b) => {
+    const at = a._type === 'task' ? timeToMins(a.time_block) : timeToMins(a.start_time)
+    const bt = b._type === 'task' ? timeToMins(b.time_block) : timeToMins(b.start_time)
+    return at - bt
+  })
 
   const urgentTasks = tasks.filter(t => !t.completed && (t.urgency === 'urgent' || t.urgency === 'high'))
   const todayDone = tasks.filter(t => t.completed).length
@@ -188,7 +212,7 @@ export default function Home({ onAddTask, onEditTask }) {
       {/* Stat chips */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 8, marginBottom: 18 }}>
         {[
-          { label: 'Due today', val: tasks.length, color: '#f87171' },
+          { label: 'Due today', val: tasks.length + todayEvents.length, color: '#f87171' },
           { label: 'Urgent', val: urgentTasks.length, color: '#f59e0b' },
           { label: 'This week', val: weekTasks.length, color: '#a78bfa' },
           { label: 'Projects', val: projects.length, color: '#10b981' },
@@ -215,15 +239,21 @@ export default function Home({ onAddTask, onEditTask }) {
             <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.1em', color: '#555', textTransform: 'uppercase' }}>Today's blocks</div>
             <div style={{ fontSize: 10, color: '#444', fontFamily: "'DM Mono'" }}>{todayDone}/{tasks.length}</div>
           </div>
-          {tasks.length === 0
-            ? <div style={{ fontSize: 12, color: '#333', textAlign: 'center', padding: '8px 0' }}>No tasks today</div>
-            : tasks.map(task => (
-              <div key={task.id} onClick={() => onEditTask(task)} style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 7, cursor: 'pointer' }}>
-                <div onClick={e => { e.stopPropagation(); toggleTask(task) }} style={{ width: 16, height: 16, borderRadius: '50%', border: `1.5px solid ${task.completed ? '#d4520f' : '#333'}`, background: task.completed ? '#d4520f' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                  {task.completed && <svg width="8" height="8" viewBox="0 0 8 8"><polyline points="1,4 3,6 7,2" stroke="white" strokeWidth="1.5" fill="none" strokeLinecap="round"/></svg>}
+          {todayAllItems.length === 0
+            ? <div style={{ fontSize: 12, color: '#333', textAlign: 'center', padding: '8px 0' }}>Nothing today</div>
+            : todayAllItems.map(item => item._type === 'event' ? (
+              <div key={item.id} style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 7, cursor: 'pointer' }} onClick={() => navigate('/week')}>
+                <svg width="11" height="11" viewBox="0 0 12 12" fill="none" style={{ flexShrink: 0 }}><circle cx="6" cy="6" r="5" stroke="#3b82f6" strokeWidth="1.3"/><polyline points="6,3 6,6 8,7.5" stroke="#3b82f6" strokeWidth="1.3" strokeLinecap="round"/></svg>
+                <div style={{ fontSize: 12, color: '#93c5fd', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.title}</div>
+                <div style={{ fontFamily: "'DM Mono'", fontSize: 10, color: '#1e5a8c', flexShrink: 0 }}>{item.start_time}</div>
+              </div>
+            ) : (
+              <div key={item.id} onClick={() => onEditTask(item)} style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 7, cursor: 'pointer' }}>
+                <div onClick={e => { e.stopPropagation(); toggleTask(item) }} style={{ width: 16, height: 16, borderRadius: '50%', border: `1.5px solid ${item.completed ? '#d4520f' : '#333'}`, background: item.completed ? '#d4520f' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  {item.completed && <svg width="8" height="8" viewBox="0 0 8 8"><polyline points="1,4 3,6 7,2" stroke="white" strokeWidth="1.5" fill="none" strokeLinecap="round"/></svg>}
                 </div>
-                <div style={{ fontSize: 12, color: task.completed ? '#444' : '#d4d2cc', textDecoration: task.completed ? 'line-through' : 'none', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{task.name}</div>
-                {task.time_block && <div style={{ fontFamily: "'DM Mono'", fontSize: 10, color: '#555', flexShrink: 0 }}>{task.time_block}</div>}
+                <div style={{ fontSize: 12, color: item.completed ? '#444' : '#d4d2cc', textDecoration: item.completed ? 'line-through' : 'none', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.name}</div>
+                {item.time_block && <div style={{ fontFamily: "'DM Mono'", fontSize: 10, color: '#555', flexShrink: 0 }}>{item.time_block}</div>}
               </div>
             ))
           }
@@ -268,6 +298,33 @@ export default function Home({ onAddTask, onEditTask }) {
           })}
         </div>
       </div>
+
+      {/* Upcoming events this week */}
+      {weekEvents.length > 0 && (
+        <div style={{ marginBottom: 18 }}>
+          <div className="section-label">Upcoming events</div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
+            {weekEvents.slice(0, 5).map(ev => {
+              const evDate = new Date(ev.start_date + 'T00:00:00')
+              const dayName = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][evDate.getDay()]
+              const isToday = ev.start_date === todayStr
+              return (
+                <div key={ev.id} onClick={() => navigate('/week')} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '11px 14px', background: '#0c1a2e', border: '1px solid #1a3a5c', borderRadius: 12, cursor: 'pointer' }}>
+                  <div style={{ textAlign: 'center', flexShrink: 0 }}>
+                    <div style={{ fontSize: 10, fontWeight: 600, color: isToday ? '#d4520f' : '#1e5a8c', textTransform: 'uppercase' }}>{isToday ? 'Today' : dayName}</div>
+                    <div style={{ fontSize: 18, fontWeight: 500, color: isToday ? '#e8823a' : '#93c5fd' }}>{evDate.getDate()}</div>
+                  </div>
+                  <div style={{ width: 1, height: 32, background: '#1a3a5c', flexShrink: 0 }} />
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 14, fontWeight: 500, color: '#93c5fd', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{ev.title}</div>
+                    <div style={{ fontSize: 11, color: '#1e5a8c', marginTop: 2, fontFamily: "'DM Mono'" }}>{ev.start_time} → {ev.end_time}{ev.location ? ` · 📍 ${ev.location}` : ''}</div>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Active projects */}
       <div style={{ marginBottom: 18 }}>
