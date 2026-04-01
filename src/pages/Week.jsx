@@ -28,6 +28,25 @@ export default function Week({ onAddTask, onEditTask }) {
   const [daySheet, setDaySheet] = useState(null) // { date, tasks, events }
   const [eventModal, setEventModal] = useState(null) // null | { event, date }
 
+  // Lock body scroll when modal open
+  useEffect(() => {
+    const open = !!(eventModal || daySheet)
+    if (open) {
+      document.body.style.overflow = 'hidden'
+      document.body.style.position = 'fixed'
+      document.body.style.width = '100%'
+    } else {
+      document.body.style.overflow = ''
+      document.body.style.position = ''
+      document.body.style.width = ''
+    }
+    return () => {
+      document.body.style.overflow = ''
+      document.body.style.position = ''
+      document.body.style.width = ''
+    }
+  }, [eventModal, daySheet])
+
   const today = new Date(); today.setHours(0,0,0,0)
   const todayStr = toStr(today)
 

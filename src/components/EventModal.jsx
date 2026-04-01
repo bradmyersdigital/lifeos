@@ -72,6 +72,8 @@ function Drum({ items, selectedIdx, onChange }) {
   const ty = (ITEM_H * (3 - 1) / 2) - (selectedIdx * ITEM_H)
   return (
     <div ref={ref} onPointerDown={onDown} onPointerMove={onMove} onPointerUp={onUp} onPointerCancel={onUp}
+      onTouchStart={e => e.stopPropagation()}
+      onTouchMove={e => e.stopPropagation()}
       style={{ flex: 1, height: HEIGHT, overflow: 'hidden', position: 'relative', cursor: 'ns-resize', userSelect: 'none', touchAction: 'none' }}>
       <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: ITEM_H, background: 'linear-gradient(to bottom, #0f0f11 30%, transparent)', zIndex: 2, pointerEvents: 'none' }} />
       <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: ITEM_H, background: 'linear-gradient(to top, #0f0f11 30%, transparent)', zIndex: 2, pointerEvents: 'none' }} />
@@ -139,7 +141,7 @@ export default function EventModal({ event, date, onClose, onSaved }) {
 
   return (
     <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className="modal-sheet">
+      <div className="modal-sheet" onTouchMove={e => e.stopPropagation()}>
         <div className="modal-handle" />
         <div className="modal-title">
           {isEdit ? 'Edit event' : 'New event'}
