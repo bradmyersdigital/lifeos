@@ -139,9 +139,18 @@ export default function EventModal({ event, date, onClose, onSaved }) {
     onClose()
   }
 
+  const preventScroll = e => e.preventDefault()
+
   return (
-    <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className="modal-sheet" onTouchMove={e => e.stopPropagation()}>
+    <div
+      className="modal-overlay"
+      onClick={e => e.target === e.currentTarget && onClose()}
+      onTouchMove={e => { if (e.target === e.currentTarget) e.preventDefault() }}
+    >
+      <div
+        className="modal-sheet"
+        onTouchMove={e => e.stopPropagation()}
+      >
         <div className="modal-handle" />
         <div className="modal-title">
           {isEdit ? 'Edit event' : 'New event'}

@@ -28,19 +28,11 @@ function Shell() {
   // Lock body scroll when any modal is open
   useEffect(() => {
     if (taskModal) {
-      document.body.style.overflow = 'hidden'
-      document.body.style.position = 'fixed'
-      document.body.style.width = '100%'
+      document.documentElement.style.overflow = 'hidden'
     } else {
-      document.body.style.overflow = ''
-      document.body.style.position = ''
-      document.body.style.width = ''
+      document.documentElement.style.overflow = ''
     }
-    return () => {
-      document.body.style.overflow = ''
-      document.body.style.position = ''
-      document.body.style.width = ''
-    }
+    return () => { document.documentElement.style.overflow = '' }
   }, [taskModal])
 
   const openAdd = (mode) => setTaskModal({ mode, task: null })

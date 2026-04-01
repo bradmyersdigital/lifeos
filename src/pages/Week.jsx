@@ -31,20 +31,13 @@ export default function Week({ onAddTask, onEditTask }) {
   // Lock body scroll when modal open
   useEffect(() => {
     const open = !!(eventModal || daySheet)
+    const scrollY = window.scrollY
     if (open) {
-      document.body.style.overflow = 'hidden'
-      document.body.style.position = 'fixed'
-      document.body.style.width = '100%'
+      document.documentElement.style.overflow = 'hidden'
     } else {
-      document.body.style.overflow = ''
-      document.body.style.position = ''
-      document.body.style.width = ''
+      document.documentElement.style.overflow = ''
     }
-    return () => {
-      document.body.style.overflow = ''
-      document.body.style.position = ''
-      document.body.style.width = ''
-    }
+    return () => { document.documentElement.style.overflow = '' }
   }, [eventModal, daySheet])
 
   const today = new Date(); today.setHours(0,0,0,0)
