@@ -6,17 +6,98 @@ const SECTOR_COLORS = {
   business: '#d4520f', 'real estate': '#3b82f6', health: '#10b981',
   'personal growth': '#f59e0b', family: '#ec4899', hobbies: '#a78bfa',
 }
-const SECTOR_ICONS = {
-  business: '💼', 'real estate': '🏠', health: '🏃',
-  'personal growth': '📚', family: '❤️', hobbies: '🎨',
-}
 const URG_STYLE = {
-  urgent: { bg: '#2a0a0a', color: '#f87171', border: '#7a1010' },
-  high:   { bg: '#1e1208', color: '#e8823a', border: '#7a3410' },
-  medium: { bg: '#1e1a00', color: '#fcd34d', border: '#4a3d00' },
-  low:    { bg: '#0a1e14', color: '#6ee7b7', border: '#0f4a2a' },
+  urgent: { bg: '#2a0a0a', color: '#f87171' },
+  high:   { bg: '#1e1208', color: '#e8823a' },
+  medium: { bg: '#1e1a00', color: '#fcd34d' },
+  low:    { bg: '#0a1e14', color: '#6ee7b7' },
 }
 const DAY_NAMES = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun']
+const EMOJI_PICKS = ['💼','🏠','🏃','📚','🎨','❤️','💰','🌱','⚡','🎯','🔥','✨','🎵','🏋️','🧠','💡','🌍','🚀','📝','🎮','🏆','🛠️','📊','🎭','🧘','🍎','☀️','🌙','💎','🦁']
+const COLOR_PICKS = ['#d4520f','#3b82f6','#10b981','#f59e0b','#ec4899','#a78bfa','#f87171','#34d399','#60a5fa','#fbbf24','#e879f9','#2dd4bf']
+
+function SectorModal({ sector, onClose, onSaved }) {
+  const isEdit = !!sector
+  const [name, setName] = useState(sector?.name || '')
+  const [icon, setIcon] = useState(sector?.icon || '📁')
+  const [color, setColor] = useState(sector?.color || '#d4520f')
+  const [saving, setSaving] = useState(false)
+  const [deleting, setDeleting] = useState(false)
+
+  const handleSave = async () => {
+    if (!name.trim()) return
+    setSaving(true)
+    if (isEdit) {
+      await supabase.from('sectors').update({ name: name.trim(), icon, color }).eq('id', sector.id)
+    } else {
+      await supabase.from('sectors').insert({ name: name.trim(), icon, color })
+    }
+    setSaving(false)
+    onSaved()
+    onClose()
+  }
+
+  const handleDelete = async () => {
+    if (!window.confirm(`Delete "${sector.name}" sector?`)) return
+    setDeleting(true)
+    await supabase.from('sectors').delete().eq('id', sector.id)
+    setDeleting(false)
+    onSaved()
+    onClose()
+  }
+
+  return (
+    <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
+      <div className="modal-sheet">
+        <div className="modal-handle" />
+        <div className="modal-title">
+          {isEdit ? `Edit ${sector.name}` : 'New sector'}
+          <div className="modal-close" onClick={onClose}>×</div>
+        </div>
+
+        <div style={{ textAlign: 'center', fontSize: 52, marginBottom: 12 }}>{icon}</div>
+
+        <div className="field">
+          <div className="field-label">Sector name</div>
+          <input type="text" placeholder="e.g. Business, Health..." value={name} onChange={e => setName(e.target.value)} autoFocus />
+        </div>
+
+        <div className="field">
+          <div className="field-label">Icon — tap to select or type any emoji</div>
+          <input type="text" value={icon} onChange={e => setIcon(e.target.value)} style={{ fontSize: 22, textAlign: 'center' }} />
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7, marginTop: 10, justifyContent: 'center' }}>
+            {EMOJI_PICKS.map(e => (
+              <div key={e} onClick={() => setIcon(e)} style={{ width: 40, height: 40, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, background: icon === e ? '#1e1208' : '#161618', border: `1px solid ${icon === e ? '#7a3410' : '#242428'}`, borderRadius: 10, cursor: 'pointer' }}>
+                {e}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="field">
+          <div className="field-label">Color</div>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            {COLOR_PICKS.map(c => (
+              <div key={c} onClick={() => setColor(c)} style={{ width: 32, height: 32, borderRadius: '50%', background: c, border: `3px solid ${color === c ? '#fff' : 'transparent'}`, cursor: 'pointer', transition: 'border 0.15s' }} />
+            ))}
+          </div>
+        </div>
+
+        <div style={{ display: 'flex', gap: 10, marginTop: 18 }}>
+          {isEdit && (
+            <button onClick={handleDelete} disabled={deleting} style={{ flex: 1, padding: 11, borderRadius: 10, background: '#2a0a0a', border: '1px solid #7a1010', color: '#f87171', fontSize: 14, fontWeight: 500, cursor: 'pointer', fontFamily: "'DM Sans'" }}>
+              {deleting ? 'Deleting…' : 'Delete'}
+            </button>
+          )}
+          <button className="btn-ghost" style={{ flex: 1 }} onClick={onClose}>Cancel</button>
+          <button className="btn-primary" style={{ flex: 2 }} onClick={handleSave} disabled={saving}>
+            {saving ? 'Saving…' : isEdit ? 'Save changes' : 'Add sector'}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
 
 export default function Home({ onAddTask, onEditTask }) {
   const navigate = useNavigate()
@@ -24,10 +105,9 @@ export default function Home({ onAddTask, onEditTask }) {
   const [projects, setProjects] = useState([])
   const [habits, setHabits] = useState([])
   const [habitLogs, setHabitLogs] = useState([])
-  const [sectors, setSectors] = useState([])
-  const [editSector, setEditSector] = useState(null)
-  const [sectorIcon, setSectorIcon] = useState('')
   const [weekTasks, setWeekTasks] = useState([])
+  const [sectors, setSectors] = useState([])
+  const [sectorModal, setSectorModal] = useState(null) // null | 'new' | sector object
 
   const today = new Date()
   const todayStr = today.toISOString().split('T')[0]
@@ -35,7 +115,6 @@ export default function Home({ onAddTask, onEditTask }) {
   const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
   const dateStr = `${days[today.getDay()]}, ${months[today.getMonth()]} ${today.getDate()}`
 
-  // week dates Mon-Sun
   const dow = today.getDay()
   const monday = new Date(today)
   monday.setDate(today.getDate() - ((dow + 6) % 7))
@@ -45,48 +124,22 @@ export default function Home({ onAddTask, onEditTask }) {
     return d.toISOString().split('T')[0]
   })
 
-  useEffect(() => {
-    // today's tasks (by start_date)
-    supabase.from('tasks').select('*, projects(name)')
-      .eq('start_date', todayStr).order('time_block')
-      .then(({ data }) => setTasks(data || []))
+  useEffect(() => { loadAll() }, [todayStr])
 
-    // active projects
-    supabase.from('projects').select('*, tasks(*)')
-      .eq('status', 'active')
-      .then(({ data }) => setProjects(data || []))
-
-    // habits
-    supabase.from('habits').select('*')
-      .then(({ data }) => setHabits(data || []))
-
-    // sectors
-    supabase.from('sectors').select('*').order('name')
-      .then(({ data }) => setSectors(data || []))
-
-    // habit logs this week
-    supabase.from('habit_logs').select('*')
-      .gte('completed_date', weekDates[0])
-      .then(({ data }) => setHabitLogs(data || []))
-
-    // week tasks
-    supabase.from('tasks').select('*')
-      .gte('start_date', weekDates[0])
-      .lte('start_date', weekDates[6])
-      .then(({ data }) => setWeekTasks(data || []))
-  }, [todayStr])
+  const loadAll = async () => {
+    supabase.from('tasks').select('*, projects(name)').eq('start_date', todayStr).order('time_block').then(({ data }) => setTasks(data || []))
+    supabase.from('projects').select('*, tasks(*)').eq('status', 'active').then(({ data }) => setProjects(data || []))
+    supabase.from('habits').select('*').then(({ data }) => setHabits(data || []))
+    supabase.from('habit_logs').select('*').gte('completed_date', weekDates[0]).then(({ data }) => setHabitLogs(data || []))
+    supabase.from('tasks').select('*').gte('start_date', weekDates[0]).lte('start_date', weekDates[6]).then(({ data }) => setWeekTasks(data || []))
+    supabase.from('sectors').select('*').order('name').then(({ data }) => setSectors(data || []))
+  }
 
   const toggleTask = async (task) => {
     const updated = !task.completed
     await supabase.from('tasks').update({ completed: updated }).eq('id', task.id)
     setTasks(prev => prev.map(t => t.id === task.id ? { ...t, completed: updated } : t))
   }
-
-  const todayDone = tasks.filter(t => t.completed).length
-  const urgentTasks = tasks.filter(t => !t.completed && (t.urgency === 'urgent' || t.urgency === 'high'))
-  const focusTask = urgentTasks[0] || tasks.find(t => !t.completed)
-  const rolledOver = tasks.filter(t => t.rolled_over).length
-  const doneHabitsToday = habits.filter(h => habitLogs.some(l => l.habit_id === h.id && l.completed_date === todayStr)).length
 
   const toggleHabit = async (habit) => {
     const logged = habitLogs.some(l => l.habit_id === habit.id && l.completed_date === todayStr)
@@ -99,20 +152,16 @@ export default function Home({ onAddTask, onEditTask }) {
     }
   }
 
-  const saveSectorIcon = async (sector) => {
-    await supabase.from('sectors').update({ icon: sectorIcon }).eq('id', sector.id)
-    setSectors(prev => prev.map(s => s.id === sector.id ? { ...s, icon: sectorIcon } : s))
-    setEditSector(null)
-    setSectorIcon('')
-  }
-
   const getProjectPct = (p) => {
     const t = p.tasks || []
     if (!t.length) return 0
     return Math.round(t.filter(x => x.completed).length / t.length * 100)
   }
 
-  const todayIdx = dow === 0 ? 6 : dow - 1
+  const urgentTasks = tasks.filter(t => !t.completed && (t.urgency === 'urgent' || t.urgency === 'high'))
+  const todayDone = tasks.filter(t => t.completed).length
+  const rolledOver = tasks.filter(t => t.rolled_over).length
+  const doneHabitsToday = habits.filter(h => habitLogs.some(l => l.habit_id === h.id && l.completed_date === todayStr)).length
 
   return (
     <div>
@@ -122,10 +171,10 @@ export default function Home({ onAddTask, onEditTask }) {
           <div style={{ fontSize: 22, fontWeight: 500 }}>Good morning 👋</div>
           <div style={{ fontSize: 13, color: '#555', marginTop: 3, fontFamily: "'DM Mono'" }}>{dateStr}</div>
         </div>
-        <div style={{ width: 38, height: 38, borderRadius: '50%', background: '#b84a1a', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 600, color: '#fff', flexShrink: 0 }}>Y</div>
+        <div style={{ width: 38, height: 38, borderRadius: '50%', background: '#b84a1a', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 600, color: '#fff' }}>Y</div>
       </div>
 
-      {/* Quick add buttons */}
+      {/* Add task buttons */}
       <div className="action-row" style={{ marginBottom: 16 }}>
         <div className="action-btn" style={{ background: '#1e1208', border: '1px solid #7a3410', color: '#e8823a' }} onClick={() => onAddTask('today')}>
           <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><line x1="7.5" y1="1" x2="7.5" y2="14" stroke="#e8823a" strokeWidth="1.8" strokeLinecap="round"/><line x1="1" y1="7.5" x2="14" y2="7.5" stroke="#e8823a" strokeWidth="1.8" strokeLinecap="round"/></svg>
@@ -160,12 +209,10 @@ export default function Home({ onAddTask, onEditTask }) {
         </div>
       )}
 
-      {/* Two column layout for time blocks + urgent */}
+      {/* Today + Urgent side by side */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 18 }}>
-
-        {/* Today's time blocks */}
         <div style={{ background: '#161618', border: '1px solid #242428', borderRadius: 14, padding: 14 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 10 }}>
             <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.1em', color: '#555', textTransform: 'uppercase' }}>Today's blocks</div>
             <div style={{ fontSize: 10, color: '#444', fontFamily: "'DM Mono'" }}>{todayDone}/{tasks.length}</div>
           </div>
@@ -173,33 +220,25 @@ export default function Home({ onAddTask, onEditTask }) {
             ? <div style={{ fontSize: 12, color: '#333', textAlign: 'center', padding: '8px 0' }}>No tasks today</div>
             : tasks.map(task => (
               <div key={task.id} onClick={() => onEditTask(task)} style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 7, cursor: 'pointer' }}>
-                <div onClick={e => { e.stopPropagation(); toggleTask(task) }} style={{ width: 16, height: 16, borderRadius: '50%', border: `1.5px solid ${task.completed ? '#d4520f' : '#333'}`, background: task.completed ? '#d4520f' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, cursor: 'pointer' }}>
+                <div onClick={e => { e.stopPropagation(); toggleTask(task) }} style={{ width: 16, height: 16, borderRadius: '50%', border: `1.5px solid ${task.completed ? '#d4520f' : '#333'}`, background: task.completed ? '#d4520f' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                   {task.completed && <svg width="8" height="8" viewBox="0 0 8 8"><polyline points="1,4 3,6 7,2" stroke="white" strokeWidth="1.5" fill="none" strokeLinecap="round"/></svg>}
                 </div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 12, color: task.completed ? '#444' : '#d4d2cc', textDecoration: task.completed ? 'line-through' : 'none', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{task.name}</div>
-                </div>
-                {task.sector && <div style={{ width: 5, height: 5, borderRadius: '50%', background: SECTOR_COLORS[task.sector?.toLowerCase()] || '#555', flexShrink: 0 }} />}
+                <div style={{ fontSize: 12, color: task.completed ? '#444' : '#d4d2cc', textDecoration: task.completed ? 'line-through' : 'none', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{task.name}</div>
                 {task.time_block && <div style={{ fontFamily: "'DM Mono'", fontSize: 10, color: '#555', flexShrink: 0 }}>{task.time_block}</div>}
               </div>
             ))
           }
         </div>
-
-        {/* Urgent / High priority */}
         <div style={{ background: '#161618', border: '1px solid #242428', borderRadius: 14, padding: 14 }}>
           <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.1em', color: '#555', textTransform: 'uppercase', marginBottom: 10 }}>Urgent / High</div>
           {urgentTasks.length === 0
             ? <div style={{ fontSize: 12, color: '#333', textAlign: 'center', padding: '8px 0' }}>All clear 🎉</div>
-            : urgentTasks.slice(0, 5).map(task => {
+            : urgentTasks.slice(0, 4).map(task => {
               const u = URG_STYLE[task.urgency] || URG_STYLE.high
               return (
                 <div key={task.id} onClick={() => onEditTask(task)} style={{ marginBottom: 8, cursor: 'pointer' }}>
                   <div style={{ fontSize: 12, color: '#d4d2cc', marginBottom: 3, lineHeight: 1.3 }}>{task.name}</div>
-                  <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
-                    <span style={{ fontSize: 10, fontWeight: 600, padding: '1px 6px', borderRadius: 5, background: u.bg, color: u.color }}>{task.urgency}</span>
-                    {task.sector && <span style={{ fontSize: 10, padding: '1px 6px', borderRadius: 5, background: '#1e1e24', color: '#666' }}>{task.sector}</span>}
-                  </div>
+                  <span style={{ fontSize: 10, fontWeight: 600, padding: '1px 6px', borderRadius: 5, background: u.bg, color: u.color }}>{task.urgency}</span>
                 </div>
               )
             })
@@ -216,12 +255,12 @@ export default function Home({ onAddTask, onEditTask }) {
             const dayTasks = weekTasks.filter(t => t.start_date === date)
             const d = new Date(date)
             return (
-              <div key={date} onClick={() => navigate('/week')} style={{ background: isToday ? '#1e1208' : '#161618', border: `1px solid ${isToday ? '#7a3410' : '#242428'}`, borderRadius: 10, padding: '8px 4px', textAlign: 'center', cursor: 'pointer', transition: 'border-color 0.15s' }}>
+              <div key={date} onClick={() => navigate('/week')} style={{ background: isToday ? '#1e1208' : '#161618', border: `1px solid ${isToday ? '#7a3410' : '#242428'}`, borderRadius: 10, padding: '8px 4px', textAlign: 'center', cursor: 'pointer' }}>
                 <div style={{ fontSize: 9, color: isToday ? '#d4520f' : '#555', fontWeight: 600, textTransform: 'uppercase', marginBottom: 3 }}>{DAY_NAMES[i]}</div>
                 <div style={{ fontSize: 15, fontWeight: 500, color: isToday ? '#e8823a' : '#888', marginBottom: 4 }}>{d.getDate()}</div>
-                {dayTasks.slice(0, 3).map((t, ti) => (
-                  <div key={ti} style={{ fontSize: 9, background: SECTOR_COLORS[t.sector?.toLowerCase()] ? SECTOR_COLORS[t.sector?.toLowerCase()] + '22' : '#1e1e24', color: SECTOR_COLORS[t.sector?.toLowerCase()] || '#555', borderRadius: 4, padding: '1px 3px', marginBottom: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {t.name.length > 8 ? t.name.substring(0, 8) + '…' : t.name}
+                {dayTasks.slice(0, 2).map((t, ti) => (
+                  <div key={ti} style={{ fontSize: 9, background: '#1e1e24', color: '#555', borderRadius: 4, padding: '1px 3px', marginBottom: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {t.name.length > 7 ? t.name.substring(0, 7) + '…' : t.name}
                   </div>
                 ))}
                 {dayTasks.length === 0 && <div style={{ fontSize: 10, color: '#2a2a2a' }}>—</div>}
@@ -235,7 +274,7 @@ export default function Home({ onAddTask, onEditTask }) {
       <div style={{ marginBottom: 18 }}>
         <div className="section-label">Active projects</div>
         {projects.length === 0 ? (
-          <div style={{ padding: '14px', textAlign: 'center', fontSize: 13, color: '#333', border: '1px dashed #242428', borderRadius: 12 }}>
+          <div style={{ padding: 14, textAlign: 'center', fontSize: 13, color: '#333', border: '1px dashed #242428', borderRadius: 12 }}>
             No active projects — add one in the Projects tab
           </div>
         ) : (
@@ -244,15 +283,15 @@ export default function Home({ onAddTask, onEditTask }) {
               const pct = getProjectPct(p)
               const color = SECTOR_COLORS[p.sector?.toLowerCase()] || '#d4520f'
               const tasksLeft = (p.tasks || []).filter(t => !t.completed).length
-              const isOverdue = p.due_date && p.due_date < new Date().toISOString().split('T')[0]
+              const isOverdue = p.due_date && p.due_date < todayStr
               return (
                 <div key={p.id} style={{ background: '#161618', border: '1px solid #242428', borderRadius: 12, padding: 12 }}>
                   <div style={{ fontSize: 13, fontWeight: 500, color: '#e8e6e1', marginBottom: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.name}</div>
                   <div style={{ fontSize: 11, color: '#555', marginBottom: 8 }}>{p.sector}</div>
                   <div style={{ height: 4, background: '#1e1e24', borderRadius: 2, overflow: 'hidden', marginBottom: 6 }}>
-                    <div style={{ height: '100%', width: pct + '%', background: color, borderRadius: 2, transition: 'width 0.4s' }} />
+                    <div style={{ height: '100%', width: pct + '%', background: color, borderRadius: 2 }} />
                   </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                     <div style={{ fontSize: 10, color: '#555', fontFamily: "'DM Mono'" }}>{pct}% · {tasksLeft} left</div>
                     {p.due_date && <div style={{ fontSize: 10, fontFamily: "'DM Mono'", color: isOverdue ? '#f87171' : '#444' }}>Due {p.due_date}</div>}
                   </div>
@@ -263,7 +302,7 @@ export default function Home({ onAddTask, onEditTask }) {
         )}
       </div>
 
-      {/* Habits quick check */}
+      {/* Habits */}
       <div style={{ marginBottom: 18 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
           <div className="section-label" style={{ margin: 0 }}>Habits</div>
@@ -286,57 +325,40 @@ export default function Home({ onAddTask, onEditTask }) {
       </div>
 
       {/* Sectors */}
-      <div className="section-label">Sectors</div>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 8, marginBottom: 8 }}>
-        {sectors.length > 0 ? sectors.map(s => (
-          <div key={s.id} style={{ background: '#161618', border: '1px solid #242428', borderRadius: 14, padding: '12px 8px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5, position: 'relative' }}>
-            <div style={{ fontSize: 28, marginBottom: 2 }}>{s.icon}</div>
-            <div style={{ fontSize: 11, color: '#777', fontWeight: 500, textAlign: 'center' }}>{s.name}</div>
-            <div onClick={() => { setEditSector(s); setSectorIcon(s.icon) }} style={{ position: 'absolute', top: 6, right: 6, width: 20, height: 20, borderRadius: 6, background: '#1e1e24', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
-              <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M7 1.5L8.5 3L3.5 8H2V6.5L7 1.5Z" stroke="#666" strokeWidth="1.2" fill="none" strokeLinecap="round" strokeLinejoin="round"/></svg>
-            </div>
-          </div>
-        )) : ['Business','Real Estate','Health','Personal Growth','Hobbies','Family'].map(name => (
-          <div key={name} style={{ background: '#161618', border: '1px solid #242428', borderRadius: 14, padding: '12px 8px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5 }}>
-            <div style={{ fontSize: 24 }}>📁</div>
-            <div style={{ fontSize: 11, color: '#777', fontWeight: 500, textAlign: 'center' }}>{name}</div>
-          </div>
-        ))}
-      </div>
-
-      {/* Sector icon editor */}
-      {editSector && (
-        <div className="modal-overlay" onClick={e => e.target === e.currentTarget && setEditSector(null)}>
-          <div className="modal-sheet">
-            <div className="modal-handle" />
-            <div className="modal-title">
-              Edit {editSector.name} icon
-              <div className="modal-close" onClick={() => setEditSector(null)}>×</div>
-            </div>
-            <div style={{ textAlign: 'center', fontSize: 48, marginBottom: 16 }}>{sectorIcon}</div>
-            <div className="field">
-              <div className="field-label">Tap an emoji or type one</div>
-              <input
-                type="text"
-                value={sectorIcon}
-                onChange={e => setSectorIcon(e.target.value)}
-                placeholder="Paste or type an emoji..."
-                style={{ fontSize: 24, textAlign: 'center' }}
-              />
-            </div>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 18, justifyContent: 'center' }}>
-              {['💼','🏠','🏃','📚','🎨','❤️','💰','🌱','⚡','🎯','🔥','✨','🎵','🏋️','🧠','💡','🌍','🚀','📝','🎮'].map(e => (
-                <div key={e} onClick={() => setSectorIcon(e)} style={{ width: 40, height: 40, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, background: sectorIcon === e ? '#1e1208' : '#161618', border: `1px solid ${sectorIcon === e ? '#7a3410' : '#242428'}`, borderRadius: 10, cursor: 'pointer' }}>
-                  {e}
-                </div>
-              ))}
-            </div>
-            <div style={{ display: 'flex', gap: 10 }}>
-              <button className="btn-ghost" style={{ flex: 1 }} onClick={() => setEditSector(null)}>Cancel</button>
-              <button className="btn-primary" style={{ flex: 2 }} onClick={() => saveSectorIcon(editSector)}>Save icon</button>
-            </div>
+      <div style={{ marginBottom: 8 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+          <div className="section-label" style={{ margin: 0 }}>Sectors</div>
+          <div onClick={() => setSectorModal('new')} style={{ display: 'flex', alignItems: 'center', gap: 5, background: '#1e1208', border: '1px solid #7a3410', borderRadius: 8, padding: '5px 10px', cursor: 'pointer', fontSize: 12, color: '#d4520f', fontWeight: 500 }}>
+            <svg width="11" height="11" viewBox="0 0 11 11" fill="none"><line x1="5.5" y1="1" x2="5.5" y2="10" stroke="#d4520f" strokeWidth="1.6" strokeLinecap="round"/><line x1="1" y1="5.5" x2="10" y2="5.5" stroke="#d4520f" strokeWidth="1.6" strokeLinecap="round"/></svg>
+            Add
           </div>
         </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 8 }}>
+          {sectors.map(s => (
+            <div key={s.id} style={{ background: '#161618', border: '1px solid #242428', borderRadius: 14, padding: '14px 8px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, position: 'relative', cursor: 'pointer' }}>
+              <div style={{ fontSize: 30 }}>{s.icon}</div>
+              <div style={{ fontSize: 11, color: '#888', fontWeight: 500, textAlign: 'center' }}>{s.name}</div>
+              <div onClick={e => { e.stopPropagation(); setSectorModal(s) }} style={{ position: 'absolute', top: 6, right: 6, width: 22, height: 22, borderRadius: 6, background: '#1e1e24', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+                <svg width="11" height="11" viewBox="0 0 11 11" fill="none"><path d="M8 1.5L9.5 3L4 8.5H2.5V7L8 1.5Z" stroke="#666" strokeWidth="1.2" fill="none" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              </div>
+            </div>
+          ))}
+          {sectors.length === 0 && ['Business','Real Estate','Health','Personal Growth','Hobbies','Family'].map(n => (
+            <div key={n} style={{ background: '#161618', border: '1px solid #242428', borderRadius: 14, padding: '14px 8px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
+              <div style={{ fontSize: 28 }}>📁</div>
+              <div style={{ fontSize: 11, color: '#888', fontWeight: 500, textAlign: 'center' }}>{n}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Sector modal */}
+      {sectorModal && (
+        <SectorModal
+          sector={sectorModal === 'new' ? null : sectorModal}
+          onClose={() => setSectorModal(null)}
+          onSaved={loadAll}
+        />
       )}
     </div>
   )
