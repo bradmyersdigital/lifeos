@@ -111,7 +111,7 @@ export default function EventModal({ event, date, onClose, onSaved }) {
   const [projects, setProjects] = useState([])
   const [saving, setSaving] = useState(false)
   const [deleting, setDeleting] = useState(false)
-  const [showMore, setShowMore] = useState(isEdit)
+  const [attending, setAttending] = useState(event?.attending || '')
 
   const [sH, setSH] = useState(ps.h)
   const [sM, setSM] = useState(ps.m)
@@ -130,7 +130,7 @@ export default function EventModal({ event, date, onClose, onSaved }) {
   const handleSave = async () => {
     if (!title.trim()) return
     setSaving(true)
-    const payload = { title: title.trim(), start_date: startDate, start_time: startTime, end_time: endTime, location, sector, notes, project_id: projectId || null }
+    const payload = { title: title.trim(), start_date: startDate, start_time: startTime, end_time: endTime, location, attending, sector, notes, project_id: projectId || null }
     if (isEdit) await supabase.from('events').update(payload).eq('id', event.id)
     else await supabase.from('events').insert(payload)
     setSaving(false)
@@ -188,40 +188,37 @@ export default function EventModal({ event, date, onClose, onSaved }) {
           <div style={{ textAlign: 'center', fontFamily: "'DM Mono'", fontSize: 12, color: '#d4520f', marginTop: 5, fontWeight: 600 }}>{startTime} → {endTime}</div>
         </div>
 
-        {/* Optional fields toggle */}
-        <div onClick={() => setShowMore(!showMore)} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: '#555', cursor: 'pointer', marginBottom: 12 }}>
-          <div style={{ fontSize: 16, transition: 'transform 0.2s', transform: showMore ? 'rotate(90deg)' : 'none' }}>›</div>
-          {showMore ? 'Hide' : 'Add'} location, sector, notes
+        <div className="field">
+          <div className="field-label">Location</div>
+          <input type="text" placeholder="Where?" value={location} onChange={e => setLocation(e.target.value)} />
         </div>
 
-        {showMore && (
-          <>
-            <div className="field">
-              <div className="field-label">Location</div>
-              <input type="text" placeholder="Where?" value={location} onChange={e => setLocation(e.target.value)} />
-            </div>
-            <div className="field-row">
-              <div className="field">
-                <div className="field-label">Sector</div>
-                <select value={sector} onChange={e => setSector(e.target.value)}>
-                  <option value="">Select...</option>
-                  {SECTORS.map(s => <option key={s}>{s}</option>)}
-                </select>
-              </div>
-              <div className="field">
-                <div className="field-label">Project</div>
-                <select value={projectId} onChange={e => setProjectId(e.target.value)}>
-                  <option value="">None</option>
-                  {projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-                </select>
-              </div>
-            </div>
-            <div className="field">
-              <div className="field-label">Notes</div>
-              <textarea placeholder="Any details..." value={notes} onChange={e => setNotes(e.target.value)} style={{ height: 56 }} />
-            </div>
-          </>
-        )}
+        <div className="field">
+          <div className="field-label">Who's attending</div>
+          <input type="text" placeholder="e.g. John, Sarah, Mike..." value={attending} onChange={e => setAttending(e.target.value)} />
+        </div>
+
+        <div className="field-row">
+          <div className="field">
+            <div className="field-label">Sector</div>
+            <select value={sector} onChange={e => setSector(e.target.value)}>
+              <option value="">Select...</option>
+              {SECTORS.map(s => <option key={s}>{s}</option>)}
+            </select>
+          </div>
+          <div className="field">
+            <div className="field-label">Project</div>
+            <select value={projectId} onChange={e => setProjectId(e.target.value)}>
+              <option value="">None</option>
+              {projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+            </select>
+          </div>
+        </div>
+
+        <div className="field">
+          <div className="field-label">Notes</div>
+          <textarea placeholder="Any details..." value={notes} onChange={e => setNotes(e.target.value)} style={{ height: 56 }} />
+        </div>
 
         <div style={{ display: 'flex', gap: 10, marginTop: 16 }}>
           {isEdit && (
