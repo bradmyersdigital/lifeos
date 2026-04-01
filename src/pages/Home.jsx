@@ -207,27 +207,36 @@ export default function Home({ onAddTask, onEditTask }) {
       </div>
 
       {/* Active projects */}
-      {projects.length > 0 && (
-        <div style={{ marginBottom: 18 }}>
-          <div className="section-label">Active projects</div>
+      <div style={{ marginBottom: 18 }}>
+        <div className="section-label">Active projects</div>
+        {projects.length === 0 ? (
+          <div style={{ padding: '14px', textAlign: 'center', fontSize: 13, color: '#333', border: '1px dashed #242428', borderRadius: 12 }}>
+            No active projects — add one in the Projects tab
+          </div>
+        ) : (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: 8 }}>
             {projects.slice(0, 4).map(p => {
               const pct = getProjectPct(p)
               const color = SECTOR_COLORS[p.sector?.toLowerCase()] || '#d4520f'
+              const tasksLeft = (p.tasks || []).filter(t => !t.completed).length
+              const isOverdue = p.due_date && p.due_date < new Date().toISOString().split('T')[0]
               return (
                 <div key={p.id} style={{ background: '#161618', border: '1px solid #242428', borderRadius: 12, padding: 12 }}>
                   <div style={{ fontSize: 13, fontWeight: 500, color: '#e8e6e1', marginBottom: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.name}</div>
                   <div style={{ fontSize: 11, color: '#555', marginBottom: 8 }}>{p.sector}</div>
-                  <div style={{ height: 4, background: '#1e1e24', borderRadius: 2, overflow: 'hidden', marginBottom: 4 }}>
+                  <div style={{ height: 4, background: '#1e1e24', borderRadius: 2, overflow: 'hidden', marginBottom: 6 }}>
                     <div style={{ height: '100%', width: pct + '%', background: color, borderRadius: 2, transition: 'width 0.4s' }} />
                   </div>
-                  <div style={{ fontSize: 10, color: '#555', fontFamily: "'DM Mono'" }}>{pct}% — {(p.tasks || []).filter(t => !t.completed).length} tasks left</div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div style={{ fontSize: 10, color: '#555', fontFamily: "'DM Mono'" }}>{pct}% · {tasksLeft} left</div>
+                    {p.due_date && <div style={{ fontSize: 10, fontFamily: "'DM Mono'", color: isOverdue ? '#f87171' : '#444' }}>Due {p.due_date}</div>}
+                  </div>
                 </div>
               )
             })}
           </div>
-        </div>
-      )}
+        )}
+      </div>
 
       {/* Habits quick check */}
       <div style={{ marginBottom: 18 }}>
