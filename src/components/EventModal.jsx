@@ -71,17 +71,25 @@ function Drum({ items, selectedIdx, onChange }) {
 
   const ty = (ITEM_H * (3 - 1) / 2) - (selectedIdx * ITEM_H)
   return (
-    <div ref={ref} onPointerDown={onDown} onPointerMove={onMove} onPointerUp={onUp} onPointerCancel={onUp}
-      onTouchStart={e => e.stopPropagation()}
-      onTouchMove={e => e.stopPropagation()}
-      style={{ flex: 1, height: HEIGHT, overflow: 'hidden', position: 'relative', cursor: 'ns-resize', userSelect: 'none', touchAction: 'none' }}>
-      <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: ITEM_H, background: 'linear-gradient(to bottom, #0f0f11 30%, transparent)', zIndex: 2, pointerEvents: 'none' }} />
-      <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: ITEM_H, background: 'linear-gradient(to top, #0f0f11 30%, transparent)', zIndex: 2, pointerEvents: 'none' }} />
+    <div
+      ref={ref}
+      onPointerDown={onDown}
+      onPointerMove={onMove}
+      onPointerUp={onUp}
+      onPointerCancel={onUp}
+      style={{ flex: 1, height: HEIGHT, overflow: 'hidden', position: 'relative', cursor: 'ns-resize', userSelect: 'none', touchAction: 'none' }}
+    >
+      <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: ITEM_H, background: 'linear-gradient(to bottom, #1a1a1e 30%, transparent)', zIndex: 2, pointerEvents: 'none' }} />
+      <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: ITEM_H, background: 'linear-gradient(to top, #1a1a1e 30%, transparent)', zIndex: 2, pointerEvents: 'none' }} />
       <div style={{ position: 'absolute', left: 2, right: 2, top: '50%', transform: 'translateY(-50%)', height: ITEM_H, background: 'rgba(212,82,15,0.1)', border: '1px solid rgba(212,82,15,0.28)', borderRadius: 7, pointerEvents: 'none', zIndex: 1 }} />
       <div style={{ position: 'absolute', left: 0, right: 0, transform: `translateY(${ty}px)`, transition: dragging.current ? 'none' : 'transform 0.18s cubic-bezier(0.25,0.46,0.45,0.94)' }}>
         {items.map((item, i) => {
           const dist = Math.abs(i - selectedIdx)
-          return <div key={item} onClick={() => onChange(i)} style={{ height: ITEM_H, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: "'DM Mono',monospace", fontSize: dist === 0 ? 20 : dist === 1 ? 15 : 12, fontWeight: dist === 0 ? 600 : 400, color: dist === 0 ? '#e8e6e1' : dist === 1 ? '#555' : '#2a2a2a', cursor: 'pointer' }}>{item}</div>
+          return (
+            <div key={item} onClick={() => onChange(i)} style={{ height: ITEM_H, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: "'DM Mono',monospace", fontSize: dist === 0 ? 20 : dist === 1 ? 15 : 12, fontWeight: dist === 0 ? 600 : 400, color: dist === 0 ? '#e8e6e1' : dist === 1 ? '#555' : '#2a2a2a', cursor: 'pointer' }}>
+              {item}
+            </div>
+          )
         })}
       </div>
     </div>
@@ -91,7 +99,6 @@ function Drum({ items, selectedIdx, onChange }) {
 export default function EventModal({ event, date, onClose, onSaved }) {
   const isEdit = !!event
   const today = new Date().toISOString().split('T')[0]
-
   const ps = parseTime(event?.start_time)
   const pe = parseTime(event?.end_time || '10:00 AM')
 
@@ -104,6 +111,7 @@ export default function EventModal({ event, date, onClose, onSaved }) {
   const [projects, setProjects] = useState([])
   const [saving, setSaving] = useState(false)
   const [deleting, setDeleting] = useState(false)
+  const [showMore, setShowMore] = useState(isEdit)
 
   const [sH, setSH] = useState(ps.h)
   const [sM, setSM] = useState(ps.m)
@@ -139,18 +147,9 @@ export default function EventModal({ event, date, onClose, onSaved }) {
     onClose()
   }
 
-  const preventScroll = e => e.preventDefault()
-
   return (
-    <div
-      className="modal-overlay"
-      onClick={e => e.target === e.currentTarget && onClose()}
-      onTouchMove={e => { if (e.target === e.currentTarget) e.preventDefault() }}
-    >
-      <div
-        className="modal-sheet"
-        onTouchMove={e => e.stopPropagation()}
-      >
+    <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
+      <div className="modal-sheet">
         <div className="modal-handle" />
         <div className="modal-title">
           {isEdit ? 'Edit event' : 'New event'}
@@ -162,60 +161,67 @@ export default function EventModal({ event, date, onClose, onSaved }) {
           <input type="text" placeholder="What's the event?" value={title} onChange={e => setTitle(e.target.value)} autoFocus />
         </div>
 
-        <div className="field-row">
-          <div className="field">
-            <div className="field-label">Date</div>
-            <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} />
-          </div>
-          <div className="field">
-            <div className="field-label">Sector</div>
-            <select value={sector} onChange={e => setSector(e.target.value)}>
-              <option value="">Select...</option>
-              {SECTORS.map(s => <option key={s}>{s}</option>)}
-            </select>
-          </div>
+        <div className="field">
+          <div className="field-label">Date</div>
+          <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} />
         </div>
 
-        {/* Time pickers side by side compact */}
         <div className="field">
           <div className="field-label">Time — Start → End</div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', gap: 8, alignItems: 'center' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', gap: 6, alignItems: 'center' }}>
             <div style={{ background: '#0f0f11', border: '1px solid #2a2a30', borderRadius: 10, padding: '3px 6px', display: 'flex', alignItems: 'center' }}>
               <Drum items={HOURS} selectedIdx={sH} onChange={setSH} />
-              <div style={{ fontFamily: "'DM Mono'", fontSize: 18, color: '#555' }}>:</div>
+              <div style={{ fontFamily: "'DM Mono'", fontSize: 16, color: '#555' }}>:</div>
               <Drum items={MINUTES} selectedIdx={sM} onChange={setSM} />
-              <div style={{ width: 6 }} />
+              <div style={{ width: 5 }} />
               <Drum items={AMPM} selectedIdx={sAp} onChange={setSAp} />
             </div>
-            <div style={{ textAlign: 'center', color: '#555', fontSize: 14 }}>→</div>
+            <div style={{ color: '#555', fontSize: 14, textAlign: 'center' }}>→</div>
             <div style={{ background: '#0f0f11', border: '1px solid #2a2a30', borderRadius: 10, padding: '3px 6px', display: 'flex', alignItems: 'center' }}>
               <Drum items={HOURS} selectedIdx={eH} onChange={setEH} />
-              <div style={{ fontFamily: "'DM Mono'", fontSize: 18, color: '#555' }}>:</div>
+              <div style={{ fontFamily: "'DM Mono'", fontSize: 16, color: '#555' }}>:</div>
               <Drum items={MINUTES} selectedIdx={eM} onChange={setEM} />
-              <div style={{ width: 6 }} />
+              <div style={{ width: 5 }} />
               <Drum items={AMPM} selectedIdx={eAp} onChange={setEAp} />
             </div>
           </div>
-          <div style={{ textAlign: 'center', fontFamily: "'DM Mono'", fontSize: 13, color: '#d4520f', marginTop: 6, fontWeight: 600 }}>{startTime} → {endTime}</div>
+          <div style={{ textAlign: 'center', fontFamily: "'DM Mono'", fontSize: 12, color: '#d4520f', marginTop: 5, fontWeight: 600 }}>{startTime} → {endTime}</div>
         </div>
 
-        <div className="field">
-          <div className="field-label">Location (optional)</div>
-          <input type="text" placeholder="Where?" value={location} onChange={e => setLocation(e.target.value)} />
+        {/* Optional fields toggle */}
+        <div onClick={() => setShowMore(!showMore)} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: '#555', cursor: 'pointer', marginBottom: 12 }}>
+          <div style={{ fontSize: 16, transition: 'transform 0.2s', transform: showMore ? 'rotate(90deg)' : 'none' }}>›</div>
+          {showMore ? 'Hide' : 'Add'} location, sector, notes
         </div>
 
-        <div className="field">
-          <div className="field-label">Link to project (optional)</div>
-          <select value={projectId} onChange={e => setProjectId(e.target.value)}>
-            <option value="">No project</option>
-            {projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-          </select>
-        </div>
-
-        <div className="field">
-          <div className="field-label">Notes (optional)</div>
-          <textarea placeholder="Any details..." value={notes} onChange={e => setNotes(e.target.value)} style={{ height: 56 }} />
-        </div>
+        {showMore && (
+          <>
+            <div className="field">
+              <div className="field-label">Location</div>
+              <input type="text" placeholder="Where?" value={location} onChange={e => setLocation(e.target.value)} />
+            </div>
+            <div className="field-row">
+              <div className="field">
+                <div className="field-label">Sector</div>
+                <select value={sector} onChange={e => setSector(e.target.value)}>
+                  <option value="">Select...</option>
+                  {SECTORS.map(s => <option key={s}>{s}</option>)}
+                </select>
+              </div>
+              <div className="field">
+                <div className="field-label">Project</div>
+                <select value={projectId} onChange={e => setProjectId(e.target.value)}>
+                  <option value="">None</option>
+                  {projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                </select>
+              </div>
+            </div>
+            <div className="field">
+              <div className="field-label">Notes</div>
+              <textarea placeholder="Any details..." value={notes} onChange={e => setNotes(e.target.value)} style={{ height: 56 }} />
+            </div>
+          </>
+        )}
 
         <div style={{ display: 'flex', gap: 10, marginTop: 16 }}>
           {isEdit && (
