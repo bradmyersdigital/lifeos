@@ -1,0 +1,43 @@
+okay good. next set of long edits:
+
+
+
+1. Set "No specific Time" for task creation to off as defualt. we want the time selecter always avail;able. also for each event and and taskm,, remove the scrolling time feature and just make it inputable, obiosuly formatted in time to easily input it and then change am or pm. 
+
+2. Be ablke to hold down and reorganize order for sectors page, and sectors headings in task page
+
+3. Filters in weekly view aernt syncyed to proper sectors
+
+4. Add "complete project" option to projects 
+
+5. When adding or editing habits, make it pop up up slide like how adding task are. give the ability to add when those habits get done throughout the week, like bubbles with m, t, w, t,f, s, s. Add the ability to hold down the habits and reorgbnaize them.
+
+6. Subscription due date box shows small when going to create a new one until ou select the date, then it looks normal. 
+
+7. Adding income on the finace page isnt working
+
+8. Add a current savings box to finance page
+
+9. Finance page: if negative amount after income and expenses, show red text sayign "You are overspending by (The amount). And green with whatever you think if they are ahead. 
+
+10. On home page, and "subscriptions/Bills due soon" under habits
+
+11. If creating a task within a project, the project associated box should already be set to that project. Same thing if creating a task in that project thats already asscoaited with a sector. and same thing is creating a task within a sector.
+
+12. In sector section, remove Both task options, Put "Create Task" and also "Create Project" button. 
+
+13. In timeblovk section of homepage, if a task is long wordered the box extneds horizontally to fit and pushes the other box off screen. keep the box a set lenth and have it extend down vertically witht he text obvoisly going down to the next line. 
+
+14. When creating a task, add the option to "create new project" when selecting what project the task is going to be associated with. 
+
+15.  Add sector silter to projects page. also be able to lable by importance.
+
+16. When swiping the side of the screen left like on safari when it takes you back to the previous screen, in some pages it doesnt take you back to the page you were just on. it may take you back to home or the more menu dpending on where your add. the correct way is if you choose to go back that way, take it back to the previous page you were on always. 
+
+17. In sectors page on each sector in smaller writing, add "Current # of projects" and "Current # of task" or however you would lable those.
+
+18. Add routine section into habits.  For routines add a view to see it in a timed order, seperate by morning, afternoon, evening, night but use times like how we have it set up on weekly view
+
+19. Be able to set multiple goals in goal page, ad add details or any info. amke each goal its own seperate clickable button in which you can add more details about the goal, and add any task that will help get you there. add percentages to it to track the goal.
+
+20. For "Week at a glance" on the home page, make it so ytou can scroll by week and i can view the next week right away. Also side note the dates are wrong on there, its behind by a day

@@ -99,6 +99,50 @@ function SectorModal({ sector, onClose, onSaved }) {
   )
 }
 
+function DueSoonSection() {
+  const [items, setItems] = useState([])
+  const today = new Date()
+  const todayStr = today.toISOString().split('T')[0]
+  const soon = new Date(today); soon.setDate(today.getDate() + 7)
+  const soonStr = soon.toISOString().split('T')[0]
+
+  useEffect(() => {
+    const load = async () => {
+      const [{ data: s }, { data: b }] = await Promise.all([
+        supabase.from('finance_subscriptions').select('*').gte('due_date', todayStr).lte('due_date', soonStr).eq('is_active', true),
+        supabase.from('finance_bills').select('*').gte('due_date', todayStr).lte('due_date', soonStr).eq('is_active', true),
+      ])
+      const merged = [...(s||[]).map(x=>({...x,_type:'sub'})),...(b||[]).map(x=>({...x,_type:'bill'}))]
+        .sort((a,b) => a.due_date?.localeCompare(b.due_date))
+      setItems(merged)
+    }
+    load()
+  }, [])
+
+  if (items.length === 0) return null
+
+  return (
+    <div style={{ marginBottom: 18 }}>
+      <div className="section-label">Due soon</div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+        {items.map(item => (
+          <div key={item.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px', background: '#161618', border: '1px solid #242428', borderRadius: 12 }}>
+            <div style={{ fontSize: 18 }}>{item._type === 'sub' ? '🔄' : '🧾'}</div>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 13, color: '#d4d2cc', fontWeight: 500 }}>{item.name}</div>
+              <div style={{ fontSize: 11, color: '#555', fontFamily: "'DM Mono'", marginTop: 2 }}>{item._type === 'sub' ? 'Subscription' : 'Bill'}</div>
+            </div>
+            <div style={{ textAlign: 'right' }}>
+              <div style={{ fontSize: 13, color: '#f59e0b', fontFamily: "'DM Mono'", fontWeight: 500 }}>${parseFloat(item.amount).toFixed(0)}</div>
+              <div style={{ fontSize: 11, color: '#555', fontFamily: "'DM Mono'", marginTop: 2 }}>Due {item.due_date}</div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 export default function Home({ onAddTask, onEditTask }) {
   const navigate = useNavigate()
   const [tasks, setTasks] = useState([])
@@ -119,10 +163,17 @@ export default function Home({ onAddTask, onEditTask }) {
   const dow = today.getDay()
   const monday = new Date(today)
   monday.setDate(today.getDate() - ((dow + 6) % 7))
+  monday.setHours(0,0,0,0)
+  const [weekGlanceOffset, setWeekGlanceOffset] = useState(0)
+  const glanceMonday = new Date(monday)
+  glanceMonday.setDate(monday.getDate() + weekGlanceOffset * 7)
   const weekDates = Array.from({ length: 7 }, (_, i) => {
-    const d = new Date(monday)
-    d.setDate(monday.getDate() + i)
-    return d.toISOString().split('T')[0]
+    const d = new Date(glanceMonday)
+    d.setDate(glanceMonday.getDate() + i)
+    // Fix timezone offset
+    const offset = d.getTimezoneOffset()
+    const adjusted = new Date(d.getTime() - offset * 60 * 1000)
+    return adjusted.toISOString().split('T')[0]
   })
 
   useEffect(() => { loadAll() }, [todayStr])
@@ -252,7 +303,7 @@ export default function Home({ onAddTask, onEditTask }) {
                 <div onClick={e => { e.stopPropagation(); toggleTask(item) }} style={{ width: 16, height: 16, borderRadius: '50%', border: `1.5px solid ${item.completed ? '#d4520f' : '#333'}`, background: item.completed ? '#d4520f' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                   {item.completed && <svg width="8" height="8" viewBox="0 0 8 8"><polyline points="1,4 3,6 7,2" stroke="white" strokeWidth="1.5" fill="none" strokeLinecap="round"/></svg>}
                 </div>
-                <div style={{ fontSize: 12, color: item.completed ? '#444' : '#d4d2cc', textDecoration: item.completed ? 'line-through' : 'none', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.name}</div>
+                <div style={{ fontSize: 12, color: item.completed ? '#444' : '#d4d2cc', textDecoration: item.completed ? 'line-through' : 'none', flex: 1, minWidth: 0, wordBreak: 'break-word', lineHeight: 1.3 }}>{item.name}</div>
                 {item.time_block && <div style={{ fontFamily: "'DM Mono'", fontSize: 10, color: '#555', flexShrink: 0 }}>{item.time_block}</div>}
               </div>
             ))
@@ -277,7 +328,14 @@ export default function Home({ onAddTask, onEditTask }) {
 
       {/* Week at a glance */}
       <div style={{ marginBottom: 18 }}>
-        <div className="section-label">Week at a glance</div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+          <div className="section-label" style={{ margin: 0 }}>Week at a glance</div>
+          <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+            <div onClick={() => setWeekGlanceOffset(o => o-1)} style={{ width: 28, height: 28, borderRadius: 8, background: '#161618', border: '1px solid #242428', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: 14, color: '#888' }}>‹</div>
+            {weekGlanceOffset !== 0 && <div onClick={() => setWeekGlanceOffset(0)} style={{ fontSize: 11, color: '#d4520f', cursor: 'pointer' }}>Today</div>}
+            <div onClick={() => setWeekGlanceOffset(o => o+1)} style={{ width: 28, height: 28, borderRadius: 8, background: '#161618', border: '1px solid #242428', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: 14, color: '#888' }}>›</div>
+          </div>
+        </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', gap: 5 }}>
           {weekDates.map((date, i) => {
             const isToday = date === todayStr
@@ -379,6 +437,9 @@ export default function Home({ onAddTask, onEditTask }) {
           })}
         </div>
       </div>
+
+      {/* Bills & Subs due soon */}
+      <DueSoonSection />
 
       {/* Sectors */}
       <div style={{ marginBottom: 8 }}>

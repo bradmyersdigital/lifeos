@@ -22,6 +22,8 @@ function EntryModal({ type, item, onClose, onSaved }) {
     setSaving(true)
     const payload = type === 'savings'
       ? { name: name.trim(), monthly_target: parseFloat(amount) || 0 }
+      : type === 'income'
+      ? { name: name.trim(), amount: parseFloat(amount) || 0, frequency }
       : { name: name.trim(), amount: parseFloat(amount) || 0, frequency, is_active: isActive, due_date: dueDate || null }
     if (isEdit) await supabase.from(table).update(payload).eq('id', item.id)
     else await supabase.from(table).insert(payload)
@@ -48,7 +50,7 @@ function EntryModal({ type, item, onClose, onSaved }) {
                 <option value="weekly">Weekly</option><option value="biweekly">Biweekly</option><option value="monthly">Monthly</option><option value="yearly">Yearly</option>
               </select>
             </div>
-            {(type === 'subscription' || type === 'bill') && <div className="field"><div className="field-label">Due date</div><input type="date" value={dueDate} onChange={e => setDueDate(e.target.value)} /></div>}
+            {(type === 'subscription' || type === 'bill') && (<div className="field"><div className="field-label">Due date</div><input type="date" value={dueDate} onChange={e => setDueDate(e.target.value)} style={{ minHeight: 40 }} /></div>)}
           </div>
         )}
         {(type === 'subscription' || type === 'bill') && (
@@ -74,7 +76,8 @@ export default function Finance() {
   const [bills, setBills] = useState([])
   const [income, setIncome] = useState([])
   const [savings, setSavings] = useState([])
-  const [modal, setModal] = useState(null) // { type, item }
+  const [modal, setModal] = useState(null)
+  const [currentSavings, setCurrentSavings] = useState('')
   const [section, setSection] = useState(null) // expanded section
 
   const now = new Date()
@@ -137,6 +140,9 @@ export default function Finance() {
           <div style={{ gridColumn: '1/-1', borderTop: '1px solid #2a2a30', paddingTop: 12 }}>
             <div style={{ fontSize: 11, color: '#555', marginBottom: 4 }}>Left over</div>
             <div style={{ fontSize: 32, fontWeight: 500, color: leftOver >= 0 ? '#10b981' : '#f87171' }}>{fmt(leftOver)}</div>
+            {leftOver < 0 && <div style={{ fontSize: 13, color: '#f87171', marginTop: 6, fontWeight: 500 }}>⚠️ You are overspending by {fmt(Math.abs(leftOver))}</div>}
+            {leftOver > 0 && leftOver < totalIncome * 0.1 && <div style={{ fontSize: 13, color: '#f59e0b', marginTop: 6 }}>💡 Tight this month — only {fmt(leftOver)} remaining</div>}
+            {leftOver >= totalIncome * 0.1 && totalIncome > 0 && <div style={{ fontSize: 13, color: '#10b981', marginTop: 6 }}>✅ Looking good! {fmt(leftOver)} left after expenses</div>}
           </div>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
@@ -148,14 +154,22 @@ export default function Finance() {
       </div>
 
       {/* Stat chips */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 8, marginBottom: 18 }}>
-        {[['Subs', fmt(totalSubs), `${subs.filter(s=>s.is_active!==false).length} active`,'#a78bfa'],['Bills', fmt(totalBills), `${bills.filter(b=>b.is_active!==false).length} items`,'#3b82f6'],['Due soon', dueSoon.length, 'next 7 days','#f87171'],['Savings', fmt(totalSavings), 'monthly goal','#f59e0b']].map(([l,v,s,c])=>(
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 8, marginBottom: 12 }}>
+        {[['Subs', fmt(totalSubs), `${subs.filter(s=>s.is_active!==false).length} active`,'#a78bfa'],['Bills', fmt(totalBills), `${bills.filter(b=>b.is_active!==false).length} items`,'#3b82f6'],['Due soon', dueSoon.length, 'next 7 days','#f87171'],['Goal', fmt(totalSavings), 'monthly','#f59e0b']].map(([l,v,s,cc])=>(
           <div key={l} style={{ background: '#161618', border: '1px solid #242428', borderRadius: 12, padding: 10 }}>
             <div style={{ fontSize: 10, color: '#555', marginBottom: 3 }}>{l}</div>
-            <div style={{ fontSize: 15, fontWeight: 500, color: c }}>{v}</div>
+            <div style={{ fontSize: 15, fontWeight: 500, color: cc }}>{v}</div>
             <div style={{ fontSize: 10, color: '#444', marginTop: 2 }}>{s}</div>
           </div>
         ))}
+      </div>
+      <div style={{ background: '#161618', border: '1px solid #1a3a2a', borderRadius: 12, padding: '12px 16px', marginBottom: 18, display: 'flex', alignItems: 'center', gap: 12 }}>
+        <div style={{ flex: 1 }}>
+          <div style={{ fontSize: 11, color: '#555', marginBottom: 4 }}>Current savings balance</div>
+          <input type="number" placeholder="Enter your current savings..." value={currentSavings} onChange={e => setCurrentSavings(e.target.value)}
+            style={{ background: 'transparent', border: 'none', outline: 'none', fontSize: 22, fontWeight: 500, color: '#10b981', fontFamily: "'DM Mono'", width: '100%' }} />
+        </div>
+        <div style={{ fontSize: 24 }}>🏦</div>
       </div>
 
       {/* Action tiles */}

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { supabase } from '../lib/supabase'
 
 const URG_STYLE = {
@@ -14,6 +14,8 @@ export default function Tasks({ onAddTask, onEditTask }) {
   const [filter, setFilter] = useState('all')
   const [search, setSearch] = useState('')
   const [collapsed, setCollapsed] = useState({})
+  const dragItem = useRef(null)
+  const dragOver = useRef(null)
   const today = new Date().toISOString().split('T')[0]
 
   useEffect(() => { loadAll() }, [])
@@ -34,6 +36,20 @@ export default function Tasks({ onAddTask, onEditTask }) {
   }
 
   const toggleCollapse = key => setCollapsed(prev => ({ ...prev, [key]: !prev[key] }))
+
+  const handleDragStart = idx => { dragItem.current = idx }
+  const handleDragEnter = idx => { dragOver.current = idx }
+  const handleDragEnd = async () => {
+    if (dragItem.current === null || dragOver.current === null || dragItem.current === dragOver.current) return
+    const reordered = [...sectors]
+    const [moved] = reordered.splice(dragItem.current, 1)
+    reordered.splice(dragOver.current, 0, moved)
+    setSectors(reordered)
+    dragItem.current = null; dragOver.current = null
+    for (let i = 0; i < reordered.length; i++) {
+      await supabase.from('sectors').update({ sort_order: i }).eq('id', reordered[i].id)
+    }
+  }
 
   const filtered = tasks.filter(t => {
     if (search && !t.name.toLowerCase().includes(search.toLowerCase())) return false
@@ -121,11 +137,19 @@ export default function Tasks({ onAddTask, onEditTask }) {
         ))}
       </div>
 
-      {sectorGroups.map(({ key, label, icon, color, tasks: st }) => {
+      {sectorGroups.map(({ key, label, icon, color, tasks: st }, idx) => {
         if (st.length === 0 && filter !== 'all') return null
         return (
           <div key={key} style={{ marginBottom: 20 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8, cursor: 'pointer' }} onClick={() => toggleCollapse(key)}>
+            <div
+              draggable
+              onDragStart={() => handleDragStart(idx)}
+              onDragEnter={() => handleDragEnter(idx)}
+              onDragEnd={handleDragEnd}
+              onDragOver={e => e.preventDefault()}
+              style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8, cursor: 'grab', userSelect: 'none' }}
+              onClick={() => toggleCollapse(key)}
+            >
               <div style={{ fontSize: 16 }}>{icon}</div>
               <div style={{ fontSize: 13, fontWeight: 500, color: '#aaa', flex: 1 }}>{label}</div>
               <div style={{ fontFamily: "'DM Mono'", fontSize: 11, color: '#555' }}>{st.length} tasks</div>

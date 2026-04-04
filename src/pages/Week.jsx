@@ -25,6 +25,7 @@ export default function Week({ onAddTask, onEditTask }) {
   const [events, setEvents] = useState([])
   const [activeFilter, setActiveFilter] = useState('all')
   const [loading, setLoading] = useState(false)
+  const [sectors, setSectors] = useState([])
   const [daySheet, setDaySheet] = useState(null) // { date, tasks, events }
   const [eventModal, setEventModal] = useState(null) // null | { event, date }
 
@@ -50,6 +51,10 @@ export default function Week({ onAddTask, onEditTask }) {
   const monthDate = new Date(today.getFullYear(), today.getMonth() + monthOffset, 1)
   const monthYear = monthDate.getFullYear()
   const monthMonth = monthDate.getMonth()
+
+  useEffect(() => {
+    supabase.from('sectors').select('*').order('sort_order').order('name').then(({ data }) => setSectors(data || []))
+  }, [])
 
   useEffect(() => {
     if (view === 'week') loadWeek()
@@ -80,7 +85,7 @@ export default function Week({ onAddTask, onEditTask }) {
 
   const reload = () => { view === 'week' ? loadWeek() : loadMonth() }
 
-  const SECTORS = ['all','business','real estate','health','personal growth','family','hobbies']
+  const SECTORS = ['all', ...sectors.map(s => s.name.toLowerCase())]
 
   const timeToMins = t => {
     if (!t) return 999
@@ -159,7 +164,7 @@ export default function Week({ onAddTask, onEditTask }) {
       <div style={{ display: 'flex', gap: 6, marginBottom: 16, overflowX: 'auto', paddingBottom: 4 }}>
         {SECTORS.map(s => (
           <div key={s} onClick={() => setActiveFilter(s)} style={{ padding: '5px 12px', borderRadius: 20, fontSize: 12, fontWeight: 500, cursor: 'pointer', border: '1px solid', whiteSpace: 'nowrap', transition: 'all 0.15s', background: activeFilter === s ? '#1e1208' : '#161618', borderColor: activeFilter === s ? '#7a3410' : '#242428', color: activeFilter === s ? '#d4520f' : '#666' }}>
-            {s === 'all' ? 'All' : s.charAt(0).toUpperCase() + s.slice(1)}
+            {s === 'all' ? 'All' : sectors.find(sec => sec.name.toLowerCase() === s)?.name || s.charAt(0).toUpperCase() + s.slice(1)}
           </div>
         ))}
       </div>

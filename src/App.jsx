@@ -23,6 +23,8 @@ const NAV = [
 
 const MORE_PATHS = ['/projects','/notes','/finance','/goals','/realestate']
 
+  // Ensure browser back button works naturally by not overriding history
+
 function Shell() {
   const navigate = useNavigate()
   const location = useLocation()
