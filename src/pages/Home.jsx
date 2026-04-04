@@ -166,16 +166,13 @@ export default function Home({ onAddTask, onEditTask, onAddEvent }) {
   const dateStr = `${days[today.getDay()]}, ${months[today.getMonth()]} ${today.getDate()}`
 
   const dow = today.getDay()
-  const monday = new Date(today)
-  monday.setDate(today.getDate() - ((dow + 6) % 7))
-  monday.setHours(0,0,0,0)
+  // dow=0 is Sunday, we want Monday=0, so: (dow+6)%7
+  const daysFromMonday = (dow + 6) % 7
   const [weekGlanceOffset, setWeekGlanceOffset] = useState(0)
-  const glanceMonday = new Date(monday)
-  glanceMonday.setDate(monday.getDate() + weekGlanceOffset * 7)
+  // Compute the Monday of the current week, then offset by weekGlanceOffset weeks
   const weekDates = Array.from({ length: 7 }, (_, i) => {
-    const d = new Date(glanceMonday)
-    d.setDate(glanceMonday.getDate() + i)
-    // Use local date to avoid timezone offset issues
+    const d = new Date(today)
+    d.setDate(today.getDate() - daysFromMonday + i + (weekGlanceOffset * 7))
     const yr = d.getFullYear()
     const mo = String(d.getMonth() + 1).padStart(2, '0')
     const dy = String(d.getDate()).padStart(2, '0')

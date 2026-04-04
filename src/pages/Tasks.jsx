@@ -109,8 +109,8 @@ export default function Tasks({ onAddTask, onEditTask }) {
         </div>
       </div>
 
-      <div className="action-row">
-        <div className="action-btn" style={{ background: '#1e1208', border: '1px solid #7a3410', color: '#e8823a' }} onClick={() => onAddTask('today')}>
+      <div style={{ marginBottom: 16 }}>
+        <div className="action-btn" style={{ background: '#1e1208', border: '1px solid #7a3410', color: '#e8823a', width: '100%', justifyContent: 'center' }} onClick={() => onAddTask('today')}>
           <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><line x1="7.5" y1="1" x2="7.5" y2="14" stroke="#e8823a" strokeWidth="1.8" strokeLinecap="round"/><line x1="1" y1="7.5" x2="14" y2="7.5" stroke="#e8823a" strokeWidth="1.8" strokeLinecap="round"/></svg>
           Add Task
         </div>

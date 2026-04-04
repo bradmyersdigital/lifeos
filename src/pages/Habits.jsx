@@ -88,11 +88,65 @@ function HabitModal({ habit, onClose, onSaved }) {
   )
 }
 
+
+function RoutineModal({ routine, onClose, onSaved }) {
+  const isEdit = !!routine
+  const [name, setName] = useState(routine?.name || '')
+  const [time, setTime] = useState(routine?.time || '')
+  const [duration, setDuration] = useState(routine?.duration || '')
+  const [icon, setIcon] = useState(routine?.icon || '')
+  const [saving, setSaving] = useState(false)
+
+  const handleSave = async () => {
+    if (!name.trim()) return; setSaving(true)
+    const payload = { name: name.trim(), time, duration: parseInt(duration)||null, icon }
+    if (isEdit) await supabase.from('routines').update(payload).eq('id', routine.id)
+    else await supabase.from('routines').insert(payload)
+    setSaving(false); onSaved(); onClose()
+  }
+
+  const handleDelete = async () => {
+    if (!window.confirm('Delete this routine item?')) return
+    await supabase.from('routines').delete().eq('id', routine.id)
+    onSaved(); onClose()
+  }
+
+  const QUICK_ICONS = ['🏃','🧘','☕','🚿','🥗','📖','💊','🧹','🎯','💪','🌅','🌙','🎵','✍️','🧠']
+
+  return (
+    <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
+      <div className="modal-sheet">
+        <div className="modal-handle" />
+        <div className="modal-title">{isEdit ? 'Edit routine item' : 'Add routine item'}<div className="modal-close" onClick={onClose}>×</div></div>
+        <div className="field"><div className="field-label">Name</div><input type="text" placeholder="e.g. Morning run, Meditate..." value={name} onChange={e => setName(e.target.value)} /></div>
+        <div className="field-row">
+          <div className="field"><div className="field-label">Time</div><input type="time" value={time} onChange={e => setTime(e.target.value)} /></div>
+          <div className="field"><div className="field-label">Duration (mins)</div><input type="number" placeholder="30" value={duration} onChange={e => setDuration(e.target.value)} /></div>
+        </div>
+        <div className="field">
+          <div className="field-label">Icon (optional)</div>
+          <input type="text" value={icon} onChange={e => setIcon(e.target.value)} style={{ fontSize: 20, textAlign: 'center' }} placeholder="Tap or type emoji" />
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 10, justifyContent: 'center' }}>
+            {QUICK_ICONS.map(e => <div key={e} onClick={() => setIcon(e)} style={{ width: 38, height: 38, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, background: icon === e ? '#1e1208' : '#161618', border: `1px solid ${icon === e ? '#7a3410' : '#242428'}`, borderRadius: 9, cursor: 'pointer' }}>{e}</div>)}
+          </div>
+        </div>
+        <div style={{ display: 'flex', gap: 10, marginTop: 18 }}>
+          {isEdit && <button onClick={handleDelete} style={{ flex:1,padding:11,borderRadius:10,background:'#2a0a0a',border:'1px solid #7a1010',color:'#f87171',fontSize:14,fontWeight:500,cursor:'pointer',fontFamily:"'DM Sans'" }}>Delete</button>}
+          <button className="btn-ghost" style={{ flex: 1 }} onClick={onClose}>Cancel</button>
+          <button className="btn-primary" style={{ flex: 2 }} onClick={handleSave} disabled={saving}>{saving ? 'Saving…' : isEdit ? 'Save' : 'Add'}</button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export default function Habits() {
   const [habits, setHabits] = useState([])
   const [logs, setLogs] = useState([])
   const [habitModal, setHabitModal] = useState(null)
   const [view, setView] = useState('today')
+  const [routines, setRoutines] = useState([])
+  const [routineModal, setRoutineModal] = useState(null)
   const [calMonth, setCalMonth] = useState(0)
   const [selectedHabit, setSelectedHabit] = useState(null)
   const dragItem = useRef(null)
@@ -109,6 +163,8 @@ export default function Habits() {
 
   const loadAll = async () => {
     const { data: hd } = await supabase.from('habits').select('*').order('sort_order').order('created_at')
+    const { data: rd } = await supabase.from('routines').select('*').order('time')
+    if (rd) setRoutines(rd)
     const monthDate = new Date(today.getFullYear(), today.getMonth() + calMonth, 1)
     const first = toStr(new Date(monthDate.getFullYear(), monthDate.getMonth(), 1))
     const weekStart = new Date(today); weekStart.setDate(today.getDate() - todayIdx)
@@ -165,28 +221,44 @@ export default function Habits() {
     await saveOrder(reordered)
   }
 
-  // Mobile touch drag
+  // Mobile long-press drag
+  const longPressTimer = useRef(null)
+  const isDragging = useRef(false)
+
   const handleTouchStart = (e, idx) => {
     touchStartY.current = e.touches[0].clientY
     touchDragIdx.current = idx
+    isDragging.current = false
+    longPressTimer.current = setTimeout(() => {
+      isDragging.current = true
+    }, 300)
   }
   const handleTouchMove = (e) => {
+    if (!isDragging.current) {
+      clearTimeout(longPressTimer.current)
+      return
+    }
     e.preventDefault()
+    e.stopPropagation()
     const y = e.touches[0].clientY
-    const cardH = 180
-    const newIdx = Math.max(0, Math.min(habits.length - 1, Math.round(touchDragIdx.current + (y - touchStartY.current) / cardH)))
-    if (touchDragIdx.current !== newIdx) {
+    const cardH = 185
+    const delta = Math.round((y - touchStartY.current) / cardH)
+    const targetIdx = Math.max(0, Math.min(habits.length - 1, touchDragIdx.current + delta))
+    if (targetIdx !== touchDragIdx.current) {
       const reordered = [...habits]
       const [moved] = reordered.splice(touchDragIdx.current, 1)
-      reordered.splice(newIdx, 0, moved)
+      reordered.splice(targetIdx, 0, moved)
       setHabits(reordered)
-      touchDragIdx.current = newIdx
+      touchDragIdx.current = targetIdx
       touchStartY.current = y
     }
   }
   const handleTouchEnd = async () => {
-    await saveOrder(habits)
-    touchDragIdx.current = null; touchStartY.current = null
+    clearTimeout(longPressTimer.current)
+    if (isDragging.current) await saveOrder(habits)
+    isDragging.current = false
+    touchDragIdx.current = null
+    touchStartY.current = null
   }
 
   // Calendar
@@ -207,9 +279,9 @@ export default function Habits() {
         <div style={{ fontSize: 20, fontWeight: 500 }}>Habits</div>
         <div style={{ display: 'flex', gap: 8 }}>
           <div style={{ display: 'flex', background: '#161618', border: '1px solid #242428', borderRadius: 10, overflow: 'hidden' }}>
-            {['today','calendar'].map(v => (
+            {[['today','Today'],['calendar','Calendar'],['routines','Routines']].map(([v,label]) => (
               <div key={v} onClick={() => setView(v)} style={{ padding: '7px 12px', fontSize: 12, fontWeight: 500, cursor: 'pointer', background: view === v ? '#1e1208' : 'transparent', color: view === v ? '#d4520f' : '#666' }}>
-                {v === 'today' ? 'Today' : 'Calendar'}
+                {label}
               </div>
             ))}
           </div>
@@ -256,7 +328,7 @@ export default function Habits() {
                 onTouchStart={e => handleTouchStart(e, idx)}
                 onTouchMove={handleTouchMove}
                 onTouchEnd={handleTouchEnd}
-                style={{ background: '#161618', border: `1px solid ${done ? '#1a3a1a' : isScheduledToday ? '#242428' : '#1e1e24'}`, borderRadius: 14, padding: 16, marginBottom: 10, userSelect: 'none', touchAction: 'none', opacity: !isScheduledToday ? 0.6 : 1 }}
+                style={{ background: '#161618', border: `1px solid ${done ? '#1a3a1a' : isScheduledToday ? '#242428' : '#1e1e24'}`, borderRadius: 14, padding: 16, marginBottom: 10, userSelect: 'none', WebkitUserSelect: 'none', touchAction: 'none', WebkitTouchCallout: 'none', opacity: !isScheduledToday ? 0.6 : 1 }}
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
                   <div onClick={() => setHabitModal(habit)} style={{ width: 40, height: 40, borderRadius: 11, background: '#1e1e22', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, flexShrink: 0, cursor: 'pointer' }}>{habit.icon}</div>
@@ -364,6 +436,62 @@ export default function Habits() {
             ))}
           </div>
         </div>
+      )}
+
+      {view === 'routines' && (
+        <div>
+          <div style={{ fontSize: 12, color: '#444', marginBottom: 16 }}>Daily routines organized by time of day</div>
+
+          <div style={{ marginBottom: 14 }}>
+            <div onClick={() => setRoutineModal('new')} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '12px 16px', background: '#1e1208', border: '1px solid #7a3410', borderRadius: 12, cursor: 'pointer', color: '#e8823a', fontSize: 13, fontWeight: 500 }}>
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><line x1="7" y1="1" x2="7" y2="13" stroke="#e8823a" strokeWidth="1.8" strokeLinecap="round"/><line x1="1" y1="7" x2="13" y2="7" stroke="#e8823a" strokeWidth="1.8" strokeLinecap="round"/></svg>
+              Add routine item
+            </div>
+          </div>
+
+          {[
+            { label: 'Morning', color: '#f59e0b', icon: '🌅', range: [0, 12] },
+            { label: 'Afternoon', color: '#10b981', icon: '☀️', range: [12, 17] },
+            { label: 'Evening', color: '#a78bfa', icon: '🌆', range: [17, 21] },
+            { label: 'Night', color: '#3b82f6', icon: '🌙', range: [21, 24] },
+          ].map(period => {
+            const periodItems = routines.filter(r => {
+              if (!r.time) return false
+              const hr = parseInt(r.time.split(':')[0])
+              return hr >= period.range[0] && hr < period.range[1]
+            })
+            return (
+              <div key={period.label} style={{ marginBottom: 20 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+                  <div style={{ fontSize: 18 }}>{period.icon}</div>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: period.color, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{period.label}</div>
+                </div>
+                {periodItems.length === 0
+                  ? <div style={{ padding: '10px 14px', fontSize: 13, color: '#2a2a2a', border: '1px dashed #1e1e24', borderRadius: 10, textAlign: 'center' }}>Nothing yet — tap above to add</div>
+                  : periodItems.map(item => (
+                    <div key={item.id} onClick={() => setRoutineModal(item)} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', background: '#161618', border: '1px solid #1e1e24', borderRadius: 12, marginBottom: 6, cursor: 'pointer' }}>
+                      <div style={{ fontFamily: "'DM Mono'", fontSize: 12, color: period.color, minWidth: 55, flexShrink: 0 }}>{item.time}</div>
+                      <div style={{ width: 1, height: 28, background: '#2a2a30', flexShrink: 0 }} />
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontSize: 14, color: '#d4d2cc', fontWeight: 500 }}>{item.name}</div>
+                        {item.duration && <div style={{ fontSize: 11, color: '#555', marginTop: 2, fontFamily: "'DM Mono'" }}>{item.duration} min</div>}
+                      </div>
+                      {item.icon && <div style={{ fontSize: 18 }}>{item.icon}</div>}
+                    </div>
+                  ))
+                }
+              </div>
+            )
+          })}
+        </div>
+      )}
+
+      {routineModal && (
+        <RoutineModal
+          routine={routineModal === 'new' ? null : routineModal}
+          onClose={() => setRoutineModal(null)}
+          onSaved={loadAll}
+        />
       )}
 
       {habitModal && <HabitModal habit={habitModal === 'new' ? null : habitModal} onClose={() => setHabitModal(null)} onSaved={loadAll} />}

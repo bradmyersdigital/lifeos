@@ -47,7 +47,7 @@ function TimeInput({ label, value, onChange }) {
   )
 }
 
-export default function TaskModal({ mode, onClose, onSaved, task, defaultProjectId, defaultSector }) {
+export default function TaskModal({ mode, onClose, onSaved, task, defaultProjectId, defaultSector, defaultGoalId }) {
   const isEdit = !!task
   const today = new Date().toISOString().split('T')[0]
 
@@ -66,6 +66,8 @@ export default function TaskModal({ mode, onClose, onSaved, task, defaultProject
   const [sectors, setSectors] = useState([])
   const [saving, setSaving] = useState(false)
   const [deleting, setDeleting] = useState(false)
+  const [goalId, setGoalId] = useState(task?.goal_id || defaultGoalId || '')
+  const [goals, setGoals] = useState([])
   const [showNewProject, setShowNewProject] = useState(false)
   const [newProjectName, setNewProjectName] = useState('')
 
@@ -73,6 +75,7 @@ export default function TaskModal({ mode, onClose, onSaved, task, defaultProject
     supabase.from('projects').select('id, name').eq('status', 'active').then(({ data }) => setProjects(data || []))
     supabase.from('notes').select('id, text').order('created_at', { ascending: false }).limit(20).then(({ data }) => setNotes(data || []))
     supabase.from('sectors').select('*').order('sort_order').order('name').then(({ data }) => setSectors(data || []))
+    supabase.from('goals').select('id, goal_text, timeframe').order('timeframe').then(({ data }) => setGoals(data || []))
   }, [])
 
   const createNewProject = async () => {
@@ -93,7 +96,7 @@ export default function TaskModal({ mode, onClose, onSaved, task, defaultProject
       name: name.trim(), urgency: urgency.toLowerCase(), sector,
       time_block: timeBlock || null,
       due_date: dueDate, start_date: startDate,
-      project_id: projectId || null, note_id: noteId || null,
+      project_id: projectId || null, note_id: noteId || null, goal_id: goalId || null,
       notes_text: notesText, location: location || null,
     }
     if (isEdit) await supabase.from('tasks').update(payload).eq('id', task.id)
@@ -184,6 +187,14 @@ export default function TaskModal({ mode, onClose, onSaved, task, defaultProject
           <select value={noteId} onChange={e => setNoteId(e.target.value)}>
             <option value="">No note linked</option>
             {notes.map(n => <option key={n.id} value={n.id}>{n.text.substring(0, 50)}{n.text.length > 50 ? '…' : ''}</option>)}
+          </select>
+        </div>
+
+        <div className="field">
+          <div className="field-label">Link to goal (optional)</div>
+          <select value={goalId} onChange={e => setGoalId(e.target.value)}>
+            <option value="">No goal linked</option>
+            {goals.map(g => <option key={g.id} value={g.id}>{g.timeframe?.replace('month','mo ').replace('year','yr ')} — {g.goal_text?.substring(0,40)}{g.goal_text?.length>40?'…':''}</option>)}
           </select>
         </div>
 

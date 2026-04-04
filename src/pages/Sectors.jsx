@@ -61,6 +61,7 @@ function SectorDetail({ sector, onEditTask, onAddTask }) {
   const [projects, setProjects] = useState([])
   const [tab, setTab] = useState('projects')
   const [taskModal, setTaskModal] = useState(null)
+  const [selectedProject, setSelectedProject] = useState(null)
   const today = new Date().toISOString().split('T')[0]
 
   useEffect(() => {
@@ -101,6 +102,55 @@ function SectorDetail({ sector, onEditTask, onAddTask }) {
             <span style={{ fontSize: 10, fontWeight: 600, padding: '1px 6px', borderRadius: 5, background: urg.bg, color: urg.color }}>{task.urgency}</span>
           </div>
         </div>
+      </div>
+    )
+  }
+
+  if (selectedProject) {
+    const pt = selectedProject.tasks || []
+    const done = pt.filter(t => t.completed).length
+    const pct = pt.length ? Math.round(done/pt.length*100) : 0
+    return (
+      <div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
+          <div onClick={() => setSelectedProject(null)} style={{ width: 34, height: 34, borderRadius: 10, background: '#161618', border: '1px solid #242428', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: 18, color: '#888' }}>‹</div>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 18, fontWeight: 500 }}>{selectedProject.name}</div>
+            <div style={{ fontSize: 12, color: '#555', marginTop: 1 }}>{sector.name}</div>
+          </div>
+          {selectedProject.status !== 'completed' && (
+            <div onClick={async () => { if(window.confirm('Mark as completed?')) { await supabase.from('projects').update({status:'completed'}).eq('id',selectedProject.id); reload(); setSelectedProject(null) } }} style={{ display:'flex',alignItems:'center',gap:5,padding:'6px 10px',borderRadius:10,background:'#0a1e14',border:'1px solid #10b981',color:'#6ee7b7',fontSize:12,fontWeight:500,cursor:'pointer',flexShrink:0 }}>
+              ✓ Done
+            </div>
+          )}
+        </div>
+        {selectedProject.description && <div style={{ fontSize:14,color:'#666',marginBottom:16,padding:'12px 14px',background:'#161618',borderRadius:12,border:'1px solid #242428' }}>{selectedProject.description}</div>}
+        <div style={{ display:'flex',alignItems:'center',gap:8,marginBottom:18 }}>
+          <div className="prog-bar" style={{ flex:1 }}><div className="prog-fill" style={{ width:pct+'%', background: sector.color||'#d4520f' }} /></div>
+          <div style={{ fontFamily:"'DM Mono'",fontSize:12,color:'#666' }}>{pct}%</div>
+        </div>
+        <div style={{ marginBottom:16 }}>
+          <div className="action-btn" style={{ background:'#1e1208',border:'1px solid #7a3410',color:'#e8823a',width:'100%' }} onClick={() => setTaskModal({ mode:'today', forProject: selectedProject })}>
+            <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><line x1="7.5" y1="1" x2="7.5" y2="14" stroke="#e8823a" strokeWidth="1.8" strokeLinecap="round"/><line x1="1" y1="7.5" x2="14" y2="7.5" stroke="#e8823a" strokeWidth="1.8" strokeLinecap="round"/></svg>
+            Add Task
+          </div>
+        </div>
+        <div className="section-label">Tasks</div>
+        {pt.length === 0 && <div style={{textAlign:'center',padding:'20px',color:'#444',fontSize:13,border:'1px dashed #242428',borderRadius:12,marginBottom:14}}>No tasks yet</div>}
+        {pt.map(task => {
+          const urg = URG_STYLE[task.urgency] || URG_STYLE.medium
+          return (
+            <div key={task.id} onClick={() => onEditTask(task)} style={{display:'flex',alignItems:'center',gap:10,padding:'11px 14px',background:'#161618',border:'1px solid #242428',borderRadius:12,marginBottom:6,cursor:'pointer',opacity:task.completed?0.4:1}}>
+              <div style={{width:20,height:20,borderRadius:'50%',border:`1.5px solid ${task.completed?'#d4520f':'#333'}`,background:task.completed?'#d4520f':'transparent',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
+                {task.completed&&<svg width="9" height="9" viewBox="0 0 9 9"><polyline points="1,4.5 3.5,7 8,2" stroke="white" strokeWidth="1.5" fill="none" strokeLinecap="round"/></svg>}
+              </div>
+              <div style={{flex:1}}>
+                <div style={{fontSize:14,color:'#d4d2cc'}}>{task.name}</div>
+                {task.start_date&&<div style={{fontSize:11,color:'#555',fontFamily:"'DM Mono'",marginTop:2}}>{task.start_date}</div>}
+              </div>
+            </div>
+          )
+        })}
       </div>
     )
   }
@@ -175,7 +225,7 @@ function SectorDetail({ sector, onEditTask, onAddTask }) {
           {projects.map(p => {
             const pt = p.tasks || [], done = pt.filter(t => t.completed).length, pct = pt.length ? Math.round(done/pt.length*100) : 0
             return (
-              <div key={p.id} onClick={() => navigate('/projects')} style={{ background: '#161618', border: '1px solid #242428', borderRadius: 14, padding: 16, marginBottom: 10, cursor: 'pointer' }}>
+              <div key={p.id} onClick={() => setSelectedProject(p)} style={{ background: '#161618', border: '1px solid #242428', borderRadius: 14, padding: 16, marginBottom: 10, cursor: 'pointer' }}>
                 <div style={{ fontSize: 15, fontWeight: 500, marginBottom: 6 }}>{p.name}</div>
                 {p.description && <div style={{ fontSize: 13, color: '#555', marginBottom: 10 }}>{p.description}</div>}
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
@@ -190,7 +240,9 @@ function SectorDetail({ sector, onEditTask, onAddTask }) {
       )}
 
       {taskModal && (
-        <TaskModal mode={taskModal.mode} task={null} defaultSector={sector.name}
+        <TaskModal mode={taskModal.mode} task={null}
+          defaultSector={sector.name}
+          defaultProjectId={taskModal.forProject?.id}
           onClose={() => setTaskModal(null)}
           onSaved={() => { setTaskModal(null); reload() }}
         />
@@ -242,32 +294,47 @@ export default function Sectors({ onEditTask }) {
     await saveOrder(reordered)
   }
 
-  // Mobile touch drag
+  // Mobile long-press drag
+  const longPressTimer = useRef(null)
+  const isDragging = useRef(false)
+
   const handleTouchStart = (e, idx) => {
     touchStartY.current = e.touches[0].clientY
     touchDragIdx.current = idx
+    isDragging.current = false
+    longPressTimer.current = setTimeout(() => {
+      isDragging.current = true
+    }, 300)
   }
   const handleTouchMove = (e) => {
+    if (!isDragging.current) {
+      clearTimeout(longPressTimer.current)
+      return
+    }
     e.preventDefault()
+    e.stopPropagation()
     const y = e.touches[0].clientY
     const cardH = 160
-    const newIdx = Math.max(0, Math.min(sectors.length - 1, Math.round(touchDragIdx.current + (y - touchStartY.current) / cardH)))
-    if (newIdx !== dragOver.current) {
-      dragOver.current = newIdx
-      // live preview
-      if (touchDragIdx.current !== newIdx) {
-        const reordered = [...sectors]
-        const [moved] = reordered.splice(touchDragIdx.current, 1)
-        reordered.splice(newIdx, 0, moved)
-        setSectors(reordered)
-        touchDragIdx.current = newIdx
-        touchStartY.current = y
-      }
+    const newIdx = Math.max(0, Math.min(sectors.length - 1,
+      Math.floor((y - (e.currentTarget.getBoundingClientRect?.()?.top || 0)) / cardH)
+    ))
+    const delta = Math.round((y - touchStartY.current) / cardH)
+    const targetIdx = Math.max(0, Math.min(sectors.length - 1, touchDragIdx.current + delta))
+    if (targetIdx !== touchDragIdx.current) {
+      const reordered = [...sectors]
+      const [moved] = reordered.splice(touchDragIdx.current, 1)
+      reordered.splice(targetIdx, 0, moved)
+      setSectors(reordered)
+      touchDragIdx.current = targetIdx
+      touchStartY.current = y
     }
   }
   const handleTouchEnd = async () => {
-    await saveOrder(sectors)
-    touchDragIdx.current = null; touchStartY.current = null
+    clearTimeout(longPressTimer.current)
+    if (isDragging.current) await saveOrder(sectors)
+    isDragging.current = false
+    touchDragIdx.current = null
+    touchStartY.current = null
   }
 
   if (selected) return <SectorDetail sector={selected} onEditTask={onEditTask} onAddTask={() => {}} />
@@ -295,7 +362,7 @@ export default function Sectors({ onEditTask }) {
             onTouchMove={handleTouchMove}
             onTouchEnd={handleTouchEnd}
             onClick={() => setSelected(s)}
-            style={{ background: '#161618', border: '1px solid #242428', borderRadius: 16, padding: 20, cursor: 'grab', position: 'relative', userSelect: 'none', touchAction: 'none' }}
+            style={{ background: '#161618', border: '1px solid #242428', borderRadius: 16, padding: 20, cursor: 'grab', position: 'relative', userSelect: 'none', WebkitUserSelect: 'none', touchAction: 'none', WebkitTouchCallout: 'none' }}
           >
             <div style={{ fontSize: 40, marginBottom: 8 }}>{s.icon}</div>
             <div style={{ fontSize: 16, fontWeight: 500, marginBottom: 4 }}>{s.name}</div>
