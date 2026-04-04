@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { supabase } from '../lib/supabase'
 
-const FREQ_MULT = { weekly: 4.33, biweekly: 2.17, monthly: 1, yearly: 1/12 }
+const FREQ_MULT = { weekly: 4, biweekly: 2, monthly: 1, yearly: 1/12 }
 const toMonthly = (amount, freq) => (parseFloat(amount) || 0) * (FREQ_MULT[freq] || 1)
 
 const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December']
@@ -100,7 +100,8 @@ export default function Finance() {
   const totalBills = bills.filter(b => b.is_active !== false).reduce((sum, b) => sum + toMonthly(b.amount, b.frequency), 0)
   const totalSavings = savings.reduce((sum, s) => sum + (parseFloat(s.monthly_target) || 0), 0)
   const totalExpenses = totalSubs + totalBills
-  const leftOver = totalIncome - totalExpenses - totalSavings
+  const savedThisMonth = parseFloat(currentSavings) || 0
+  const leftOver = totalIncome - totalExpenses - totalSavings - savedThisMonth
 
   const fmt = (n) => n.toLocaleString('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0, maximumFractionDigits: 0 })
 
@@ -131,7 +132,7 @@ export default function Finance() {
       <div style={{ background: '#161618', border: '1px solid #242428', borderRadius: 16, padding: 20, marginBottom: 16 }}>
         <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.1em', color: '#555', textTransform: 'uppercase', marginBottom: 16 }}>Monthly snapshot</div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
-          {[['Income', totalIncome, '#10b981'],['Expenses', totalExpenses, '#f87171'],['Savings', totalSavings, '#f59e0b']].map(([l,v,c]) => (
+          {[['Income', totalIncome, '#10b981'],['Expenses', totalExpenses, '#f87171'],['Monthly Savings Goal', totalSavings, '#f59e0b'],['Saved This Month', parseFloat(currentSavings)||0, '#10b981']].map(([l,v,c]) => (
             <div key={l}>
               <div style={{ fontSize: 11, color: '#555', marginBottom: 3 }}>{l}</div>
               <div style={{ fontSize: 18, fontWeight: 500, color: c }}>{fmt(v)}</div>
@@ -166,8 +167,11 @@ export default function Finance() {
       <div style={{ background: '#161618', border: '1px solid #1a3a2a', borderRadius: 12, padding: '12px 16px', marginBottom: 18, display: 'flex', alignItems: 'center', gap: 12 }}>
         <div style={{ flex: 1 }}>
           <div style={{ fontSize: 11, color: '#555', marginBottom: 4 }}>Current savings balance</div>
-          <input type="number" placeholder="Enter your current savings..." value={currentSavings} onChange={e => setCurrentSavings(e.target.value)}
-            style={{ background: 'transparent', border: 'none', outline: 'none', fontSize: 22, fontWeight: 500, color: '#10b981', fontFamily: "'DM Mono'", width: '100%' }} />
+          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+            <span style={{ fontSize: 22, fontWeight: 500, color: '#10b981', fontFamily: "'DM Mono'" }}>$</span>
+            <input type="number" placeholder="0" value={currentSavings} onChange={e => setCurrentSavings(e.target.value)}
+              style={{ background: 'transparent', border: 'none', outline: 'none', fontSize: 22, fontWeight: 500, color: '#10b981', fontFamily: "'DM Mono'", width: '100%' }} />
+          </div>
         </div>
         <div style={{ fontSize: 24 }}>🏦</div>
       </div>

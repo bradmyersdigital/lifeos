@@ -11,6 +11,7 @@ import More from './pages/More'
 import Finance from './pages/Finance'
 import Goals from './pages/Goals'
 import TaskModal from './components/TaskModal'
+import EventModal from './components/EventModal'
 
 const NAV = [
   { path: '/',        label: 'Home',    icon: HomeIcon },
@@ -29,6 +30,7 @@ function Shell() {
   const navigate = useNavigate()
   const location = useLocation()
   const [taskModal, setTaskModal] = useState(null)
+  const [eventModal, setEventModal] = useState(null)
   const [refreshKey, setRefreshKey] = useState(0)
 
   useEffect(() => {
@@ -37,7 +39,8 @@ function Shell() {
     return () => { document.documentElement.style.overflow = '' }
   }, [taskModal])
 
-  const openAdd = (mode) => setTaskModal({ mode, task: null })
+  const openAdd = (mode, ctx = {}) => setTaskModal({ mode, task: null, ...ctx })
+  const openAddEvent = () => setEventModal({ event: null, date: new Date().toISOString().split('T')[0] })
   const openEdit = (task) => setTaskModal({ mode: 'scheduled', task })
   const closeModal = () => setTaskModal(null)
   const onSaved = () => { setRefreshKey(k => k + 1); closeModal() }
@@ -49,7 +52,7 @@ function Shell() {
     <div className="app-shell">
       <div className="page-scroll">
         <Routes>
-          <Route path="/"            element={<Home key={refreshKey} onAddTask={openAdd} onEditTask={openEdit} />} />
+          <Route path="/"            element={<Home key={refreshKey} onAddTask={openAdd} onEditTask={openEdit} onAddEvent={openAddEvent} />} />
           <Route path="/week"        element={<Week key={refreshKey} onAddTask={openAdd} onEditTask={openEdit} />} />
           <Route path="/tasks"       element={<Tasks key={refreshKey} onAddTask={openAdd} onEditTask={openEdit} />} />
           <Route path="/sectors"     element={<Sectors key={refreshKey} onAddTask={openAdd} onEditTask={openEdit} />} />
@@ -70,7 +73,8 @@ function Shell() {
           </div>
         ))}
       </nav>
-      {taskModal && <TaskModal mode={taskModal.mode} task={taskModal.task} onClose={closeModal} onSaved={onSaved} />}
+      {taskModal && <TaskModal mode={taskModal.mode} task={taskModal.task} defaultProjectId={taskModal.defaultProjectId} defaultSector={taskModal.defaultSector} onClose={closeModal} onSaved={onSaved} />}
+      {eventModal && <EventModal event={eventModal.event} date={eventModal.date} onClose={() => setEventModal(null)} onSaved={() => { setRefreshKey(k=>k+1); setEventModal(null) }} />}
     </div>
   )
 }

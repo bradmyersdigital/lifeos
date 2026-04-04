@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
+import TaskModal from '../components/TaskModal'
+import { supabase } from '../lib/supabase'
 
 const TIMEFRAMES = [
   { key: '1month',  label: '1 Month',  section: 'Current Focus', prominent: true },
@@ -60,6 +62,7 @@ function GoalDetail({ tf, goal, onBack, onSaved }) {
   const [tasks, setTasks] = useState([])
   const [allTasks, setAllTasks] = useState([])
   const [editing, setEditing] = useState(false)
+  const [addTaskModal, setAddTaskModal] = useState(false)
   const [linkingTask, setLinkingTask] = useState(false)
   const styles = SECTION_STYLES[tf.section]
 
@@ -112,7 +115,10 @@ function GoalDetail({ tf, goal, onBack, onSaved }) {
 
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
         <div className="section-label" style={{ margin: 0 }}>Linked tasks</div>
-        <div onClick={() => setLinkingTask(!linkingTask)} style={{ fontSize: 12, color: '#d4520f', cursor: 'pointer', padding: '4px 10px', background: '#1e1208', border: '1px solid #7a3410', borderRadius: 8 }}>+ Link task</div>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <div onClick={() => setAddTaskModal(true)} style={{ fontSize: 12, color: '#e8823a', cursor: 'pointer', padding: '4px 10px', background: '#1e1208', border: '1px solid #7a3410', borderRadius: 8 }}>+ Create task</div>
+          <div onClick={() => setLinkingTask(!linkingTask)} style={{ fontSize: 12, color: '#555', cursor: 'pointer', padding: '4px 10px', background: '#161618', border: '1px solid #242428', borderRadius: 8 }}>Link existing</div>
+        </div>
       </div>
 
       {linkingTask && allTasks.length > 0 && (
@@ -141,6 +147,16 @@ function GoalDetail({ tf, goal, onBack, onSaved }) {
       ))}
 
       {editing && <GoalModal tf={tf} goal={goal} onClose={() => setEditing(false)} onSaved={() => { setEditing(false); onSaved() }} />}
+      {addTaskModal && (
+        <TaskModal mode="today" task={null}
+          onClose={() => setAddTaskModal(false)}
+          onSaved={async (newTaskId) => {
+            setAddTaskModal(false)
+            // Re-fetch tasks linked to this goal
+            supabase.from('tasks').select('*').eq('goal_id', goal.id).then(({ data }) => setTasks(data || []))
+          }}
+        />
+      )}
     </div>
   )
 }

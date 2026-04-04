@@ -143,16 +143,22 @@ function ProjectDetail({ project, onBack, onAddTask, onEditTask, onRefresh }) {
 
   return (
     <div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
         <div onClick={onBack} style={{ width: 34, height: 34, borderRadius: 10, background: '#161618', border: '1px solid #242428', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: 18, color: '#888' }}>‹</div>
-        <div style={{ flex: 1 }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <div style={{ fontSize: 20, fontWeight: 500 }}>{project.name}</div>
-            {imp && <span style={{ fontSize: 10, fontWeight: 600, padding: '2px 8px', borderRadius: 6, background: imp.bg, border: `1px solid ${imp.border}`, color: imp.color }}>{project.importance}</span>}
+            <div style={{ fontSize: 18, fontWeight: 500 }}>{project.name}</div>
+            {imp && <span style={{ fontSize: 10, fontWeight: 600, padding: '2px 8px', borderRadius: 6, background: imp.bg, border: `1px solid ${imp.border}`, color: imp.color, flexShrink: 0 }}>{project.importance}</span>}
           </div>
-          {project.sector && <div style={{ fontSize: 12, color: '#555', marginTop: 2 }}>{project.sector}</div>}
+          {project.sector && <div style={{ fontSize: 12, color: '#555', marginTop: 1 }}>{project.sector}</div>}
         </div>
-        <div onClick={() => setEditModal(true)} style={{ width: 34, height: 34, borderRadius: 10, background: '#161618', border: '1px solid #242428', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+        {project.status !== 'completed' && (
+          <div onClick={async () => { if(window.confirm('Mark as completed?')) { await supabase.from('projects').update({status:'completed'}).eq('id',project.id); onRefresh(); onBack() } }} style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '6px 10px', borderRadius: 10, background: '#0a1e14', border: '1px solid #10b981', color: '#6ee7b7', fontSize: 12, fontWeight: 500, cursor: 'pointer', flexShrink: 0 }}>
+            <svg width="11" height="11" viewBox="0 0 11 11" fill="none"><polyline points="1,5.5 4,8.5 10,2.5" stroke="#6ee7b7" strokeWidth="1.6" fill="none" strokeLinecap="round"/></svg>
+            Done
+          </div>
+        )}
+        <div onClick={() => setEditModal(true)} style={{ width: 34, height: 34, borderRadius: 10, background: '#161618', border: '1px solid #242428', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}>
           <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M9 1.5L11 3.5L4.5 10H2.5V8L9 1.5Z" stroke="#888" strokeWidth="1.3" fill="none" strokeLinecap="round" strokeLinejoin="round"/></svg>
         </div>
       </div>
@@ -174,14 +180,10 @@ function ProjectDetail({ project, onBack, onAddTask, onEditTask, onRefresh }) {
         {project.due_date && <div style={{ fontFamily: "'DM Mono'", fontSize: 11, color: project.due_date < today ? '#f87171' : '#555' }}>Due {project.due_date}</div>}
       </div>
 
-      <div className="action-row" style={{ marginBottom: 18 }}>
-        <div className="action-btn" style={{ background: '#1e1208', border: '1px solid #7a3410', color: '#e8823a' }} onClick={() => onAddTask('today')}>
+      <div style={{ marginBottom: 18 }}>
+        <div className="action-btn" style={{ background: '#1e1208', border: '1px solid #7a3410', color: '#e8823a', width: '100%' }} onClick={() => onAddTask('today', { defaultProjectId: project.id, defaultSector: project.sector })}>
           <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><line x1="7.5" y1="1" x2="7.5" y2="14" stroke="#e8823a" strokeWidth="1.8" strokeLinecap="round"/><line x1="1" y1="7.5" x2="14" y2="7.5" stroke="#e8823a" strokeWidth="1.8" strokeLinecap="round"/></svg>
-          Add task for today
-        </div>
-        <div className="action-btn" style={{ background: '#161618', border: '1px solid #2a2a30', color: '#aaa' }} onClick={() => onAddTask('scheduled')}>
-          <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><rect x="1.5" y="2.5" width="12" height="11" rx="2" stroke="#aaa" strokeWidth="1.4"/><line x1="1.5" y1="6.5" x2="13.5" y2="6.5" stroke="#aaa" strokeWidth="1.4"/><line x1="5" y1="1" x2="5" y2="4" stroke="#aaa" strokeWidth="1.4" strokeLinecap="round"/><line x1="10" y1="1" x2="10" y2="4" stroke="#aaa" strokeWidth="1.4" strokeLinecap="round"/></svg>
-          Schedule a task
+          Add Task
         </div>
       </div>
 
@@ -231,7 +233,7 @@ export default function Projects({ onAddTask, onEditTask }) {
   const [projects, setProjects] = useState([])
   const [sectors, setSectors] = useState([])
   const [selected, setSelected] = useState(null)
-  const [filter, setFilter] = useState('all')
+  const [filter, setFilter] = useState('active')
   const [sectorFilter, setSectorFilter] = useState('all')
   const [showModal, setShowModal] = useState(false)
 

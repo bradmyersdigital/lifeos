@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import TaskModal from '../components/TaskModal'
 
@@ -53,18 +54,19 @@ function SectorModal({ sector, onClose, onSaved }) {
   )
 }
 
-function SectorDetail({ sector, onBack, onEditTask }) {
+function SectorDetail({ sector, onEditTask, onAddTask }) {
+  const navigate = useNavigate()
   const [tasks, setTasks] = useState([])
   const [notes, setNotes] = useState([])
   const [projects, setProjects] = useState([])
-  const [tab, setTab] = useState('tasks')
+  const [tab, setTab] = useState('projects')
   const [taskModal, setTaskModal] = useState(null)
   const today = new Date().toISOString().split('T')[0]
 
   useEffect(() => {
     supabase.from('tasks').select('*, projects(name)').eq('sector', sector.name).order('start_date').order('time_block').then(({ data }) => setTasks(data || []))
     supabase.from('notes').select('*').eq('category', sector.name).order('created_at', { ascending: false }).then(({ data }) => setNotes(data || []))
-    supabase.from('projects').select('*, tasks(*)').eq('sector', sector.name).then(({ data }) => setProjects(data || []))
+    supabase.from('projects').select('*, tasks(*)').eq('sector', sector.name).order('created_at', { ascending: false }).then(({ data }) => setProjects(data || []))
   }, [sector.name])
 
   const toggleTask = async (task) => {
@@ -75,6 +77,7 @@ function SectorDetail({ sector, onBack, onEditTask }) {
 
   const reload = () => {
     supabase.from('tasks').select('*, projects(name)').eq('sector', sector.name).order('start_date').order('time_block').then(({ data }) => setTasks(data || []))
+    supabase.from('projects').select('*, tasks(*)').eq('sector', sector.name).order('created_at', { ascending: false }).then(({ data }) => setProjects(data || []))
   }
 
   const todayTasks = tasks.filter(t => t.start_date === today && !t.completed)
@@ -96,7 +99,6 @@ function SectorDetail({ sector, onBack, onEditTask }) {
             {task.time_block && <span style={{ fontFamily: "'DM Mono'", fontSize: 11, color: '#555' }}>{task.time_block}</span>}
             {task.start_date && <span style={{ fontFamily: "'DM Mono'", fontSize: 11, color: isOverdue ? '#f87171' : '#555' }}>{task.start_date}</span>}
             <span style={{ fontSize: 10, fontWeight: 600, padding: '1px 6px', borderRadius: 5, background: urg.bg, color: urg.color }}>{task.urgency}</span>
-            {task.projects && <span style={{ fontSize: 11, color: '#d4520f' }}>{task.projects.name} →</span>}
           </div>
         </div>
       </div>
@@ -106,7 +108,7 @@ function SectorDetail({ sector, onBack, onEditTask }) {
   return (
     <div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
-        <div onClick={onBack} style={{ width: 34, height: 34, borderRadius: 10, background: '#161618', border: '1px solid #242428', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: 18, color: '#888' }}>‹</div>
+        <div onClick={() => navigate(-1)} style={{ width: 34, height: 34, borderRadius: 10, background: '#161618', border: '1px solid #242428', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: 18, color: '#888' }}>‹</div>
         <div style={{ fontSize: 28 }}>{sector.icon}</div>
         <div><div style={{ fontSize: 20, fontWeight: 500 }}>{sector.name}</div><div style={{ fontSize: 12, color: '#555', marginTop: 1 }}>{tasks.length} tasks · {notes.length} notes · {projects.length} projects</div></div>
       </div>
@@ -114,13 +116,13 @@ function SectorDetail({ sector, onBack, onEditTask }) {
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 16 }}>
         <div className="action-btn" style={{ background: '#1e1208', border: '1px solid #7a3410', color: '#e8823a' }} onClick={() => setTaskModal({ mode: 'today' })}>
           <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><line x1="7.5" y1="1" x2="7.5" y2="14" stroke="#e8823a" strokeWidth="1.8" strokeLinecap="round"/><line x1="1" y1="7.5" x2="14" y2="7.5" stroke="#e8823a" strokeWidth="1.8" strokeLinecap="round"/></svg>
-          Create Task
+          Add Task
         </div>
         <div className="action-btn" style={{ background: '#161618', border: '1px solid #2a2a30', color: '#aaa' }} onClick={async () => {
           const name = window.prompt('Project name?')
           if (!name?.trim()) return
           await supabase.from('projects').insert({ name: name.trim(), sector: sector.name, status: 'active' })
-          supabase.from('projects').select('*, tasks(*)').eq('sector', sector.name).then(({ data }) => setProjects(data || []))
+          reload()
           setTab('projects')
         }}>
           <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><rect x="2" y="2" width="11" height="11" rx="2" stroke="#aaa" strokeWidth="1.4"/><line x1="7.5" y1="5" x2="7.5" y2="10" stroke="#aaa" strokeWidth="1.4" strokeLinecap="round"/><line x1="5" y1="7.5" x2="10" y2="7.5" stroke="#aaa" strokeWidth="1.4" strokeLinecap="round"/></svg>
@@ -138,7 +140,7 @@ function SectorDetail({ sector, onBack, onEditTask }) {
       </div>
 
       <div style={{ display: 'flex', gap: 6, marginBottom: 16 }}>
-        {['tasks','notes','projects'].map(t => (
+        {['projects','tasks','notes'].map(t => (
           <div key={t} onClick={() => setTab(t)} style={{ padding: '6px 16px', borderRadius: 20, fontSize: 13, fontWeight: 500, cursor: 'pointer', border: '1px solid', transition: 'all 0.15s', background: tab === t ? '#1e1208' : '#161618', borderColor: tab === t ? '#7a3410' : '#242428', color: tab === t ? '#d4520f' : '#666' }}>
             {t.charAt(0).toUpperCase() + t.slice(1)}
           </div>
@@ -154,6 +156,7 @@ function SectorDetail({ sector, onBack, onEditTask }) {
           {doneTasks.length > 0 && <><div className="section-label">Completed</div>{doneTasks.map(t => <TaskRow key={t.id} task={t} />)}</>}
         </div>
       )}
+
       {tab === 'notes' && (
         <div>
           {notes.length === 0 && <div style={{ textAlign: 'center', padding: '30px', color: '#444', fontSize: 13 }}>No notes</div>}
@@ -165,19 +168,21 @@ function SectorDetail({ sector, onBack, onEditTask }) {
           ))}
         </div>
       )}
+
       {tab === 'projects' && (
         <div>
-          {projects.length === 0 && <div style={{ textAlign: 'center', padding: '30px', color: '#444', fontSize: 13 }}>No projects</div>}
+          {projects.length === 0 && <div style={{ textAlign: 'center', padding: '30px', color: '#444', fontSize: 13 }}>No projects yet</div>}
           {projects.map(p => {
             const pt = p.tasks || [], done = pt.filter(t => t.completed).length, pct = pt.length ? Math.round(done/pt.length*100) : 0
             return (
-              <div key={p.id} style={{ background: '#161618', border: '1px solid #242428', borderRadius: 14, padding: 16, marginBottom: 10 }}>
+              <div key={p.id} onClick={() => navigate('/projects')} style={{ background: '#161618', border: '1px solid #242428', borderRadius: 14, padding: 16, marginBottom: 10, cursor: 'pointer' }}>
                 <div style={{ fontSize: 15, fontWeight: 500, marginBottom: 6 }}>{p.name}</div>
+                {p.description && <div style={{ fontSize: 13, color: '#555', marginBottom: 10 }}>{p.description}</div>}
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
                   <div className="prog-bar" style={{ flex: 1 }}><div className="prog-fill" style={{ width: pct + '%', background: sector.color || '#d4520f' }} /></div>
                   <div style={{ fontFamily: "'DM Mono'", fontSize: 11, color: '#666' }}>{pct}%</div>
                 </div>
-                <div style={{ fontSize: 12, color: '#555' }}>{done} of {pt.length} tasks done</div>
+                <div style={{ fontSize: 12, color: '#555' }}>{done} of {pt.length} tasks · tap to open →</div>
               </div>
             )
           })}
@@ -200,42 +205,76 @@ export default function Sectors({ onEditTask }) {
   const [sectorModal, setSectorModal] = useState(null)
   const dragItem = useRef(null)
   const dragOver = useRef(null)
+  const touchStartY = useRef(null)
+  const touchDragIdx = useRef(null)
 
   useEffect(() => { loadSectors() }, [])
+
   const loadSectors = async () => {
     const { data: sd } = await supabase.from('sectors').select('*').order('sort_order').order('name')
     if (!sd) return setSectors([])
-    // Get counts for each sector
     const [{ data: td }, { data: pd }] = await Promise.all([
       supabase.from('tasks').select('sector').eq('completed', false),
       supabase.from('projects').select('sector').eq('status', 'active'),
     ])
-    const taskCounts = {}
-    const projCounts = {}
+    const taskCounts = {}, projCounts = {}
     ;(td||[]).forEach(t => { if(t.sector) taskCounts[t.sector] = (taskCounts[t.sector]||0)+1 })
     ;(pd||[]).forEach(p => { if(p.sector) projCounts[p.sector] = (projCounts[p.sector]||0)+1 })
     setSectors(sd.map(s => ({ ...s, _taskCount: taskCounts[s.name]||0, _projCount: projCounts[s.name]||0 })))
   }
 
-  const handleDragStart = (idx) => { dragItem.current = idx }
-  const handleDragEnter = (idx) => { dragOver.current = idx }
-  const handleDragEnd = async () => {
-    if (dragItem.current === null || dragOver.current === null) return
-    const reordered = [...sectors]
-    const [moved] = reordered.splice(dragItem.current, 1)
-    reordered.splice(dragOver.current, 0, moved)
-    setSectors(reordered)
-    dragItem.current = null; dragOver.current = null
+  const saveOrder = async (reordered) => {
     for (let i = 0; i < reordered.length; i++) {
       await supabase.from('sectors').update({ sort_order: i }).eq('id', reordered[i].id)
     }
   }
 
-  if (selected) return <SectorDetail sector={selected} onBack={() => setSelected(null)} onEditTask={onEditTask} />
+  // Desktop drag
+  const handleDragStart = idx => { dragItem.current = idx }
+  const handleDragEnter = idx => { dragOver.current = idx }
+  const handleDragEnd = async () => {
+    if (dragItem.current === null || dragOver.current === null || dragItem.current === dragOver.current) return
+    const reordered = [...sectors]
+    const [moved] = reordered.splice(dragItem.current, 1)
+    reordered.splice(dragOver.current, 0, moved)
+    setSectors(reordered)
+    dragItem.current = null; dragOver.current = null
+    await saveOrder(reordered)
+  }
+
+  // Mobile touch drag
+  const handleTouchStart = (e, idx) => {
+    touchStartY.current = e.touches[0].clientY
+    touchDragIdx.current = idx
+  }
+  const handleTouchMove = (e) => {
+    e.preventDefault()
+    const y = e.touches[0].clientY
+    const cardH = 160
+    const newIdx = Math.max(0, Math.min(sectors.length - 1, Math.round(touchDragIdx.current + (y - touchStartY.current) / cardH)))
+    if (newIdx !== dragOver.current) {
+      dragOver.current = newIdx
+      // live preview
+      if (touchDragIdx.current !== newIdx) {
+        const reordered = [...sectors]
+        const [moved] = reordered.splice(touchDragIdx.current, 1)
+        reordered.splice(newIdx, 0, moved)
+        setSectors(reordered)
+        touchDragIdx.current = newIdx
+        touchStartY.current = y
+      }
+    }
+  }
+  const handleTouchEnd = async () => {
+    await saveOrder(sectors)
+    touchDragIdx.current = null; touchStartY.current = null
+  }
+
+  if (selected) return <SectorDetail sector={selected} onEditTask={onEditTask} onAddTask={() => {}} />
 
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
         <div style={{ fontSize: 20, fontWeight: 500 }}>Sectors</div>
         <div onClick={() => setSectorModal('new')} style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#1e1208', border: '1px solid #7a3410', borderRadius: 10, padding: '7px 14px', cursor: 'pointer', fontSize: 13, color: '#d4520f', fontWeight: 500 }}>
           <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><line x1="6.5" y1="1" x2="6.5" y2="12" stroke="#d4520f" strokeWidth="1.8" strokeLinecap="round"/><line x1="1" y1="6.5" x2="12" y2="6.5" stroke="#d4520f" strokeWidth="1.8" strokeLinecap="round"/></svg>
@@ -243,6 +282,7 @@ export default function Sectors({ onEditTask }) {
         </div>
       </div>
       <div style={{ fontSize: 12, color: '#444', marginBottom: 16 }}>Hold and drag to reorder</div>
+
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: 12 }}>
         {sectors.map((s, idx) => (
           <div key={s.id}
@@ -251,8 +291,11 @@ export default function Sectors({ onEditTask }) {
             onDragEnter={() => handleDragEnter(idx)}
             onDragEnd={handleDragEnd}
             onDragOver={e => e.preventDefault()}
+            onTouchStart={e => handleTouchStart(e, idx)}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleTouchEnd}
             onClick={() => setSelected(s)}
-            style={{ background: '#161618', border: '1px solid #242428', borderRadius: 16, padding: 20, cursor: 'grab', position: 'relative', userSelect: 'none' }}
+            style={{ background: '#161618', border: '1px solid #242428', borderRadius: 16, padding: 20, cursor: 'grab', position: 'relative', userSelect: 'none', touchAction: 'none' }}
           >
             <div style={{ fontSize: 40, marginBottom: 8 }}>{s.icon}</div>
             <div style={{ fontSize: 16, fontWeight: 500, marginBottom: 4 }}>{s.name}</div>
@@ -267,6 +310,7 @@ export default function Sectors({ onEditTask }) {
           </div>
         ))}
       </div>
+
       {sectorModal && <SectorModal sector={sectorModal === 'new' ? null : sectorModal} onClose={() => setSectorModal(null)} onSaved={loadSectors} />}
     </div>
   )
