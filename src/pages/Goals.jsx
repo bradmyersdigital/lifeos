@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import TaskModal from '../components/TaskModal'
-import { supabase } from '../lib/supabase'
 
 const TIMEFRAMES = [
   { key: '1month',  label: '1 Month',  section: 'Current Focus', prominent: true },
