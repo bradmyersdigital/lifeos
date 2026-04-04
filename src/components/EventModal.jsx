@@ -158,7 +158,7 @@ export default function EventModal({ event, date, onClose, onSaved }) {
 
         <div className="field">
           <div className="field-label">Event title</div>
-          <input type="text" placeholder="What's the event?" value={title} onChange={e => setTitle(e.target.value)} autoFocus />
+          <input type="text" placeholder="What's the event?" value={title} onChange={e => setTitle(e.target.value)} />
         </div>
 
         <div className="field">

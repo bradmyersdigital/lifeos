@@ -1,15 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 
-const SECTORS = [
-  { key: 'business',      label: 'Business',       color: '#d4520f' },
-  { key: 'real estate',   label: 'Real Estate',    color: '#3b82f6' },
-  { key: 'health',        label: 'Health',         color: '#10b981' },
-  { key: 'personal growth', label: 'Personal Growth', color: '#f59e0b' },
-  { key: 'family',        label: 'Family',         color: '#ec4899' },
-  { key: 'hobbies',       label: 'Hobbies',        color: '#a78bfa' },
-]
-
 const URG_STYLE = {
   urgent: { bg: '#2a0a0a', color: '#f87171' },
   high:   { bg: '#1e1208', color: '#e8823a' },
@@ -19,16 +10,21 @@ const URG_STYLE = {
 
 export default function Tasks({ onAddTask, onEditTask }) {
   const [tasks, setTasks] = useState([])
+  const [sectors, setSectors] = useState([])
   const [filter, setFilter] = useState('all')
   const [search, setSearch] = useState('')
   const [collapsed, setCollapsed] = useState({})
   const today = new Date().toISOString().split('T')[0]
 
-  useEffect(() => { loadTasks() }, [])
+  useEffect(() => { loadAll() }, [])
 
-  const loadTasks = async () => {
-    const { data } = await supabase.from('tasks').select('*, projects(name)').order('due_date').order('time_block')
-    setTasks(data || [])
+  const loadAll = async () => {
+    const [{ data: t }, { data: s }] = await Promise.all([
+      supabase.from('tasks').select('*, projects(name)').order('start_date').order('time_block'),
+      supabase.from('sectors').select('*').order('name'),
+    ])
+    setTasks(t || [])
+    setSectors(s || [])
   }
 
   const toggleTask = async (task) => {
@@ -37,22 +33,54 @@ export default function Tasks({ onAddTask, onEditTask }) {
     setTasks(prev => prev.map(t => t.id === task.id ? { ...t, completed: updated } : t))
   }
 
-  const toggleCollapse = (key) => setCollapsed(prev => ({ ...prev, [key]: !prev[key] }))
+  const toggleCollapse = key => setCollapsed(prev => ({ ...prev, [key]: !prev[key] }))
 
   const filtered = tasks.filter(t => {
     if (search && !t.name.toLowerCase().includes(search.toLowerCase())) return false
-    if (filter === 'today') return t.due_date === today && !t.completed
-    if (filter === 'upcoming') return t.due_date > today && !t.completed
-    if (filter === 'overdue') return t.due_date < today && !t.completed
+    if (filter === 'today') return t.start_date === today && !t.completed
+    if (filter === 'upcoming') return t.start_date > today && !t.completed
+    if (filter === 'overdue') return t.start_date < today && !t.completed
     if (filter === 'done') return t.completed
     return true
   })
 
   const counts = {
     total: tasks.length,
-    today: tasks.filter(t => t.due_date === today && !t.completed).length,
-    overdue: tasks.filter(t => t.due_date < today && !t.completed).length,
+    today: tasks.filter(t => t.start_date === today && !t.completed).length,
+    overdue: tasks.filter(t => t.start_date < today && !t.completed).length,
     done: tasks.filter(t => t.completed).length,
+  }
+
+  // Build sector list from DB sectors + unassigned
+  const sectorNames = sectors.map(s => s.name)
+  const unassigned = filtered.filter(t => !t.sector || !sectorNames.includes(t.sector))
+  const sectorGroups = sectors.map(s => ({
+    key: s.name.toLowerCase(),
+    label: s.name,
+    icon: s.icon,
+    color: s.color || '#d4520f',
+    tasks: filtered.filter(t => t.sector === s.name),
+  }))
+
+  const TaskRow = ({ task }) => {
+    const urg = URG_STYLE[task.urgency] || URG_STYLE.medium
+    const isOverdue = task.start_date < today && !task.completed
+    return (
+      <div onClick={() => onEditTask(task)} style={{ display: 'flex', alignItems: 'center', gap: 11, padding: '11px 14px', background: '#161618', border: '1px solid #242428', borderRadius: 12, marginBottom: 6, opacity: task.completed ? 0.38 : 1, cursor: 'pointer' }}>
+        <div className={`check-circle${task.completed ? ' checked' : ''}`} onClick={e => { e.stopPropagation(); toggleTask(task) }}>
+          {task.completed && <svg width="10" height="10" viewBox="0 0 10 10"><polyline points="1.5,5 4,7.5 8.5,2.5" stroke="white" strokeWidth="1.8" fill="none" strokeLinecap="round"/></svg>}
+        </div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: 14, color: '#d4d2cc' }}>{task.name}</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 3, flexWrap: 'wrap' }}>
+            {task.time_block && <span style={{ fontFamily: "'DM Mono'", fontSize: 11, color: '#555' }}>{task.time_block}</span>}
+            {task.start_date && <span style={{ fontFamily: "'DM Mono'", fontSize: 11, color: isOverdue ? '#f87171' : '#555' }}>{isOverdue ? `${task.start_date} ⚠` : task.start_date}</span>}
+            <span style={{ fontSize: 10, fontWeight: 600, padding: '2px 7px', borderRadius: 6, background: urg.bg, color: urg.color }}>{task.urgency}</span>
+            {task.projects && <span style={{ fontSize: 11, color: '#d4520f' }}>{task.projects.name} →</span>}
+          </div>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -76,7 +104,6 @@ export default function Tasks({ onAddTask, onEditTask }) {
         </div>
       </div>
 
-      {/* Filters */}
       <div style={{ display: 'flex', gap: 6, marginBottom: 16, flexWrap: 'wrap' }}>
         {['all','today','upcoming','overdue','done'].map(f => (
           <div key={f} onClick={() => setFilter(f)} style={{ padding: '5px 13px', borderRadius: 20, fontSize: 12, fontWeight: 500, cursor: 'pointer', border: '1px solid', transition: 'all 0.15s', background: filter === f ? '#1e1208' : '#161618', borderColor: filter === f ? '#7a3410' : '#242428', color: filter === f ? '#d4520f' : '#666' }}>
@@ -85,7 +112,6 @@ export default function Tasks({ onAddTask, onEditTask }) {
         ))}
       </div>
 
-      {/* Stats */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 8, marginBottom: 20 }}>
         {[['Total', counts.total, '#e8e6e1'],['Today', counts.today, '#e8e6e1'],['Overdue', counts.overdue, '#f87171'],['Done', counts.done, '#6ee7b7']].map(([label, val, color]) => (
           <div key={label} style={{ background: '#161618', border: '1px solid #242428', borderRadius: 11, padding: 12 }}>
@@ -95,49 +121,37 @@ export default function Tasks({ onAddTask, onEditTask }) {
         ))}
       </div>
 
-      {/* Sectors */}
-      {SECTORS.map(({ key, label, color }) => {
-        const sectorTasks = filtered.filter(t => t.sector?.toLowerCase() === key)
-        if (sectorTasks.length === 0 && filter !== 'all') return null
+      {sectorGroups.map(({ key, label, icon, color, tasks: st }) => {
+        if (st.length === 0 && filter !== 'all') return null
         return (
           <div key={key} style={{ marginBottom: 20 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8, cursor: 'pointer' }} onClick={() => toggleCollapse(key)}>
-              <div style={{ width: 9, height: 9, borderRadius: '50%', background: color }} />
+              <div style={{ fontSize: 16 }}>{icon}</div>
               <div style={{ fontSize: 13, fontWeight: 500, color: '#aaa', flex: 1 }}>{label}</div>
-              <div style={{ fontFamily: "'DM Mono'", fontSize: 11, color: '#555' }}>{sectorTasks.length} tasks</div>
+              <div style={{ fontFamily: "'DM Mono'", fontSize: 11, color: '#555' }}>{st.length} tasks</div>
               <div style={{ color: '#444', fontSize: 13, transform: collapsed[key] ? 'rotate(-90deg)' : 'none', transition: 'transform 0.2s' }}>›</div>
             </div>
             {!collapsed[key] && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                {sectorTasks.length === 0
-                  ? <div style={{ padding: 14, textAlign: 'center', fontSize: 13, color: '#3a3a3a', border: '1px dashed #242428', borderRadius: 12 }}>No tasks — add one above</div>
-                  : sectorTasks.map(task => {
-                    const urg = URG_STYLE[task.urgency] || URG_STYLE.medium
-                    const isOverdue = task.due_date < today && !task.completed
-                    return (
-                      <div key={task.id} onClick={() => onEditTask(task)} style={{ display: 'flex', alignItems: 'center', gap: 11, padding: '11px 14px', background: '#161618', border: '1px solid #242428', borderRadius: 12, opacity: task.completed ? 0.38 : 1, cursor: 'pointer' }}>
-                        <div className={`check-circle${task.completed ? ' checked' : ''}`} onClick={e => { e.stopPropagation(); toggleTask(task) }}>
-                          {task.completed && <svg width="10" height="10" viewBox="0 0 10 10"><polyline points="1.5,5 4,7.5 8.5,2.5" stroke="white" strokeWidth="1.8" fill="none" strokeLinecap="round"/></svg>}
-                        </div>
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ fontSize: 14, color: '#d4d2cc' }}>{task.name}</div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 3, flexWrap: 'wrap' }}>
-                            {task.time_block && <span style={{ fontFamily: "'DM Mono'", fontSize: 11, color: '#555' }}>{task.time_block}</span>}
-                            {task.start_date && <span style={{ fontFamily: "'DM Mono'", fontSize: 11, color: '#888' }}>Do: {task.start_date}</span>}
-                            {task.due_date && <span style={{ fontFamily: "'DM Mono'", fontSize: 11, color: isOverdue ? '#f87171' : '#555' }}>{isOverdue ? `Due: ${task.due_date} ⚠` : `Deadline: ${task.due_date}`}</span>}
-                            <span style={{ fontSize: 10, fontWeight: 600, padding: '2px 7px', borderRadius: 6, background: urg.bg, color: urg.color }}>{task.urgency}</span>
-                            {task.projects && <span style={{ fontSize: 11, color: '#d4520f' }}>{task.projects.name} →</span>}
-                          </div>
-                        </div>
-                      </div>
-                    )
-                  })
-                }
-              </div>
+              st.length === 0
+                ? <div style={{ padding: 14, textAlign: 'center', fontSize: 13, color: '#3a3a3a', border: '1px dashed #242428', borderRadius: 12 }}>No tasks — add one above</div>
+                : st.map(task => <TaskRow key={task.id} task={task} />)
             )}
           </div>
         )
       })}
+
+      {/* Unassigned */}
+      {unassigned.length > 0 && (
+        <div style={{ marginBottom: 20 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8, cursor: 'pointer' }} onClick={() => toggleCollapse('__unassigned')}>
+            <div style={{ fontSize: 16 }}>📌</div>
+            <div style={{ fontSize: 13, fontWeight: 500, color: '#666', flex: 1 }}>Unassigned</div>
+            <div style={{ fontFamily: "'DM Mono'", fontSize: 11, color: '#555' }}>{unassigned.length} tasks</div>
+            <div style={{ color: '#444', fontSize: 13, transform: collapsed['__unassigned'] ? 'rotate(-90deg)' : 'none', transition: 'transform 0.2s' }}>›</div>
+          </div>
+          {!collapsed['__unassigned'] && unassigned.map(task => <TaskRow key={task.id} task={task} />)}
+        </div>
+      )}
     </div>
   )
 }

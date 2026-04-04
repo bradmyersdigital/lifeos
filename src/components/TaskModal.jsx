@@ -142,6 +142,8 @@ export default function TaskModal({ mode, onClose, onSaved, task }) {
   const [projectId, setProjectId] = useState(task?.project_id || '')
   const [noteId, setNoteId] = useState(task?.note_id || '')
   const [notesText, setNotesText] = useState(task?.notes_text || '')
+  const [location, setLocation] = useState(task?.location || '')
+  const [noTime, setNoTime] = useState(!task?.time_block)
   const [hourIdx, setHourIdx] = useState(parsedTime.hourIdx)
   const [minIdx, setMinIdx] = useState(parsedTime.minIdx)
   const [ampmIdx, setAmpmIdx] = useState(parsedTime.ampmIdx)
@@ -155,7 +157,7 @@ export default function TaskModal({ mode, onClose, onSaved, task }) {
     supabase.from('notes').select('id, text, category').order('created_at', { ascending: false }).limit(20).then(({ data }) => setNotes(data || []))
   }, [])
 
-  const timeString = `${HOURS[hourIdx]}:${MINUTES[minIdx]} ${AMPM[ampmIdx]}`
+  const timeString = noTime ? null : `${HOURS[hourIdx]}:${MINUTES[minIdx]} ${AMPM[ampmIdx]}`
 
   const handleSave = async () => {
     if (!name.trim()) return
@@ -196,7 +198,7 @@ export default function TaskModal({ mode, onClose, onSaved, task }) {
 
         <div className="field">
           <div className="field-label">Task name</div>
-          <input type="text" placeholder="What needs to get done?" value={name} onChange={e => setName(e.target.value)} autoFocus />
+          <input type="text" placeholder="What needs to get done?" value={name} onChange={e => setName(e.target.value)} />
         </div>
 
         <div className="field">
@@ -221,15 +223,28 @@ export default function TaskModal({ mode, onClose, onSaved, task }) {
         </div>
 
         <div className="field">
-          <div className="field-label">Time block</div>
-          <div style={{ background: '#0f0f11', border: '1px solid #2a2a30', borderRadius: 12, padding: '4px 8px', display: 'flex', alignItems: 'center' }}>
-            <Drum items={HOURS} selectedIdx={hourIdx} onChange={setHourIdx} />
-            <div style={{ fontFamily: "'DM Mono'", fontSize: 22, color: '#555', padding: '0 4px' }}>:</div>
-            <Drum items={MINUTES} selectedIdx={minIdx} onChange={setMinIdx} />
-            <div style={{ width: 14 }} />
-            <Drum items={AMPM} selectedIdx={ampmIdx} onChange={setAmpmIdx} />
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+            <div className="field-label" style={{ margin: 0 }}>Time block</div>
+            <div onClick={() => setNoTime(!noTime)} style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: 12, color: noTime ? '#d4520f' : '#555' }}>
+              <div style={{ width: 28, height: 16, borderRadius: 8, background: noTime ? '#1e1208' : '#1e1e24', border: `1px solid ${noTime ? '#7a3410' : '#333'}`, position: 'relative', transition: 'all 0.2s' }}>
+                <div style={{ width: 12, height: 12, borderRadius: '50%', background: noTime ? '#d4520f' : '#555', position: 'absolute', top: 1, left: noTime ? 13 : 1, transition: 'left 0.2s' }} />
+              </div>
+              No specific time
+            </div>
           </div>
-          <div style={{ textAlign: 'center', fontFamily: "'DM Mono'", fontSize: 14, color: '#d4520f', marginTop: 8, fontWeight: 600 }}>{timeString}</div>
+          {!noTime && (
+            <>
+              <div style={{ background: '#0f0f11', border: '1px solid #2a2a30', borderRadius: 12, padding: '4px 8px', display: 'flex', alignItems: 'center' }}>
+                <Drum items={HOURS} selectedIdx={hourIdx} onChange={setHourIdx} />
+                <div style={{ fontFamily: "'DM Mono'", fontSize: 22, color: '#555', padding: '0 4px' }}>:</div>
+                <Drum items={MINUTES} selectedIdx={minIdx} onChange={setMinIdx} />
+                <div style={{ width: 14 }} />
+                <Drum items={AMPM} selectedIdx={ampmIdx} onChange={setAmpmIdx} />
+              </div>
+              <div style={{ textAlign: 'center', fontFamily: "'DM Mono'", fontSize: 14, color: '#d4520f', marginTop: 8, fontWeight: 600 }}>{timeString}</div>
+            </>
+          )}
+          {noTime && <div style={{ textAlign: 'center', fontSize: 13, color: '#555', padding: '8px 0' }}>Will appear after timed items</div>}
         </div>
 
         <div className="field">
@@ -265,6 +280,11 @@ export default function TaskModal({ mode, onClose, onSaved, task }) {
             <option value="">No note linked</option>
             {notes.map(n => <option key={n.id} value={n.id}>{n.text.substring(0, 50)}{n.text.length > 50 ? '…' : ''}</option>)}
           </select>
+        </div>
+
+        <div className="field">
+          <div className="field-label">Location (optional)</div>
+          <input type="text" placeholder="Where?" value={location} onChange={e => setLocation(e.target.value)} />
         </div>
 
         <div className="field">

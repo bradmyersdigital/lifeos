@@ -8,16 +8,20 @@ import Projects from './pages/Projects'
 import Notes from './pages/Notes'
 import Habits from './pages/Habits'
 import More from './pages/More'
+import Finance from './pages/Finance'
+import Goals from './pages/Goals'
 import TaskModal from './components/TaskModal'
 
 const NAV = [
-  { path: '/',         label: 'Home',    icon: HomeIcon },
-  { path: '/week',     label: 'Week',    icon: WeekIcon },
-  { path: '/tasks',    label: 'Tasks',   icon: TasksIcon },
-  { path: '/sectors',  label: 'Sectors', icon: SectorsIcon },
-  { path: '/habits',   label: 'Habits',  icon: HabitsIcon },
-  { path: '/more',     label: 'More',    icon: MoreIcon },
+  { path: '/',        label: 'Home',    icon: HomeIcon },
+  { path: '/week',    label: 'Week',    icon: WeekIcon },
+  { path: '/tasks',   label: 'Tasks',   icon: TasksIcon },
+  { path: '/sectors', label: 'Sectors', icon: SectorsIcon },
+  { path: '/habits',  label: 'Habits',  icon: HabitsIcon },
+  { path: '/more',    label: 'More',    icon: MoreIcon },
 ]
+
+const MORE_PATHS = ['/projects','/notes','/finance','/goals','/realestate']
 
 function Shell() {
   const navigate = useNavigate()
@@ -25,13 +29,9 @@ function Shell() {
   const [taskModal, setTaskModal] = useState(null)
   const [refreshKey, setRefreshKey] = useState(0)
 
-  // Lock body scroll when any modal is open
   useEffect(() => {
-    if (taskModal) {
-      document.documentElement.style.overflow = 'hidden'
-    } else {
-      document.documentElement.style.overflow = ''
-    }
+    if (taskModal) document.documentElement.style.overflow = 'hidden'
+    else document.documentElement.style.overflow = ''
     return () => { document.documentElement.style.overflow = '' }
   }, [taskModal])
 
@@ -40,7 +40,7 @@ function Shell() {
   const closeModal = () => setTaskModal(null)
   const onSaved = () => { setRefreshKey(k => k + 1); closeModal() }
 
-  const isMore = ['/projects','/notes','/realestate'].includes(location.pathname)
+  const isMore = MORE_PATHS.includes(location.pathname)
   const activeNav = isMore ? '/more' : location.pathname
 
   return (
@@ -51,14 +51,15 @@ function Shell() {
           <Route path="/week"        element={<Week key={refreshKey} onAddTask={openAdd} onEditTask={openEdit} />} />
           <Route path="/tasks"       element={<Tasks key={refreshKey} onAddTask={openAdd} onEditTask={openEdit} />} />
           <Route path="/sectors"     element={<Sectors key={refreshKey} onAddTask={openAdd} onEditTask={openEdit} />} />
-          <Route path="/projects"    element={<Projects key={refreshKey} />} />
+          <Route path="/projects"    element={<Projects key={refreshKey} onAddTask={openAdd} onEditTask={openEdit} />} />
           <Route path="/notes"       element={<Notes key={refreshKey} />} />
           <Route path="/habits"      element={<Habits key={refreshKey} />} />
+          <Route path="/finance"     element={<Finance key={refreshKey} />} />
+          <Route path="/goals"       element={<Goals key={refreshKey} />} />
           <Route path="/more"        element={<More />} />
           <Route path="/realestate"  element={<More />} />
         </Routes>
       </div>
-
       <nav className="bottom-nav">
         {NAV.map(({ path, label, icon: Icon }) => (
           <div key={path} className={`nav-item${activeNav === path ? ' active' : ''}`} onClick={() => navigate(path)}>
@@ -67,10 +68,7 @@ function Shell() {
           </div>
         ))}
       </nav>
-
-      {taskModal && (
-        <TaskModal mode={taskModal.mode} task={taskModal.task} onClose={closeModal} onSaved={onSaved} />
-      )}
+      {taskModal && <TaskModal mode={taskModal.mode} task={taskModal.task} onClose={closeModal} onSaved={onSaved} />}
     </div>
   )
 }

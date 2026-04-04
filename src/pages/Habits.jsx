@@ -2,56 +2,54 @@ import React, { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 
 const DAY_LABELS = ['M','T','W','T','F','S','S']
+const MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December']
+
+function toStr(d) { return d.toISOString().split('T')[0] }
 
 export default function Habits() {
   const [habits, setHabits] = useState([])
   const [logs, setLogs] = useState([])
   const [showEdit, setShowEdit] = useState(false)
   const [newHabitName, setNewHabitName] = useState('')
-  const today = new Date().toISOString().split('T')[0]
-  const todayDow = new Date().getDay()
+  const [view, setView] = useState('today') // 'today' | 'calendar'
+  const [calMonth, setCalMonth] = useState(0) // offset from current month
+  const [selectedHabit, setSelectedHabit] = useState(null)
+
+  const today = new Date()
+  const todayStr = toStr(today)
+  const todayDow = today.getDay()
   const todayIdx = todayDow === 0 ? 6 : todayDow - 1
 
-  useEffect(() => { loadHabits() }, [])
+  useEffect(() => { loadAll() }, [calMonth])
 
-  const loadHabits = async () => {
-    const { data: habitData } = await supabase.from('habits').select('*').order('created_at')
-    const { data: logData } = await supabase.from('habit_logs').select('*').gte('completed_date', getWeekStart())
-    setHabits(habitData || [])
-    setLogs(logData || [])
-  }
-
-  const getWeekStart = () => {
-    const d = new Date()
-    const day = d.getDay()
-    const diff = d.getDate() - ((day + 6) % 7)
-    d.setDate(diff)
-    return d.toISOString().split('T')[0]
+  const loadAll = async () => {
+    const { data: hd } = await supabase.from('habits').select('*').order('created_at')
+    const monthDate = new Date(today.getFullYear(), today.getMonth() + calMonth, 1)
+    const first = toStr(new Date(monthDate.getFullYear(), monthDate.getMonth(), 1))
+    const last = toStr(new Date(monthDate.getFullYear(), monthDate.getMonth() + 1, 0))
+    // also get current week
+    const weekStart = new Date(today); weekStart.setDate(today.getDate() - todayIdx)
+    const { data: ld } = await supabase.from('habit_logs').select('*').gte('completed_date', first < toStr(weekStart) ? first : toStr(weekStart))
+    setHabits(hd || [])
+    setLogs(ld || [])
   }
 
   const getDateForDayIdx = (idx) => {
-    const d = new Date()
-    const dow = d.getDay()
-    const currentIdx = dow === 0 ? 6 : dow - 1
-    const diff = idx - currentIdx
-    d.setDate(d.getDate() + diff)
-    return d.toISOString().split('T')[0]
+    const d = new Date(today)
+    d.setDate(d.getDate() - (todayIdx - idx))
+    return toStr(d)
   }
 
-  const isLogged = (habitId, dayIdx) => {
-    const date = getDateForDayIdx(dayIdx)
-    return logs.some(l => l.habit_id === habitId && l.completed_date === date)
-  }
+  const isLogged = (habitId, date) => logs.some(l => l.habit_id === habitId && l.completed_date === date)
+  const isTodayLogged = (habitId) => isLogged(habitId, todayStr)
 
-  const isTodayLogged = (habitId) => isLogged(habitId, todayIdx)
-
-  const toggleHabit = async (habitId) => {
-    const logged = isTodayLogged(habitId)
+  const toggleLog = async (habitId, date) => {
+    const logged = isLogged(habitId, date)
     if (logged) {
-      await supabase.from('habit_logs').delete().eq('habit_id', habitId).eq('completed_date', today)
-      setLogs(prev => prev.filter(l => !(l.habit_id === habitId && l.completed_date === today)))
+      await supabase.from('habit_logs').delete().eq('habit_id', habitId).eq('completed_date', date)
+      setLogs(prev => prev.filter(l => !(l.habit_id === habitId && l.completed_date === date)))
     } else {
-      const { data } = await supabase.from('habit_logs').insert({ habit_id: habitId, completed_date: today }).select().single()
+      const { data } = await supabase.from('habit_logs').insert({ habit_id: habitId, completed_date: date }).select().single()
       if (data) setLogs(prev => [...prev, data])
     }
   }
@@ -70,34 +68,50 @@ export default function Habits() {
 
   const getStreak = (habitId) => {
     let streak = 0
-    let d = new Date()
+    const d = new Date(today)
     while (true) {
-      const dateStr = d.toISOString().split('T')[0]
-      if (logs.some(l => l.habit_id === habitId && l.completed_date === dateStr)) {
-        streak++
-        d.setDate(d.getDate() - 1)
-      } else break
+      const ds = toStr(d)
+      if (logs.some(l => l.habit_id === habitId && l.completed_date === ds)) { streak++; d.setDate(d.getDate() - 1) }
+      else break
     }
     return streak
   }
 
   const doneToday = habits.filter(h => isTodayLogged(h.id)).length
 
+  // Calendar month data
+  const monthDate = new Date(today.getFullYear(), today.getMonth() + calMonth, 1)
+  const monthYear = monthDate.getFullYear()
+  const monthMonth = monthDate.getMonth()
+  const daysInMonth = new Date(monthYear, monthMonth + 1, 0).getDate()
+  const firstDow = (new Date(monthYear, monthMonth, 1).getDay() + 6) % 7
+  const calCells = []
+  for (let i = 0; i < firstDow; i++) calCells.push(null)
+  for (let d = 1; d <= daysInMonth; d++) calCells.push(d)
+
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18 }}>
         <div style={{ fontSize: 20, fontWeight: 500 }}>Habits</div>
-        <div onClick={() => setShowEdit(!showEdit)} style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#1e1208', border: '1px solid #7a3410', borderRadius: 10, padding: '7px 14px', cursor: 'pointer', fontSize: 13, color: '#d4520f', fontWeight: 500 }}>
-          <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><line x1="6.5" y1="1" x2="6.5" y2="12" stroke="#d4520f" strokeWidth="1.8" strokeLinecap="round"/><line x1="1" y1="6.5" x2="12" y2="6.5" stroke="#d4520f" strokeWidth="1.8" strokeLinecap="round"/></svg>
-          Add / Edit
+        <div style={{ display: 'flex', gap: 8 }}>
+          <div style={{ display: 'flex', background: '#161618', border: '1px solid #242428', borderRadius: 10, overflow: 'hidden' }}>
+            {['today','calendar'].map(v => (
+              <div key={v} onClick={() => setView(v)} style={{ padding: '7px 12px', fontSize: 12, fontWeight: 500, cursor: 'pointer', background: view === v ? '#1e1208' : 'transparent', color: view === v ? '#d4520f' : '#666', transition: 'all 0.15s' }}>
+                {v.charAt(0).toUpperCase() + v.slice(1)}
+              </div>
+            ))}
+          </div>
+          <div onClick={() => setShowEdit(!showEdit)} style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#1e1208', border: '1px solid #7a3410', borderRadius: 10, padding: '7px 12px', cursor: 'pointer', fontSize: 13, color: '#d4520f', fontWeight: 500 }}>
+            + Edit
+          </div>
         </div>
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 8, marginBottom: 20 }}>
-        {[['Today', `${doneToday} / ${habits.length}`, '#e8e6e1', 'completed'], ['Best streak', Math.max(0, ...habits.map(h => getStreak(h.id))), '#d4520f', 'days'], ['This week', habits.length ? Math.round(logs.length / (habits.length * 7) * 100) + '%' : '0%', '#e8e6e1', 'completion']].map(([label, val, color, sub]) => (
+        {[['Today', `${doneToday} / ${habits.length}`, '#e8e6e1', 'completed'],['Best streak', Math.max(0,...habits.map(h=>getStreak(h.id))), '#d4520f','days'],['This week', habits.length ? Math.round(logs.filter(l=>{ const d=new Date(l.completed_date); const ws=new Date(today); ws.setDate(today.getDate()-todayIdx); return d>=ws && d<=today }).length / (habits.length * 7) * 100) + '%' : '0%','#e8e6e1','completion']].map(([label,val,color,sub])=>(
           <div key={label} style={{ background: '#161618', border: '1px solid #242428', borderRadius: 11, padding: 12 }}>
             <div style={{ fontSize: 11, color: '#555', marginBottom: 3 }}>{label}</div>
-            <div style={{ fontSize: 20, fontWeight: 500, color }}>{val}</div>
+            <div style={{ fontSize: 18, fontWeight: 500, color }}>{val}</div>
             <div style={{ fontSize: 11, color: '#444', marginTop: 2, fontFamily: "'DM Mono'" }}>{sub}</div>
           </div>
         ))}
@@ -118,57 +132,122 @@ export default function Habits() {
               <div key={h.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 12px', background: '#0f0f11', border: '1px solid #1e1e24', borderRadius: 10 }}>
                 <span style={{ fontSize: 16, width: 24, textAlign: 'center' }}>{h.icon}</span>
                 <span style={{ fontSize: 13, color: '#c0bdb7', flex: 1 }}>{h.name}</span>
-                <div onClick={() => removeHabit(h.id)} style={{ width: 22, height: 22, borderRadius: '50%', border: '1px solid #2a2a30', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#555', fontSize: 14, transition: 'all 0.15s' }}>×</div>
+                <div onClick={() => removeHabit(h.id)} style={{ width: 22, height: 22, borderRadius: '50%', border: '1px solid #2a2a30', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#555', fontSize: 14 }}>×</div>
               </div>
             ))}
           </div>
         </div>
       )}
 
-      <div className="section-label">Today's habits</div>
-      {habits.map(habit => {
-        const done = isTodayLogged(habit.id)
-        const streak = getStreak(habit.id)
-        const weekDone = DAY_LABELS.filter((_, i) => isLogged(habit.id, i)).length
-        const pct = Math.round((weekDone / 7) * 100)
-        return (
-          <div key={habit.id} style={{ background: '#161618', border: `1px solid ${done ? '#1a3a1a' : '#242428'}`, borderRadius: 14, padding: 16, marginBottom: 10, transition: 'border-color 0.15s' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
-              <div style={{ width: 40, height: 40, borderRadius: 11, background: '#1e1e22', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, flexShrink: 0 }}>{habit.icon}</div>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 15, fontWeight: 500 }}>{habit.name}</div>
-                <div style={{ fontSize: 12, color: '#555', marginTop: 2 }}>Every day</div>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 5, background: '#1e1208', border: '1px solid #3a2010', borderRadius: 10, padding: '5px 10px', flexShrink: 0 }}>
-                <span style={{ fontFamily: "'DM Mono'", fontSize: 14, fontWeight: 500, color: '#d4520f' }}>{streak}</span>
-                <span style={{ fontSize: 11, color: '#7a3410' }}>day streak</span>
-              </div>
-              <div onClick={() => toggleHabit(habit.id)} style={{ width: 32, height: 32, borderRadius: '50%', border: `2px solid ${done ? '#16a34a' : '#333'}`, background: done ? '#16a34a' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0, transition: 'all 0.2s' }}>
-                <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><polyline points="1.5,6 4.5,9 10.5,3" stroke="white" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round"/></svg>
-              </div>
-            </div>
-            <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginBottom: 10 }}>
-              {DAY_LABELS.map((label, i) => {
-                const dayDone = isLogged(habit.id, i)
-                const isToday = i === todayIdx
-                const isPast = i < todayIdx
-                return (
-                  <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
-                    <div style={{ width: 22, height: 22, borderRadius: '50%', background: dayDone ? (isToday ? '#d4520f' : '#16a34a') : isPast ? '#2a0a0a' : '#1e1e24', border: `1px solid ${isToday && !dayDone ? '#d4520f' : dayDone ? 'transparent' : '#2a2a30'}`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      {dayDone && <svg width="9" height="9" viewBox="0 0 9 9"><polyline points="1,4.5 3.5,7 8,2" stroke="white" strokeWidth="1.5" fill="none" strokeLinecap="round"/></svg>}
-                    </div>
-                    <div style={{ fontSize: 10, color: '#444', fontFamily: "'DM Mono'" }}>{label}</div>
+      {/* TODAY VIEW */}
+      {view === 'today' && (
+        <div>
+          <div className="section-label">Today's habits</div>
+          {habits.map(habit => {
+            const done = isTodayLogged(habit.id)
+            const streak = getStreak(habit.id)
+            const weekDone = DAY_LABELS.filter((_, i) => isLogged(habit.id, getDateForDayIdx(i))).length
+            const pct = Math.round((weekDone / 7) * 100)
+            return (
+              <div key={habit.id} style={{ background: '#161618', border: `1px solid ${done ? '#1a3a1a' : '#242428'}`, borderRadius: 14, padding: 16, marginBottom: 10 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
+                  <div style={{ width: 40, height: 40, borderRadius: 11, background: '#1e1e22', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, flexShrink: 0 }}>{habit.icon}</div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: 15, fontWeight: 500 }}>{habit.name}</div>
+                    <div style={{ fontSize: 12, color: '#555', marginTop: 2 }}>Every day · tap day to edit history</div>
                   </div>
-                )
-              })}
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <div className="prog-bar" style={{ flex: 1 }}><div className="prog-fill" style={{ width: pct + '%' }} /></div>
-              <div style={{ fontFamily: "'DM Mono'", fontSize: 11, color: '#555', minWidth: 34, textAlign: 'right' }}>{weekDone}/7</div>
-            </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 5, background: '#1e1208', border: '1px solid #3a2010', borderRadius: 10, padding: '5px 10px', flexShrink: 0 }}>
+                    <span style={{ fontFamily: "'DM Mono'", fontSize: 14, fontWeight: 500, color: '#d4520f' }}>{streak}</span>
+                    <span style={{ fontSize: 11, color: '#7a3410' }}>day streak</span>
+                  </div>
+                  <div onClick={() => toggleLog(habit.id, todayStr)} style={{ width: 32, height: 32, borderRadius: '50%', border: `2px solid ${done ? '#16a34a' : '#333'}`, background: done ? '#16a34a' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0, transition: 'all 0.2s' }}>
+                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><polyline points="1.5,6 4.5,9 10.5,3" stroke="white" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                  </div>
+                </div>
+                {/* Week dots — tappable to edit past days */}
+                <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginBottom: 10 }}>
+                  {DAY_LABELS.map((label, i) => {
+                    const date = getDateForDayIdx(i)
+                    const dayDone = isLogged(habit.id, date)
+                    const isToday = i === todayIdx
+                    const isPast = i < todayIdx
+                    return (
+                      <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+                        <div onClick={() => (isPast || isToday) && toggleLog(habit.id, date)} style={{ width: 26, height: 26, borderRadius: '50%', background: dayDone ? (isToday ? '#d4520f' : '#16a34a') : isPast ? '#1a1a1a' : '#1e1e24', border: `1px solid ${isToday && !dayDone ? '#d4520f' : dayDone ? 'transparent' : '#2a2a30'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: isPast || isToday ? 'pointer' : 'default', transition: 'all 0.15s' }}>
+                          {dayDone && <svg width="9" height="9" viewBox="0 0 9 9"><polyline points="1,4.5 3.5,7 8,2" stroke="white" strokeWidth="1.5" fill="none" strokeLinecap="round"/></svg>}
+                        </div>
+                        <div style={{ fontSize: 10, color: isToday ? '#d4520f' : '#444', fontFamily: "'DM Mono'" }}>{label}</div>
+                      </div>
+                    )
+                  })}
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <div className="prog-bar" style={{ flex: 1 }}><div className="prog-fill" style={{ width: pct + '%' }} /></div>
+                  <div style={{ fontFamily: "'DM Mono'", fontSize: 11, color: '#555', minWidth: 34, textAlign: 'right' }}>{weekDone}/7</div>
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      )}
+
+      {/* CALENDAR VIEW */}
+      {view === 'calendar' && (
+        <div>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+            <div onClick={() => setCalMonth(o => o-1)} style={{ width: 36, height: 36, borderRadius: 10, background: '#161618', border: '1px solid #242428', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: 18, color: '#888' }}>‹</div>
+            <div style={{ fontSize: 15, fontWeight: 500 }}>{MONTH_NAMES[monthMonth]} {monthYear}</div>
+            <div onClick={() => setCalMonth(o => o+1)} style={{ width: 36, height: 36, borderRadius: 10, background: '#161618', border: '1px solid #242428', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: 18, color: '#888' }}>›</div>
           </div>
-        )
-      })}
+
+          {/* Habit selector */}
+          <div style={{ display: 'flex', gap: 6, marginBottom: 14, overflowX: 'auto', paddingBottom: 4 }}>
+            <div onClick={() => setSelectedHabit(null)} style={{ padding: '5px 12px', borderRadius: 20, fontSize: 12, fontWeight: 500, cursor: 'pointer', border: '1px solid', whiteSpace: 'nowrap', background: !selectedHabit ? '#1e1208' : '#161618', borderColor: !selectedHabit ? '#7a3410' : '#242428', color: !selectedHabit ? '#d4520f' : '#666' }}>All</div>
+            {habits.map(h => (
+              <div key={h.id} onClick={() => setSelectedHabit(h.id === selectedHabit ? null : h.id)} style={{ padding: '5px 12px', borderRadius: 20, fontSize: 12, fontWeight: 500, cursor: 'pointer', border: '1px solid', whiteSpace: 'nowrap', background: selectedHabit === h.id ? '#1e1208' : '#161618', borderColor: selectedHabit === h.id ? '#7a3410' : '#242428', color: selectedHabit === h.id ? '#d4520f' : '#666' }}>
+                {h.icon} {h.name}
+              </div>
+            ))}
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', gap: 2, marginBottom: 4 }}>
+            {DAY_LABELS.map(d => <div key={d} style={{ textAlign: 'center', fontSize: 11, fontWeight: 600, color: '#444', padding: '4px 0' }}>{d}</div>)}
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', gap: 3 }}>
+            {calCells.map((day, idx) => {
+              if (!day) return <div key={idx} />
+              const dateStr = toStr(new Date(monthYear, monthMonth, day))
+              const isToday = dateStr === todayStr
+              const isFuture = dateStr > todayStr
+              const habitsToShow = selectedHabit ? habits.filter(h => h.id === selectedHabit) : habits
+              const doneCount = habitsToShow.filter(h => isLogged(h.id, dateStr)).length
+              const total = habitsToShow.length
+              const allDone = total > 0 && doneCount === total
+              const someDone = doneCount > 0 && doneCount < total
+              return (
+                <div key={idx} style={{ background: isToday ? '#1e1208' : '#161618', border: `1px solid ${isToday ? '#7a3410' : '#1e1e24'}`, borderRadius: 10, padding: '6px 4px', minHeight: 54, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                  <div style={{ fontSize: 13, fontWeight: 500, color: isToday ? '#e8823a' : isFuture ? '#333' : '#888', marginBottom: 4 }}>{day}</div>
+                  {!isFuture && total > 0 && (
+                    <div style={{ width: 24, height: 24, borderRadius: '50%', background: allDone ? '#16a34a' : someDone ? '#f59e0b' : '#1e1e24', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      {allDone
+                        ? <svg width="10" height="10" viewBox="0 0 10 10"><polyline points="1.5,5 4,7.5 8.5,2.5" stroke="white" strokeWidth="1.8" fill="none" strokeLinecap="round"/></svg>
+                        : <div style={{ fontSize: 9, color: someDone ? '#fff' : '#444', fontWeight: 600 }}>{doneCount}</div>
+                      }
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+          <div style={{ marginTop: 16, display: 'flex', gap: 16, justifyContent: 'center' }}>
+            {[['#16a34a','All done'],['#f59e0b','Partial'],['#1e1e24','None']].map(([c,l]) => (
+              <div key={l} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: '#555' }}>
+                <div style={{ width: 12, height: 12, borderRadius: '50%', background: c }} />{l}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   )
 }
