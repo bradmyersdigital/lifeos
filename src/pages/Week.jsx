@@ -207,21 +207,7 @@ export default function Week({ onAddTask, onEditTask }) {
               <div style={{ fontSize: 18, color: '#333' }}>+</div>
             </div>
             {total === 0
-              ? (
-                <div>
-                  {showRoutines && routines.length > 0 && (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginBottom: 6 }}>
-                      {routines.map(r => (
-                        <div key={r.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '7px 12px', background: '#161618', border: '1px dashed #1e1e24', borderRadius: 10, opacity: 0.6 }}>
-                          <div style={{ fontFamily: "'DM Mono'", fontSize: 11, color: '#a78bfa', minWidth: 50 }}>{r.time || '--:--'}</div>
-                          <div style={{ fontSize: 13, color: '#888' }}>{r.icon && r.icon + ' '}{r.name}</div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                  <div onClick={() => openDaySheet(date)} style={{ padding: '10px 14px', fontSize: 13, color: '#2a2a2a', border: '1px dashed #1e1e24', borderRadius: 10, textAlign: 'center', cursor: 'pointer' }}>Tap to add</div>
-                </div>
-              )
+              ? <div onClick={() => openDaySheet(date)} style={{ padding: '10px 14px', fontSize: 13, color: '#2a2a2a', border: '1px dashed #1e1e24', borderRadius: 10, textAlign: 'center', cursor: 'pointer' }}>Tap to add</div>
               : <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                   {items.map(item => item._type === 'event' ? (
                     <div key={item.id} onClick={() => setEventModal({ event: item, date: item.start_date })} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', background: '#0a1e14', border: '1px solid #1a4a2a', borderRadius: 12, cursor: 'pointer' }}>
@@ -242,6 +228,18 @@ export default function Week({ onAddTask, onEditTask }) {
                       {item.time_block && <div style={{ fontFamily: "'DM Mono'", fontSize: 11, color: '#555', flexShrink: 0 }}>{item.time_block}</div>}
                     </div>
                   ))}
+                {showRoutines && routines.length > 0 && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 5, marginTop: 4 }}>
+                      {routines.map(r => (
+                        <div key={r.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 14px', background: '#161618', border: '1px dashed #1e1e24', borderRadius: 12, opacity: 0.7 }}>
+                          <div style={{ fontFamily: "'DM Mono'", fontSize: 11, color: '#a78bfa', minWidth: 55, flexShrink: 0 }}>{r.time || '--:--'}</div>
+                          <div style={{ width: 1, height: 20, background: '#2a2a30', flexShrink: 0 }} />
+                          <div style={{ fontSize: 13, color: '#888', flex: 1 }}>{r.icon && r.icon + ' '}{r.name}</div>
+                          {r.duration && <div style={{ fontSize: 11, color: '#444', fontFamily: "'DM Mono'" }}>{r.duration}m</div>}
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
             }
           </div>

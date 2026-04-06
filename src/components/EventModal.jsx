@@ -4,28 +4,31 @@ import { supabase } from '../lib/supabase'
 const SECTORS = ['Business', 'Real Estate', 'Health', 'Personal Growth', 'Hobbies', 'Family']
 
 function TimeInput({ label, value, onChange }) {
-  const parse = (v) => {
-    if (!v) return { t: '', ap: 'AM' }
-    const m = v.match(/(\d{1,2}:\d{2})\s*(AM|PM)/i)
-    return m ? { t: m[1], ap: m[2].toUpperCase() } : { t: v, ap: 'AM' }
+  // Convert stored "H:MM AM/PM" to 24h for input
+  const toInput = (v) => {
+    if (!v) return ''
+    const m = v.match(/(\d{1,2}):(\d{2})\s*(AM|PM)/i)
+    if (!m) return v
+    let h = parseInt(m[1])
+    if (m[3].toUpperCase() === 'PM' && h !== 12) h += 12
+    if (m[3].toUpperCase() === 'AM' && h === 12) h = 0
+    return `${String(h).padStart(2,'0')}:${m[2]}`
   }
-  const { t: initT, ap: initAp } = parse(value)
-  const [time, setTime] = useState(initT)
-  const [ampm, setAmpm] = useState(initAp)
-
-  const emit = (t, ap) => onChange(t ? `${t} ${ap}` : '')
-
+  // Convert 24h back to "H:MM AM/PM"
+  const fromInput = (v) => {
+    if (!v) return ''
+    const [hStr, mStr] = v.split(':')
+    let h = parseInt(hStr)
+    const ap = h >= 12 ? 'PM' : 'AM'
+    if (h > 12) h -= 12
+    if (h === 0) h = 12
+    return `${h}:${mStr} ${ap}`
+  }
+  const [val, setVal] = useState(toInput(value))
   return (
     <div className="field">
       <div className="field-label">{label}</div>
-      <div style={{ display: 'flex', gap: 8 }}>
-        <input type="time" value={time} onChange={e => { setTime(e.target.value); emit(e.target.value, ampm) }} style={{ flex: 1 }} />
-        <div style={{ display: 'flex', background: '#0f0f11', border: '1px solid #2a2a30', borderRadius: 10, overflow: 'hidden', flexShrink: 0 }}>
-          {['AM','PM'].map(ap => (
-            <div key={ap} onClick={() => { setAmpm(ap); emit(time, ap) }} style={{ padding: '10px 14px', fontSize: 13, fontWeight: 500, cursor: 'pointer', background: ampm === ap ? '#1e1208' : 'transparent', color: ampm === ap ? '#d4520f' : '#555', transition: 'all 0.15s' }}>{ap}</div>
-          ))}
-        </div>
-      </div>
+      <input type="time" value={val} onChange={e => { setVal(e.target.value); onChange(fromInput(e.target.value)) }} style={{ width: '100%' }} />
     </div>
   )
 }

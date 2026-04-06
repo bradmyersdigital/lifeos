@@ -12,7 +12,7 @@ const URG_STYLES = {
 
 // Simple time input — iOS shows native wheel picker, no extra AM/PM toggle needed
 function TimeInput({ value, onChange }) {
-  const [noTime, setNoTime] = useState(!value)
+  const [noTime, setNoTime] = useState(false)
 
   // Convert stored "HH:MM AM/PM" to input type=time "HH:MM"
   const toInputVal = (v) => {
