@@ -9,6 +9,7 @@ import Notes from './pages/Notes'
 import Habits from './pages/Habits'
 import More from './pages/More'
 import Finance from './pages/Finance'
+import Settings from './pages/Settings'
 import Goals from './pages/Goals'
 import TaskModal from './components/TaskModal'
 import EventModal from './components/EventModal'
@@ -22,12 +23,33 @@ const NAV = [
   { path: '/more',    label: 'More',    icon: MoreIcon },
 ]
 
-const MORE_PATHS = ['/projects','/notes','/finance','/goals','/realestate']
+const MORE_PATHS = ['/projects','/notes','/finance','/goals','/realestate','/settings']
 
   // Ensure browser back button works naturally by not overriding history
 
 function Shell() {
   const navigate = useNavigate()
+  // Apply saved theme on load
+  React.useEffect(() => {
+    try {
+      const saved = localStorage.getItem('lifeos_theme')
+      if (saved) {
+        const theme = JSON.parse(saved)
+        const root = document.documentElement
+        if (theme.accent) root.style.setProperty('--accent', theme.accent)
+        if (theme.accentBg) root.style.setProperty('--accent-bg', theme.accentBg)
+        if (theme.accentBorder) root.style.setProperty('--accent-border', theme.accentBorder)
+        if (theme.event) root.style.setProperty('--event', theme.event)
+        if (theme.eventBg) root.style.setProperty('--event-bg', theme.eventBg)
+        if (theme.eventBorder) root.style.setProperty('--event-border', theme.eventBorder)
+        if (theme.navBg) root.style.setProperty('--nav-bg', theme.navBg)
+        if (theme.cardBg) root.style.setProperty('--card-bg', theme.cardBg)
+        if (theme.pageBg) root.style.setProperty('--page-bg', theme.pageBg)
+        if (theme.text) root.style.setProperty('--text', theme.text)
+        if (theme.textMuted) root.style.setProperty('--text-muted', theme.textMuted)
+      }
+    } catch {}
+  }, [])
   const location = useLocation()
   const [taskModal, setTaskModal] = useState(null)
   const [eventModal, setEventModal] = useState(null)
@@ -63,6 +85,7 @@ function Shell() {
           <Route path="/goals"       element={<Goals key={refreshKey} />} />
           <Route path="/more"        element={<More />} />
           <Route path="/realestate"  element={<More />} />
+          <Route path="/settings"    element={<Settings />} />
         </Routes>
       </div>
       <nav className="bottom-nav">

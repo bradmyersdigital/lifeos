@@ -105,12 +105,20 @@ export default function Week({ onAddTask, onEditTask }) {
   const eventsForDay = date => events
     .filter(e => e.start_date === date && (activeFilter === 'all' || e.sector?.toLowerCase() === activeFilter))
     .sort((a, b) => timeToMins(a.start_time) - timeToMins(b.start_time))
+  // Convert routine time "HH:MM" to mins for sorting
+  const routineToMins = t => {
+    if (!t) return 999
+    const [h, m] = t.split(':').map(Number)
+    return h * 60 + (m || 0)
+  }
+
   const allItemsForDay = date => {
     const t = tasksForDay(date).map(x => ({ ...x, _type: 'task' }))
     const e = eventsForDay(date).map(x => ({ ...x, _type: 'event' }))
-    return [...t, ...e].sort((a, b) => {
-      const at = a._type === 'task' ? timeToMins(a.time_block) : timeToMins(a.start_time)
-      const bt = b._type === 'task' ? timeToMins(b.time_block) : timeToMins(b.start_time)
+    const r = showRoutines ? routines.map(x => ({ ...x, _type: 'routine' })) : []
+    return [...t, ...e, ...r].sort((a, b) => {
+      const at = a._type === 'task' ? timeToMins(a.time_block) : a._type === 'event' ? timeToMins(a.start_time) : routineToMins(a.time)
+      const bt = b._type === 'task' ? timeToMins(b.time_block) : b._type === 'event' ? timeToMins(b.start_time) : routineToMins(b.time)
       return at - bt
     })
   }
@@ -218,6 +226,13 @@ export default function Week({ onAddTask, onEditTask }) {
                       </div>
                       <div style={{ fontFamily: "'DM Mono'", fontSize: 11, color: '#1a4a2a', flexShrink: 0, textAlign: 'right' }}>{item.start_time}{item.end_time ? ` → ${item.end_time}` : ''}</div>
                     </div>
+                  ) : item._type === 'routine' ? (
+                    <div key={item.id + '-r'} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 14px', background: '#161618', border: '1px dashed #2a1a5c', borderRadius: 12, opacity: 0.75 }}>
+                      <div style={{ fontFamily: "'DM Mono'", fontSize: 11, color: '#a78bfa', minWidth: 55, flexShrink: 0 }}>{item.time || '--:--'}</div>
+                      <div style={{ width: 1, height: 20, background: '#2a1a5c', flexShrink: 0 }} />
+                      <div style={{ fontSize: 13, color: '#888', flex: 1 }}>{item.icon && item.icon + ' '}{item.name}</div>
+                      {item.duration && <div style={{ fontSize: 11, color: '#444', fontFamily: "'DM Mono'" }}>{item.duration}m</div>}
+                    </div>
                   ) : (
                     <div key={item.id} onClick={() => onEditTask(item)} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', background: '#161618', border: '1px solid #1e1e24', borderRadius: 12, cursor: 'pointer', opacity: item.completed ? 0.5 : 1 }}>
                       <div style={{ width: 7, height: 7, borderRadius: '50%', background: SECTOR_COLORS[item.sector?.toLowerCase()] || '#555', flexShrink: 0 }} />
@@ -228,18 +243,7 @@ export default function Week({ onAddTask, onEditTask }) {
                       {item.time_block && <div style={{ fontFamily: "'DM Mono'", fontSize: 11, color: '#555', flexShrink: 0 }}>{item.time_block}</div>}
                     </div>
                   ))}
-                {showRoutines && routines.length > 0 && (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 5, marginTop: 4 }}>
-                      {routines.map(r => (
-                        <div key={r.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 14px', background: '#161618', border: '1px dashed #1e1e24', borderRadius: 12, opacity: 0.7 }}>
-                          <div style={{ fontFamily: "'DM Mono'", fontSize: 11, color: '#a78bfa', minWidth: 55, flexShrink: 0 }}>{r.time || '--:--'}</div>
-                          <div style={{ width: 1, height: 20, background: '#2a2a30', flexShrink: 0 }} />
-                          <div style={{ fontSize: 13, color: '#888', flex: 1 }}>{r.icon && r.icon + ' '}{r.name}</div>
-                          {r.duration && <div style={{ fontSize: 11, color: '#444', fontFamily: "'DM Mono'" }}>{r.duration}m</div>}
-                        </div>
-                      ))}
-                    </div>
-                  )}
+
                 </div>
             }
           </div>
