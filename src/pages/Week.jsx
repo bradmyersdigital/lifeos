@@ -5,7 +5,7 @@ import EventModal from '../components/EventModal'
 const DAY_NAMES = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun']
 const MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December']
 const SECTOR_COLORS = {
-  business: '#d4520f', 'real estate': '#3b82f6', health: '#10b981',
+  business: '#d4520f', 'real estate': '#10b981', health: '#10b981',
   'personal growth': '#f59e0b', family: '#ec4899', hobbies: '#a78bfa',
 }
 
@@ -26,6 +26,8 @@ export default function Week({ onAddTask, onEditTask }) {
   const [activeFilter, setActiveFilter] = useState('all')
   const [loading, setLoading] = useState(false)
   const [sectors, setSectors] = useState([])
+  const [routines, setRoutines] = useState([])
+  const [showRoutines, setShowRoutines] = useState(false)
   const [daySheet, setDaySheet] = useState(null) // { date, tasks, events }
   const [eventModal, setEventModal] = useState(null) // null | { event, date }
 
@@ -54,6 +56,7 @@ export default function Week({ onAddTask, onEditTask }) {
 
   useEffect(() => {
     supabase.from('sectors').select('*').order('sort_order').order('name').then(({ data }) => setSectors(data || []))
+    supabase.from('routines').select('*').order('time').then(({ data }) => setRoutines(data || []))
   }, [])
 
   useEffect(() => {
@@ -147,8 +150,8 @@ export default function Week({ onAddTask, onEditTask }) {
           <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><line x1="7.5" y1="1" x2="7.5" y2="14" stroke="#e8823a" strokeWidth="1.8" strokeLinecap="round"/><line x1="1" y1="7.5" x2="14" y2="7.5" stroke="#e8823a" strokeWidth="1.8" strokeLinecap="round"/></svg>
           Add task
         </div>
-        <div className="action-btn" style={{ background: '#0c1e36', border: '1px solid #1a3a5c', color: '#93c5fd' }} onClick={() => setEventModal({ event: null, date: todayStr })}>
-          <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><rect x="1.5" y="2.5" width="12" height="11" rx="2" stroke="#93c5fd" strokeWidth="1.4"/><line x1="1.5" y1="6.5" x2="13.5" y2="6.5" stroke="#93c5fd" strokeWidth="1.4"/><line x1="5" y1="1" x2="5" y2="4" stroke="#93c5fd" strokeWidth="1.4" strokeLinecap="round"/><line x1="10" y1="1" x2="10" y2="4" stroke="#93c5fd" strokeWidth="1.4" strokeLinecap="round"/></svg>
+        <div className="action-btn" style={{ background: '#0a1e14', border: '1px solid #1a4a2a', color: '#6ee7b7' }} onClick={() => setEventModal({ event: null, date: todayStr })}>
+          <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><rect x="1.5" y="2.5" width="12" height="11" rx="2" stroke="#6ee7b7" strokeWidth="1.4"/><line x1="1.5" y1="6.5" x2="13.5" y2="6.5" stroke="#6ee7b7" strokeWidth="1.4"/><line x1="5" y1="1" x2="5" y2="4" stroke="#6ee7b7" strokeWidth="1.4" strokeLinecap="round"/><line x1="10" y1="1" x2="10" y2="4" stroke="#6ee7b7" strokeWidth="1.4" strokeLinecap="round"/></svg>
           Add event
         </div>
       </div>
@@ -169,13 +172,20 @@ export default function Week({ onAddTask, onEditTask }) {
         ))}
       </div>
 
+      {/* Routines toggle */}
+      <div style={{ marginBottom: 12 }}>
+        <div onClick={() => setShowRoutines(!showRoutines)} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '5px 12px', borderRadius: 20, fontSize: 12, fontWeight: 500, cursor: 'pointer', border: '1px solid', background: showRoutines ? '#1e1208' : '#161618', borderColor: showRoutines ? '#7a3410' : '#242428', color: showRoutines ? '#d4520f' : '#666' }}>
+          🕐 {showRoutines ? 'Hide routines' : 'Show routines'}
+        </div>
+      </div>
+
       {/* Legend */}
       <div style={{ display: 'flex', gap: 12, marginBottom: 14 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, color: '#555' }}>
           <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#d4520f' }} /> Tasks
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, color: '#555' }}>
-          <div style={{ width: 20, height: 8, borderRadius: 4, background: '#1a3a5c', border: '1px solid #3b82f6' }} /> Events
+          <div style={{ width: 20, height: 8, borderRadius: 4, background: '#1a4a2a', border: '1px solid #10b981' }} /> Events
         </div>
       </div>
 
@@ -197,16 +207,30 @@ export default function Week({ onAddTask, onEditTask }) {
               <div style={{ fontSize: 18, color: '#333' }}>+</div>
             </div>
             {total === 0
-              ? <div onClick={() => openDaySheet(date)} style={{ padding: '10px 14px', fontSize: 13, color: '#2a2a2a', border: '1px dashed #1e1e24', borderRadius: 10, textAlign: 'center', cursor: 'pointer' }}>Tap to add</div>
+              ? (
+                <div>
+                  {showRoutines && routines.length > 0 && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginBottom: 6 }}>
+                      {routines.map(r => (
+                        <div key={r.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '7px 12px', background: '#161618', border: '1px dashed #1e1e24', borderRadius: 10, opacity: 0.6 }}>
+                          <div style={{ fontFamily: "'DM Mono'", fontSize: 11, color: '#a78bfa', minWidth: 50 }}>{r.time || '--:--'}</div>
+                          <div style={{ fontSize: 13, color: '#888' }}>{r.icon && r.icon + ' '}{r.name}</div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  <div onClick={() => openDaySheet(date)} style={{ padding: '10px 14px', fontSize: 13, color: '#2a2a2a', border: '1px dashed #1e1e24', borderRadius: 10, textAlign: 'center', cursor: 'pointer' }}>Tap to add</div>
+                </div>
+              )
               : <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                   {items.map(item => item._type === 'event' ? (
-                    <div key={item.id} onClick={() => setEventModal({ event: item, date: item.start_date })} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', background: '#0c1a2e', border: '1px solid #1a3a5c', borderRadius: 12, cursor: 'pointer' }}>
-                      <svg width="12" height="12" viewBox="0 0 12 12" fill="none" style={{ flexShrink: 0 }}><circle cx="6" cy="6" r="5" stroke="#3b82f6" strokeWidth="1.3"/><polyline points="6,3 6,6 8,7.5" stroke="#3b82f6" strokeWidth="1.3" strokeLinecap="round"/></svg>
+                    <div key={item.id} onClick={() => setEventModal({ event: item, date: item.start_date })} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', background: '#0a1e14', border: '1px solid #1a4a2a', borderRadius: 12, cursor: 'pointer' }}>
+                      <svg width="12" height="12" viewBox="0 0 12 12" fill="none" style={{ flexShrink: 0 }}><circle cx="6" cy="6" r="5" stroke="#10b981" strokeWidth="1.3"/><polyline points="6,3 6,6 8,7.5" stroke="#10b981" strokeWidth="1.3" strokeLinecap="round"/></svg>
                       <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontSize: 14, color: '#93c5fd', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.title}</div>
-                        {item.location && <div style={{ fontSize: 11, color: '#1e5a8c', marginTop: 2 }}>📍 {item.location}</div>}
+                        <div style={{ fontSize: 14, color: '#6ee7b7', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.title}</div>
+                        {item.location && <div style={{ fontSize: 11, color: '#1a4a2a', marginTop: 2 }}>📍 {item.location}</div>}
                       </div>
-                      <div style={{ fontFamily: "'DM Mono'", fontSize: 11, color: '#1e5a8c', flexShrink: 0, textAlign: 'right' }}>{item.start_time}{item.end_time ? ` → ${item.end_time}` : ''}</div>
+                      <div style={{ fontFamily: "'DM Mono'", fontSize: 11, color: '#1a4a2a', flexShrink: 0, textAlign: 'right' }}>{item.start_time}{item.end_time ? ` → ${item.end_time}` : ''}</div>
                     </div>
                   ) : (
                     <div key={item.id} onClick={() => onEditTask(item)} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', background: '#161618', border: '1px solid #1e1e24', borderRadius: 12, cursor: 'pointer', opacity: item.completed ? 0.5 : 1 }}>
@@ -242,7 +266,7 @@ export default function Week({ onAddTask, onEditTask }) {
                 <div key={idx} onClick={() => openDaySheet(dateStr)} style={{ background: isToday ? '#1e1208' : '#161618', border: `1px solid ${isToday ? '#7a3410' : '#1e1e24'}`, borderRadius: 10, padding: '6px 4px', minHeight: 72, cursor: 'pointer' }}>
                   <div style={{ fontSize: 13, fontWeight: 500, color: isToday ? '#e8823a' : isPast ? '#444' : '#888', textAlign: 'center', marginBottom: 4 }}>{day}</div>
                   {de.slice(0,1).map((ev, ti) => (
-                    <div key={ti} style={{ fontSize: 9, padding: '2px 4px', borderRadius: 4, background: '#0c1a2e', color: '#3b82f6', border: '1px solid #1a3a5c', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginBottom: 2 }}>
+                    <div key={ti} style={{ fontSize: 9, padding: '2px 4px', borderRadius: 4, background: '#0a1e14', color: '#10b981', border: '1px solid #1a4a2a', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginBottom: 2 }}>
                       🗓 {ev.title}
                     </div>
                   ))}
@@ -259,7 +283,7 @@ export default function Week({ onAddTask, onEditTask }) {
           <div style={{ marginTop: 20 }}>
             <div className="section-label">This month</div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 8 }}>
-              {[['Tasks', tasks.length, '#e8e6e1'],['Events', events.length, '#93c5fd'],['Done', tasks.filter(t=>t.completed).length, '#10b981'],['Left', tasks.filter(t=>!t.completed).length, '#d4520f']].map(([label,val,color]) => (
+              {[['Tasks', tasks.length, '#e8e6e1'],['Events', events.length, '#6ee7b7'],['Done', tasks.filter(t=>t.completed).length, '#10b981'],['Left', tasks.filter(t=>!t.completed).length, '#d4520f']].map(([label,val,color]) => (
                 <div key={label} style={{ background: '#161618', border: '1px solid #242428', borderRadius: 12, padding: 12 }}>
                   <div style={{ fontSize: 11, color: '#555', marginBottom: 3 }}>{label}</div>
                   <div style={{ fontSize: 20, fontWeight: 500, color }}>{val}</div>
@@ -284,8 +308,8 @@ export default function Week({ onAddTask, onEditTask }) {
                 <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><line x1="7.5" y1="1" x2="7.5" y2="14" stroke="#e8823a" strokeWidth="1.8" strokeLinecap="round"/><line x1="1" y1="7.5" x2="14" y2="7.5" stroke="#e8823a" strokeWidth="1.8" strokeLinecap="round"/></svg>
                 Add task
               </div>
-              <div onClick={() => { setEventModal({ event: null, date: daySheet.date }); setDaySheet(null) }} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '13px', borderRadius: 12, background: '#0c1e36', border: '1px solid #1a3a5c', color: '#93c5fd', fontSize: 14, fontWeight: 500, cursor: 'pointer' }}>
-                <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><rect x="1.5" y="2.5" width="12" height="11" rx="2" stroke="#93c5fd" strokeWidth="1.4"/><line x1="1.5" y1="6.5" x2="13.5" y2="6.5" stroke="#93c5fd" strokeWidth="1.4"/><line x1="5" y1="1" x2="5" y2="4" stroke="#93c5fd" strokeWidth="1.4" strokeLinecap="round"/><line x1="10" y1="1" x2="10" y2="4" stroke="#93c5fd" strokeWidth="1.4" strokeLinecap="round"/></svg>
+              <div onClick={() => { setEventModal({ event: null, date: daySheet.date }); setDaySheet(null) }} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '13px', borderRadius: 12, background: '#0a1e14', border: '1px solid #1a4a2a', color: '#6ee7b7', fontSize: 14, fontWeight: 500, cursor: 'pointer' }}>
+                <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><rect x="1.5" y="2.5" width="12" height="11" rx="2" stroke="#6ee7b7" strokeWidth="1.4"/><line x1="1.5" y1="6.5" x2="13.5" y2="6.5" stroke="#6ee7b7" strokeWidth="1.4"/><line x1="5" y1="1" x2="5" y2="4" stroke="#6ee7b7" strokeWidth="1.4" strokeLinecap="round"/><line x1="10" y1="1" x2="10" y2="4" stroke="#6ee7b7" strokeWidth="1.4" strokeLinecap="round"/></svg>
                 Add event
               </div>
             </div>
@@ -295,12 +319,12 @@ export default function Week({ onAddTask, onEditTask }) {
             )}
 
             {daySheet.events.map(ev => (
-              <div key={ev.id} onClick={() => { setDaySheet(null); setEventModal({ event: ev, date: ev.start_date }) }} style={{ display: 'flex', gap: 12, padding: '12px 14px', background: '#0c1a2e', border: '1px solid #1a3a5c', borderRadius: 12, marginBottom: 8, cursor: 'pointer' }}>
-                <svg width="14" height="14" viewBox="0 0 14 14" fill="none" style={{ flexShrink: 0, marginTop: 2 }}><circle cx="7" cy="7" r="6" stroke="#3b82f6" strokeWidth="1.3"/><polyline points="7,4 7,7 9,8.5" stroke="#3b82f6" strokeWidth="1.3" strokeLinecap="round"/></svg>
+              <div key={ev.id} onClick={() => { setDaySheet(null); setEventModal({ event: ev, date: ev.start_date }) }} style={{ display: 'flex', gap: 12, padding: '12px 14px', background: '#0a1e14', border: '1px solid #1a4a2a', borderRadius: 12, marginBottom: 8, cursor: 'pointer' }}>
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none" style={{ flexShrink: 0, marginTop: 2 }}><circle cx="7" cy="7" r="6" stroke="#10b981" strokeWidth="1.3"/><polyline points="7,4 7,7 9,8.5" stroke="#10b981" strokeWidth="1.3" strokeLinecap="round"/></svg>
                 <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 14, color: '#93c5fd', fontWeight: 500 }}>{ev.title}</div>
-                  {ev.start_time && <div style={{ fontSize: 12, color: '#1e5a8c', fontFamily: "'DM Mono'", marginTop: 2 }}>{ev.start_time} → {ev.end_time}</div>}
-                  {ev.location && <div style={{ fontSize: 12, color: '#1e5a8c', marginTop: 2 }}>📍 {ev.location}</div>}
+                  <div style={{ fontSize: 14, color: '#6ee7b7', fontWeight: 500 }}>{ev.title}</div>
+                  {ev.start_time && <div style={{ fontSize: 12, color: '#1a4a2a', fontFamily: "'DM Mono'", marginTop: 2 }}>{ev.start_time} → {ev.end_time}</div>}
+                  {ev.location && <div style={{ fontSize: 12, color: '#1a4a2a', marginTop: 2 }}>📍 {ev.location}</div>}
                 </div>
               </div>
             ))}

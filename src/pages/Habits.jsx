@@ -320,18 +320,21 @@ export default function Habits() {
 
             return (
               <div key={habit.id}
-                draggable
-                onDragStart={() => handleDragStart(idx)}
-                onDragEnter={() => handleDragEnter(idx)}
-                onDragEnd={handleDragEnd}
-                onDragOver={e => e.preventDefault()}
-                onTouchStart={e => handleTouchStart(e, idx)}
-                onTouchMove={handleTouchMove}
-                onTouchEnd={handleTouchEnd}
-                style={{ background: '#161618', border: `1px solid ${done ? '#1a3a1a' : isScheduledToday ? '#242428' : '#1e1e24'}`, borderRadius: 14, padding: 16, marginBottom: 10, userSelect: 'none', WebkitUserSelect: 'none', touchAction: 'none', WebkitTouchCallout: 'none', opacity: !isScheduledToday ? 0.6 : 1 }}
+                style={{ background: '#161618', border: `1px solid ${done ? '#1a3a1a' : isScheduledToday ? '#242428' : '#1e1e24'}`, borderRadius: 14, padding: 16, marginBottom: 10, position: 'relative' }}
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
-                  <div onClick={() => setHabitModal(habit)} style={{ width: 40, height: 40, borderRadius: 11, background: '#1e1e22', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, flexShrink: 0, cursor: 'pointer' }}>{habit.icon}</div>
+                  <div
+                    draggable
+                    onDragStart={() => handleDragStart(idx)}
+                    onDragEnter={() => handleDragEnter(idx)}
+                    onDragEnd={handleDragEnd}
+                    onDragOver={e => e.preventDefault()}
+                    onTouchStart={e => handleTouchStart(e, idx)}
+                    onTouchMove={handleTouchMove}
+                    onTouchEnd={handleTouchEnd}
+                    onClick={() => setHabitModal(habit)}
+                    style={{ width: 40, height: 40, borderRadius: 11, background: '#1e1e22', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, flexShrink: 0, cursor: 'grab', userSelect: 'none', WebkitUserSelect: 'none', touchAction: 'none' }}
+                  >{habit.icon}</div>
                   <div style={{ flex: 1 }}>
                     <div onClick={() => setHabitModal(habit)} style={{ fontSize: 15, fontWeight: 500, cursor: 'pointer' }}>{habit.name}</div>
                     <div style={{ fontSize: 11, color: '#555', marginTop: 2 }}>

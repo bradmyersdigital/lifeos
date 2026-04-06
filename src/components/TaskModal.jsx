@@ -10,46 +10,61 @@ const URG_STYLES = {
   Urgent: { bg: '#2a0a0a', border: '#7a1010', color: '#f87171' },
 }
 
-function TimeInput({ label, value, onChange }) {
-  const [time, setTime] = useState(value || '')
-  const [ampm, setAmpm] = useState('AM')
+// Simple time input — iOS shows native wheel picker, no extra AM/PM toggle needed
+function TimeInput({ value, onChange }) {
+  const [noTime, setNoTime] = useState(!value)
 
-  useEffect(() => {
-    if (value) {
-      const m = value.match(/(\d{1,2}:\d{2})\s*(AM|PM)/i)
-      if (m) { setTime(m[1]); setAmpm(m[2].toUpperCase()) }
-    }
-  }, [])
-
-  const handleChange = (t, ap) => {
-    const formatted = t + ' ' + ap
-    onChange(formatted)
+  // Convert stored "HH:MM AM/PM" to input type=time "HH:MM"
+  const toInputVal = (v) => {
+    if (!v) return ''
+    const m = v.match(/(\d{1,2}):(\d{2})\s*(AM|PM)/i)
+    if (!m) return v
+    let h = parseInt(m[1]), min = m[2]
+    if (m[3].toUpperCase() === 'PM' && h !== 12) h += 12
+    if (m[3].toUpperCase() === 'AM' && h === 12) h = 0
+    return `${String(h).padStart(2,'0')}:${min}`
   }
+
+  // Convert "HH:MM" (24h) back to "H:MM AM/PM"
+  const fromInputVal = (v) => {
+    if (!v) return ''
+    const [hStr, mStr] = v.split(':')
+    let h = parseInt(hStr), m = mStr
+    const ap = h >= 12 ? 'PM' : 'AM'
+    if (h > 12) h -= 12
+    if (h === 0) h = 12
+    return `${h}:${m} ${ap}`
+  }
+
+  const [inputVal, setInputVal] = useState(toInputVal(value))
 
   return (
     <div className="field">
-      <div className="field-label">{label}</div>
-      <div style={{ display: 'flex', gap: 8 }}>
-        <input
-          type="time"
-          value={time}
-          onChange={e => { setTime(e.target.value); handleChange(e.target.value, ampm) }}
-          style={{ flex: 1 }}
-          placeholder="9:00"
-        />
-        <div style={{ display: 'flex', background: '#0f0f11', border: '1px solid #2a2a30', borderRadius: 10, overflow: 'hidden', flexShrink: 0 }}>
-          {['AM','PM'].map(ap => (
-            <div key={ap} onClick={() => { setAmpm(ap); handleChange(time, ap) }} style={{ padding: '10px 14px', fontSize: 13, fontWeight: 500, cursor: 'pointer', background: ampm === ap ? '#1e1208' : 'transparent', color: ampm === ap ? '#d4520f' : '#555', transition: 'all 0.15s' }}>{ap}</div>
-          ))}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+        <div className="field-label" style={{ margin: 0 }}>Time block</div>
+        <div onClick={() => { setNoTime(!noTime); if (!noTime) onChange('') }} style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: 12, color: noTime ? '#d4520f' : '#555' }}>
+          <div style={{ width: 28, height: 16, borderRadius: 8, background: noTime ? '#1e1208' : '#1e1e24', border: `1px solid ${noTime ? '#7a3410' : '#333'}`, position: 'relative', transition: 'all 0.2s' }}>
+            <div style={{ width: 12, height: 12, borderRadius: '50%', background: noTime ? '#d4520f' : '#555', position: 'absolute', top: 1, left: noTime ? 13 : 1, transition: 'left 0.2s' }} />
+          </div>
+          No time
         </div>
       </div>
+      {!noTime && (
+        <input
+          type="time"
+          value={inputVal}
+          onChange={e => { setInputVal(e.target.value); onChange(fromInputVal(e.target.value)) }}
+          style={{ width: '100%' }}
+        />
+      )}
+      {noTime && <div style={{ textAlign: 'center', fontSize: 12, color: '#444', padding: '6px 0' }}>Will appear after timed items</div>}
     </div>
   )
 }
 
 export default function TaskModal({ mode, onClose, onSaved, task, defaultProjectId, defaultSector, defaultGoalId }) {
   const isEdit = !!task
-  const today = new Date().toISOString().split('T')[0]
+  const today = (() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}` })()
 
   const [name, setName] = useState(task?.name || '')
   const [urgency, setUrgency] = useState(task?.urgency ? task.urgency.charAt(0).toUpperCase() + task.urgency.slice(1) : 'High')
@@ -81,12 +96,7 @@ export default function TaskModal({ mode, onClose, onSaved, task, defaultProject
   const createNewProject = async () => {
     if (!newProjectName.trim()) return
     const { data } = await supabase.from('projects').insert({ name: newProjectName.trim(), sector, status: 'active' }).select().single()
-    if (data) {
-      setProjects(prev => [...prev, data])
-      setProjectId(data.id)
-      setShowNewProject(false)
-      setNewProjectName('')
-    }
+    if (data) { setProjects(prev => [...prev, data]); setProjectId(data.id); setShowNewProject(false); setNewProjectName('') }
   }
 
   const handleSave = async () => {
@@ -94,8 +104,7 @@ export default function TaskModal({ mode, onClose, onSaved, task, defaultProject
     setSaving(true)
     const payload = {
       name: name.trim(), urgency: urgency.toLowerCase(), sector,
-      time_block: timeBlock || null,
-      due_date: dueDate, start_date: startDate,
+      time_block: timeBlock || null, due_date: dueDate, start_date: startDate,
       project_id: projectId || null, note_id: noteId || null, goal_id: goalId || null,
       notes_text: notesText, location: location || null,
     }
@@ -118,7 +127,7 @@ export default function TaskModal({ mode, onClose, onSaved, task, defaultProject
       <div className="modal-sheet">
         <div className="modal-handle" />
         <div className="modal-title">
-          {isEdit ? 'Edit task' : mode === 'today' ? 'Add task for today' : 'Schedule a task'}
+          {isEdit ? 'Edit task' : 'Add task'}
           <div className="modal-close" onClick={onClose}>×</div>
         </div>
 
@@ -131,36 +140,33 @@ export default function TaskModal({ mode, onClose, onSaved, task, defaultProject
           <div className="field-label">Urgency</div>
           <div style={{ display: 'flex', gap: 7 }}>
             {URGENCIES.map(u => {
-              const s = URG_STYLES[u]
-              const active = urgency === u
-              return (
-                <div key={u} onClick={() => setUrgency(u)} style={{ flex: 1, padding: '8px 4px', borderRadius: 10, textAlign: 'center', fontSize: 12, fontWeight: 500, cursor: 'pointer', transition: 'all 0.15s', background: active ? s.bg : '#0f0f11', border: `1px solid ${active ? s.border : '#242428'}`, color: active ? s.color : '#555' }}>
-                  {u}
-                </div>
-              )
+              const s = URG_STYLES[u]; const active = urgency === u
+              return <div key={u} onClick={() => setUrgency(u)} style={{ flex: 1, padding: '8px 4px', borderRadius: 10, textAlign: 'center', fontSize: 12, fontWeight: 500, cursor: 'pointer', transition: 'all 0.15s', background: active ? s.bg : '#0f0f11', border: `1px solid ${active ? s.border : '#242428'}`, color: active ? s.color : '#555' }}>{u}</div>
             })}
           </div>
         </div>
 
-        <TimeInput label="Time block" value={timeBlock} onChange={setTimeBlock} />
+        <TimeInput value={timeBlock} onChange={setTimeBlock} />
 
+        {/* Do on + Deadline on same row — item 11 */}
         <div className="field-row">
-          <div className="field">
-            <div className="field-label">Sector</div>
-            <select value={sector} onChange={e => setSector(e.target.value)}>
-              <option value="">Select...</option>
-              {sectorList.map(s => <option key={s}>{s}</option>)}
-            </select>
-          </div>
           <div className="field">
             <div className="field-label">Do on</div>
             <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} />
           </div>
+          <div className="field">
+            <div className="field-label">Deadline</div>
+            <input type="date" value={dueDate} onChange={e => setDueDate(e.target.value)} />
+          </div>
         </div>
 
+        {/* Sector below — item 11 */}
         <div className="field">
-          <div className="field-label">Deadline</div>
-          <input type="date" value={dueDate} onChange={e => setDueDate(e.target.value)} />
+          <div className="field-label">Sector</div>
+          <select value={sector} onChange={e => setSector(e.target.value)}>
+            <option value="">Select...</option>
+            {sectorList.map(s => <option key={s}>{s}</option>)}
+          </select>
         </div>
 
         <div className="field">
@@ -183,15 +189,7 @@ export default function TaskModal({ mode, onClose, onSaved, task, defaultProject
         </div>
 
         <div className="field">
-          <div className="field-label">Link a note</div>
-          <select value={noteId} onChange={e => setNoteId(e.target.value)}>
-            <option value="">No note linked</option>
-            {notes.map(n => <option key={n.id} value={n.id}>{n.text.substring(0, 50)}{n.text.length > 50 ? '…' : ''}</option>)}
-          </select>
-        </div>
-
-        <div className="field">
-          <div className="field-label">Link to goal (optional)</div>
+          <div className="field-label">Link to goal</div>
           <select value={goalId} onChange={e => setGoalId(e.target.value)}>
             <option value="">No goal linked</option>
             {goals.map(g => <option key={g.id} value={g.id}>{g.timeframe?.replace('month','mo ').replace('year','yr ')} — {g.goal_text?.substring(0,40)}{g.goal_text?.length>40?'…':''}</option>)}

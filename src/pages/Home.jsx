@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 
 const SECTOR_COLORS = {
-  business: '#d4520f', 'real estate': '#3b82f6', health: '#10b981',
+  business: '#d4520f', 'real estate': '#10b981', health: '#10b981',
   'personal growth': '#f59e0b', family: '#ec4899', hobbies: '#a78bfa',
 }
 const URG_STYLE = {
@@ -14,7 +14,7 @@ const URG_STYLE = {
 }
 const DAY_NAMES = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun']
 const EMOJI_PICKS = ['💼','🏠','🏃','📚','🎨','❤️','💰','🌱','⚡','🎯','🔥','✨','🎵','🏋️','🧠','💡','🌍','🚀','📝','🎮','🏆','🛠️','📊','🎭','🧘','🍎','☀️','🌙','💎','🦁']
-const COLOR_PICKS = ['#d4520f','#3b82f6','#10b981','#f59e0b','#ec4899','#a78bfa','#f87171','#34d399','#60a5fa','#fbbf24','#e879f9','#2dd4bf']
+const COLOR_PICKS = ['#d4520f','#10b981','#10b981','#f59e0b','#ec4899','#a78bfa','#f87171','#34d399','#60a5fa','#fbbf24','#e879f9','#2dd4bf']
 
 function SectorModal({ sector, onClose, onSaved }) {
   const isEdit = !!sector
@@ -143,6 +143,59 @@ function DueSoonSection() {
   )
 }
 
+const QUOTES = [
+  { text: "The secret of getting ahead is getting started.", author: "Mark Twain" },
+  { text: "It always seems impossible until it's done.", author: "Nelson Mandela" },
+  { text: "Don't watch the clock; do what it does. Keep going.", author: "Sam Levenson" },
+  { text: "Whether you think you can or you think you can't, you're right.", author: "Henry Ford" },
+  { text: "Success is not final; failure is not fatal: it is the courage to continue that counts.", author: "Winston Churchill" },
+  { text: "The way to get started is to quit talking and begin doing.", author: "Walt Disney" },
+  { text: "An investment in knowledge pays the best interest.", author: "Benjamin Franklin" },
+  { text: "I find that the harder I work, the more luck I seem to have.", author: "Thomas Jefferson" },
+  { text: "The only place where success comes before work is in the dictionary.", author: "Vidal Sassoon" },
+  { text: "Don't be afraid to give up the good to go for the great.", author: "John D. Rockefeller" },
+  { text: "I owe my success to having listened respectfully to the very best advice, and then going away and doing the exact opposite.", author: "G.K. Chesterton" },
+  { text: "Success usually comes to those who are too busy to be looking for it.", author: "Henry David Thoreau" },
+  { text: "Opportunities don't happen. You create them.", author: "Chris Grosser" },
+  { text: "Don't let yesterday take up too much of today.", author: "Will Rogers" },
+  { text: "You miss 100% of the shots you don't take.", author: "Wayne Gretzky" },
+  { text: "I never dreamed about success. I worked for it.", author: "Estée Lauder" },
+  { text: "Success is walking from failure to failure with no loss of enthusiasm.", author: "Winston Churchill" },
+  { text: "The real test is not whether you avoid failure, because you won't. It's whether you let it harden or shame you into inaction, or whether you learn from it.", author: "Barack Obama" },
+  { text: "The only limit to our realization of tomorrow will be our doubts of today.", author: "Franklin D. Roosevelt" },
+  { text: "Do one thing every day that scares you.", author: "Eleanor Roosevelt" },
+  { text: "Well done is better than well said.", author: "Benjamin Franklin" },
+  { text: "The best time to plant a tree was 20 years ago. The second best time is now.", author: "Chinese Proverb" },
+  { text: "An entrepreneur is someone who jumps off a cliff and builds a plane on the way down.", author: "Reid Hoffman" },
+  { text: "Your most unhappy customers are your greatest source of learning.", author: "Bill Gates" },
+  { text: "Chase the vision, not the money; the money will end up following you.", author: "Tony Hsieh" },
+  { text: "The function of leadership is to produce more leaders, not more followers.", author: "Ralph Nader" },
+  { text: "Innovation distinguishes between a leader and a follower.", author: "Steve Jobs" },
+  { text: "The secret to successful hiring is this: look for the people who want to change the world.", author: "Marc Benioff" },
+  { text: "Build something 100 people love, not something 1 million people kind of like.", author: "Brian Chesky" },
+  { text: "Move fast and break things. Unless you are breaking stuff you are not moving fast enough.", author: "Mark Zuckerberg" },
+  { text: "The biggest risk is not taking any risk.", author: "Mark Zuckerberg" },
+  { text: "Your work is going to fill a large part of your life, and the only way to be truly satisfied is to do what you believe is great work.", author: "Steve Jobs" },
+  { text: "Stay hungry, stay foolish.", author: "Steve Jobs" },
+  { text: "I'm convinced that about half of what separates successful entrepreneurs from non-successful ones is pure perseverance.", author: "Steve Jobs" },
+  { text: "The way to get started is to stop talking and begin doing.", author: "Walt Disney" },
+  { text: "Logic will get you from A to B. Imagination will take you everywhere.", author: "Albert Einstein" },
+  { text: "You don't have to be great to start, but you have to start to be great.", author: "Zig Ziglar" },
+  { text: "Success is the sum of small efforts repeated day in and day out.", author: "Robert Collier" },
+  { text: "Discipline is the bridge between goals and accomplishment.", author: "Jim Rohn" },
+  { text: "Either you run the day or the day runs you.", author: "Jim Rohn" },
+  { text: "Successful people do what unsuccessful people are not willing to do.", author: "Jim Rohn" },
+  { text: "We are what we repeatedly do. Excellence, then, is not an act but a habit.", author: "Aristotle" },
+  { text: "There is no elevator to success. You have to take the stairs.", author: "Unknown" },
+  { text: "Push yourself, because no one else is going to do it for you.", author: "Unknown" },
+  { text: "Focus on being productive instead of busy.", author: "Tim Ferriss" },
+  { text: "Formal education will make you a living; self-education will make you a fortune.", author: "Jim Rohn" },
+  { text: "Without continual growth and progress, such words as improvement, achievement, and success have no meaning.", author: "Benjamin Franklin" },
+  { text: "The harder you work for something, the greater you'll feel when you achieve it.", author: "Unknown" },
+  { text: "Dream bigger. Do bigger.", author: "Unknown" },
+  { text: "Stop doubting yourself, work hard, and make it happen.", author: "Unknown" },
+]
+
 export default function Home({ onAddTask, onEditTask, onAddEvent }) {
   const navigate = useNavigate()
   const [tasks, setTasks] = useState([])
@@ -242,14 +295,22 @@ export default function Home({ onAddTask, onEditTask, onAddEvent }) {
 
   return (
     <div>
-      {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
-        <div>
-          <div style={{ fontSize: 22, fontWeight: 500 }}>Good morning 👋</div>
-          <div style={{ fontSize: 13, color: '#555', marginTop: 3, fontFamily: "'DM Mono'" }}>{dateStr}</div>
-        </div>
-        <div style={{ width: 38, height: 38, borderRadius: '50%', background: '#b84a1a', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 600, color: '#fff' }}>Y</div>
-      </div>
+      {/* Header with rotating quote */}
+      {(() => {
+        const q = QUOTES[Math.floor(Math.random() * QUOTES.length) % QUOTES.length]
+        // Use a stable index based on the day so it changes daily but not on every render
+        const dayIdx = new Date().getDate() % QUOTES.length
+        const quote = QUOTES[dayIdx]
+        return (
+          <div style={{ marginBottom: 18 }}>
+            <div style={{ fontSize: 13, color: '#555', marginBottom: 10, fontFamily: "'DM Mono'" }}>{dateStr}</div>
+            <div style={{ background: '#161618', border: '1px solid #1e1208', borderLeft: '3px solid #d4520f', borderRadius: 12, padding: '14px 16px' }}>
+              <div style={{ fontSize: 14, color: '#d4d2cc', lineHeight: 1.6, fontStyle: 'italic', marginBottom: 8 }}>"{quote.text}"</div>
+              <div style={{ fontSize: 11, color: '#d4520f', fontWeight: 600, fontFamily: "'DM Mono'" }}>— {quote.author}</div>
+            </div>
+          </div>
+        )
+      })()}
 
       {/* Add task buttons */}
       <div className="action-row" style={{ marginBottom: 16 }}>
@@ -257,8 +318,8 @@ export default function Home({ onAddTask, onEditTask, onAddEvent }) {
           <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><line x1="7.5" y1="1" x2="7.5" y2="14" stroke="#e8823a" strokeWidth="1.8" strokeLinecap="round"/><line x1="1" y1="7.5" x2="14" y2="7.5" stroke="#e8823a" strokeWidth="1.8" strokeLinecap="round"/></svg>
           Add Task
         </div>
-        <div className="action-btn" style={{ background: '#0c1e36', border: '1px solid #1a3a5c', color: '#93c5fd' }} onClick={() => onAddEvent && onAddEvent()}>
-          <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><rect x="1.5" y="2.5" width="12" height="11" rx="2" stroke="#93c5fd" strokeWidth="1.4"/><line x1="1.5" y1="6.5" x2="13.5" y2="6.5" stroke="#93c5fd" strokeWidth="1.4"/><line x1="5" y1="1" x2="5" y2="4" stroke="#93c5fd" strokeWidth="1.4" strokeLinecap="round"/><line x1="10" y1="1" x2="10" y2="4" stroke="#93c5fd" strokeWidth="1.4" strokeLinecap="round"/></svg>
+        <div className="action-btn" style={{ background: '#0a1e14', border: '1px solid #1a4a2a', color: '#6ee7b7' }} onClick={() => onAddEvent && onAddEvent()}>
+          <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><rect x="1.5" y="2.5" width="12" height="11" rx="2" stroke="#6ee7b7" strokeWidth="1.4"/><line x1="1.5" y1="6.5" x2="13.5" y2="6.5" stroke="#6ee7b7" strokeWidth="1.4"/><line x1="5" y1="1" x2="5" y2="4" stroke="#6ee7b7" strokeWidth="1.4" strokeLinecap="round"/><line x1="10" y1="1" x2="10" y2="4" stroke="#6ee7b7" strokeWidth="1.4" strokeLinecap="round"/></svg>
           Add Event
         </div>
       </div>
@@ -297,9 +358,9 @@ export default function Home({ onAddTask, onEditTask, onAddEvent }) {
             ? <div style={{ fontSize: 12, color: '#333', textAlign: 'center', padding: '8px 0' }}>Nothing today</div>
             : todayAllItems.map(item => item._type === 'event' ? (
               <div key={item.id} style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 7, cursor: 'pointer' }} onClick={() => navigate('/week')}>
-                <svg width="11" height="11" viewBox="0 0 12 12" fill="none" style={{ flexShrink: 0 }}><circle cx="6" cy="6" r="5" stroke="#3b82f6" strokeWidth="1.3"/><polyline points="6,3 6,6 8,7.5" stroke="#3b82f6" strokeWidth="1.3" strokeLinecap="round"/></svg>
-                <div style={{ fontSize: 12, color: '#93c5fd', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.title}</div>
-                <div style={{ fontFamily: "'DM Mono'", fontSize: 10, color: '#1e5a8c', flexShrink: 0 }}>{item.start_time}</div>
+                <svg width="11" height="11" viewBox="0 0 12 12" fill="none" style={{ flexShrink: 0 }}><circle cx="6" cy="6" r="5" stroke="#10b981" strokeWidth="1.3"/><polyline points="6,3 6,6 8,7.5" stroke="#10b981" strokeWidth="1.3" strokeLinecap="round"/></svg>
+                <div style={{ fontSize: 12, color: '#6ee7b7', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.title}</div>
+                <div style={{ fontFamily: "'DM Mono'", fontSize: 10, color: '#1a4a2a', flexShrink: 0 }}>{item.start_time}</div>
               </div>
             ) : (
               <div key={item.id} onClick={() => onEditTask(item)} style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 7, cursor: 'pointer' }}>
@@ -339,11 +400,22 @@ export default function Home({ onAddTask, onEditTask, onAddEvent }) {
             <div onClick={() => setWeekGlanceOffset(o => o+1)} style={{ width: 28, height: 28, borderRadius: 8, background: '#161618', border: '1px solid #242428', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: 14, color: '#888' }}>›</div>
           </div>
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', gap: 5 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', gap: 5, position: 'relative' }} onTouchStart={e => { window._wsx = e.touches[0].clientX }} onTouchEnd={e => { if(window._wsx===undefined) return; const dx=e.changedTouches[0].clientX-window._wsx; if(Math.abs(dx)>40) setWeekGlanceOffset(o=>o+(dx<0?1:-1)); window._wsx=undefined }}>
+          {/* Touch swipe for week navigation */}
+          {(()=>{
+            const handleWS = (e) => { window._wsx = e.touches[0].clientX }
+            const handleWE = (e) => {
+              if (window._wsx === undefined) return
+              const dx = e.changedTouches[0].clientX - window._wsx
+              if (Math.abs(dx) > 40) setWeekGlanceOffset(o => o + (dx < 0 ? 1 : -1))
+              window._wsx = undefined
+            }
+            return <div style={{position:'absolute',inset:0,zIndex:1,pointerEvents:'none'}} onTouchStart={handleWS} onTouchEnd={handleWE} />
+          })()}
           {weekDates.map((date, i) => {
             const isToday = date === todayStr
             const dayTasks = weekTasks.filter(t => t.start_date === date)
-            const d = new Date(date)
+            const d = new Date(date + 'T00:00:00')
             return (
               <div key={date} onClick={() => navigate('/week')} style={{ background: isToday ? '#1e1208' : '#161618', border: `1px solid ${isToday ? '#7a3410' : '#242428'}`, borderRadius: 10, padding: '8px 4px', textAlign: 'center', cursor: 'pointer' }}>
                 <div style={{ fontSize: 9, color: isToday ? '#d4520f' : '#555', fontWeight: 600, textTransform: 'uppercase', marginBottom: 3 }}>{DAY_NAMES[i]}</div>
@@ -370,15 +442,15 @@ export default function Home({ onAddTask, onEditTask, onAddEvent }) {
               const dayName = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][evDate.getDay()]
               const isToday = ev.start_date === todayStr
               return (
-                <div key={ev.id} onClick={() => navigate('/week')} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '11px 14px', background: '#0c1a2e', border: '1px solid #1a3a5c', borderRadius: 12, cursor: 'pointer' }}>
+                <div key={ev.id} onClick={() => navigate('/week')} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '11px 14px', background: '#0a1e14', border: '1px solid #1a4a2a', borderRadius: 12, cursor: 'pointer' }}>
                   <div style={{ textAlign: 'center', flexShrink: 0 }}>
-                    <div style={{ fontSize: 10, fontWeight: 600, color: isToday ? '#d4520f' : '#1e5a8c', textTransform: 'uppercase' }}>{isToday ? 'Today' : dayName}</div>
-                    <div style={{ fontSize: 18, fontWeight: 500, color: isToday ? '#e8823a' : '#93c5fd' }}>{evDate.getDate()}</div>
+                    <div style={{ fontSize: 10, fontWeight: 600, color: isToday ? '#d4520f' : '#1a4a2a', textTransform: 'uppercase' }}>{isToday ? 'Today' : dayName}</div>
+                    <div style={{ fontSize: 18, fontWeight: 500, color: isToday ? '#e8823a' : '#6ee7b7' }}>{evDate.getDate()}</div>
                   </div>
-                  <div style={{ width: 1, height: 32, background: '#1a3a5c', flexShrink: 0 }} />
+                  <div style={{ width: 1, height: 32, background: '#1a4a2a', flexShrink: 0 }} />
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 14, fontWeight: 500, color: '#93c5fd', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{ev.title}</div>
-                    <div style={{ fontSize: 11, color: '#1e5a8c', marginTop: 2, fontFamily: "'DM Mono'" }}>{ev.start_time} → {ev.end_time}{ev.location ? ` · 📍 ${ev.location}` : ''}</div>
+                    <div style={{ fontSize: 14, fontWeight: 500, color: '#6ee7b7', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{ev.title}</div>
+                    <div style={{ fontSize: 11, color: '#1a4a2a', marginTop: 2, fontFamily: "'DM Mono'" }}>{ev.start_time} → {ev.end_time}{ev.location ? ` · 📍 ${ev.location}` : ''}</div>
                   </div>
                 </div>
               )
@@ -387,34 +459,36 @@ export default function Home({ onAddTask, onEditTask, onAddEvent }) {
         </div>
       )}
 
-      {/* Active projects */}
+      {/* Active projects — sorted by % done, scrollable 2x2 grid */}
       <div style={{ marginBottom: 18 }}>
         <div className="section-label">Active projects</div>
         {projects.length === 0 ? (
           <div style={{ padding: 14, textAlign: 'center', fontSize: 13, color: '#333', border: '1px dashed #242428', borderRadius: 12 }}>
-            No active projects — add one in the Projects tab
+            No active projects — add one in Projects
           </div>
         ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: 8 }}>
-            {projects.slice(0, 4).map(p => {
-              const pct = getProjectPct(p)
-              const color = SECTOR_COLORS[p.sector?.toLowerCase()] || '#d4520f'
-              const tasksLeft = (p.tasks || []).filter(t => !t.completed).length
-              const isOverdue = p.due_date && p.due_date < todayStr
-              return (
-                <div key={p.id} onClick={() => navigate('/projects')} style={{ background: '#161618', border: '1px solid #242428', borderRadius: 12, padding: 12, cursor: 'pointer' }}>
-                  <div style={{ fontSize: 13, fontWeight: 500, color: '#e8e6e1', marginBottom: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.name}</div>
-                  <div style={{ fontSize: 11, color: '#555', marginBottom: 8 }}>{p.sector}</div>
-                  <div style={{ height: 4, background: '#1e1e24', borderRadius: 2, overflow: 'hidden', marginBottom: 6 }}>
-                    <div style={{ height: '100%', width: pct + '%', background: color, borderRadius: 2 }} />
+          <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch', scrollSnapType: 'x mandatory', paddingBottom: 4 }}>
+            <div style={{ display: 'grid', gridTemplateRows: 'repeat(2, auto)', gridAutoFlow: 'column', gridAutoColumns: 'calc(50% - 4px)', gap: 8, width: 'max-content', minWidth: '100%' }}>
+              {[...projects].sort((a,b) => getProjectPct(b) - getProjectPct(a)).map(p => {
+                const pct = getProjectPct(p)
+                const color = SECTOR_COLORS[p.sector?.toLowerCase()] || '#d4520f'
+                const tasksLeft = (p.tasks || []).filter(t => !t.completed).length
+                const isOverdue = p.due_date && p.due_date < todayStr
+                return (
+                  <div key={p.id} onClick={() => navigate('/projects')} style={{ background: '#161618', border: '1px solid #242428', borderRadius: 12, padding: 12, cursor: 'pointer', scrollSnapAlign: 'start', width: 'calc(50vw - 20px)', maxWidth: 200 }}>
+                    <div style={{ fontSize: 13, fontWeight: 500, color: '#e8e6e1', marginBottom: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.name}</div>
+                    <div style={{ fontSize: 11, color: '#555', marginBottom: 8 }}>{p.sector}</div>
+                    <div style={{ height: 4, background: '#1e1e24', borderRadius: 2, overflow: 'hidden', marginBottom: 6 }}>
+                      <div style={{ height: '100%', width: pct + '%', background: color, borderRadius: 2 }} />
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <div style={{ fontSize: 10, color: '#555', fontFamily: "'DM Mono'" }}>{pct}% · {tasksLeft} left</div>
+                      {p.due_date && <div style={{ fontSize: 10, fontFamily: "'DM Mono'", color: isOverdue ? '#f87171' : '#444' }}>Due {p.due_date}</div>}
+                    </div>
                   </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <div style={{ fontSize: 10, color: '#555', fontFamily: "'DM Mono'" }}>{pct}% · {tasksLeft} left</div>
-                    {p.due_date && <div style={{ fontSize: 10, fontFamily: "'DM Mono'", color: isOverdue ? '#f87171' : '#444' }}>Due {p.due_date}</div>}
-                  </div>
-                </div>
-              )
-            })}
+                )
+              })}
+            </div>
           </div>
         )}
       </div>
