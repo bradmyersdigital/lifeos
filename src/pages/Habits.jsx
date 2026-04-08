@@ -369,23 +369,24 @@ export default function Habits() {
         </div>
       </div>
 
+      {/* Stat chips — always visible below header */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 8, marginBottom: 16 }}>
+        {[
+          ['Today', `${doneToday}/${scheduledHabitsToday.length}`, '#e8e6e1', 'completed'],
+          ['Best streak', Math.max(0,...habits.map(h=>getStreak(h.id))), '#d4520f', 'days'],
+          ['Total', habits.length, '#a78bfa', 'habits'],
+        ].map(([label,val,color,sub]) => (
+          <div key={label} style={{ background: '#161618', border: '1px solid #242428', borderRadius: 11, padding: 12 }}>
+            <div style={{ fontSize: 11, color: '#555', marginBottom: 3 }}>{label}</div>
+            <div style={{ fontSize: 18, fontWeight: 500, color }}>{val}</div>
+            <div style={{ fontSize: 11, color: '#444', marginTop: 2, fontFamily: "'DM Mono'" }}>{sub}</div>
+          </div>
+        ))}
+      </div>
+
       {/* TODAY VIEW */}
       {view === 'today' && (
         <div>
-          {/* Stat chips */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 8, marginBottom: 16 }}>
-            {[
-              ['Today', `${doneToday}/${scheduledHabitsToday.length}`, '#e8e6e1', 'completed'],
-              ['Best streak', Math.max(0,...habits.map(h=>getStreak(h.id))), '#d4520f', 'days'],
-              ['Total', habits.length, '#a78bfa', 'habits'],
-            ].map(([label,val,color,sub]) => (
-              <div key={label} style={{ background: '#161618', border: '1px solid #242428', borderRadius: 11, padding: 12 }}>
-                <div style={{ fontSize: 11, color: '#555', marginBottom: 3 }}>{label}</div>
-                <div style={{ fontSize: 18, fontWeight: 500, color }}>{val}</div>
-                <div style={{ fontSize: 11, color: '#444', marginTop: 2, fontFamily: "'DM Mono'" }}>{sub}</div>
-              </div>
-            ))}
-          </div>
           <div style={{ fontSize: 12, color: '#444', marginBottom: 12 }}>Hold icon to reorder · tap name to view history</div>
           {habits.map((habit, idx) => {
             const isScheduledToday = habitScheduledToday(habit, todayIdx)
