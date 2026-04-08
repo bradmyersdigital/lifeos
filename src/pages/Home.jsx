@@ -334,7 +334,7 @@ export default function Home({ onAddTask, onEditTask, onAddEvent }) {
           Add Task
         </div>
         <div className="action-btn" style={{ background: 'var(--event-dim)', border: '1px solid var(--event-border)', color: 'var(--event-color)' }} onClick={() => onAddEvent && onAddEvent()}>
-          <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><rect x="1.5" y="2.5" width="12" height="11" rx="2" stroke="#6ee7b7" strokeWidth="1.4"/><line x1="1.5" y1="6.5" x2="13.5" y2="6.5" stroke="#6ee7b7" strokeWidth="1.4"/><line x1="5" y1="1" x2="5" y2="4" stroke="#6ee7b7" strokeWidth="1.4" strokeLinecap="round"/><line x1="10" y1="1" x2="10" y2="4" stroke="#6ee7b7" strokeWidth="1.4" strokeLinecap="round"/></svg>
+          <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><rect x="1.5" y="2.5" width="12" height="11" rx="2" stroke="var(--event-color)" strokeWidth="1.4"/><line x1="1.5" y1="6.5" x2="13.5" y2="6.5" stroke="var(--event-color)" strokeWidth="1.4"/><line x1="5" y1="1" x2="5" y2="4" stroke="var(--event-color)" strokeWidth="1.4" strokeLinecap="round"/><line x1="10" y1="1" x2="10" y2="4" stroke="var(--event-color)" strokeWidth="1.4" strokeLinecap="round"/></svg>
           Add Event
         </div>
       </div>
@@ -373,7 +373,7 @@ export default function Home({ onAddTask, onEditTask, onAddEvent }) {
             ? <div style={{ fontSize: 12, color: '#333', textAlign: 'center', padding: '8px 0' }}>Nothing today</div>
             : todayAllItems.map(item => item._type === 'event' ? (
               <div key={item.id} style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 7, cursor: 'pointer' }} onClick={() => navigate('/week')}>
-                <svg width="11" height="11" viewBox="0 0 12 12" fill="none" style={{ flexShrink: 0 }}><circle cx="6" cy="6" r="5" stroke="#10b981" strokeWidth="1.3"/><polyline points="6,3 6,6 8,7.5" stroke="#10b981" strokeWidth="1.3" strokeLinecap="round"/></svg>
+                <svg width="11" height="11" viewBox="0 0 12 12" fill="none" style={{ flexShrink: 0 }}><circle cx="6" cy="6" r="5" stroke="var(--event-color)" strokeWidth="1.3"/><polyline points="6,3 6,6 8,7.5" stroke="var(--event-color)" strokeWidth="1.3" strokeLinecap="round"/></svg>
                 <div style={{ fontSize: 12, color: 'var(--event-color)', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.title}</div>
                 <div style={{ fontFamily: "'DM Mono'", fontSize: 10, color: '#1a4a2a', flexShrink: 0 }}>{item.start_time}</div>
               </div>

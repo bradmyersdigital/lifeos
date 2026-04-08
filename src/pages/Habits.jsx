@@ -23,7 +23,7 @@ function HabitStats({ habits, logs, isLogged, getStreak, statsPeriod, setStatsPe
     <div>
       <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
         {[['week','This week'],['month','30 days']].map(([p,label]) => (
-          <div key={p} onClick={() => setStatsPeriod(p)} style={{ padding: '6px 16px', borderRadius: 20, fontSize: 13, fontWeight: 500, cursor: 'pointer', border: '1px solid', background: statsPeriod === p ? '#1e1208' : '#161618', borderColor: statsPeriod === p ? '#7a3410' : '#242428', color: statsPeriod === p ? '#d4520f' : '#666' }}>
+          <div key={p} onClick={() => setStatsPeriod(p)} style={{ padding: '6px 16px', borderRadius: 20, fontSize: 13, fontWeight: 500, cursor: 'pointer', border: '1px solid', background: statsPeriod === p ? 'var(--accent-dim)' : '#161618', borderColor: statsPeriod === p ? 'var(--accent-border)' : '#242428', color: statsPeriod === p ? 'var(--accent)' : '#666' }}>
             {label}
           </div>
         ))}
@@ -358,13 +358,13 @@ export default function Habits() {
       {/* Header row */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
         <div style={{ fontSize: 20, fontWeight: 500 }}>Habits</div>
-        <div onClick={() => setHabitModal('new')} style={{ display: 'flex', alignItems: 'center', gap: 5, background: '#1e1208', border: '1px solid #7a3410', borderRadius: 10, padding: '7px 12px', cursor: 'pointer', fontSize: 13, color: '#d4520f', fontWeight: 500 }}>+ Add</div>
+        <div onClick={() => setHabitModal('new')} style={{ display: 'flex', alignItems: 'center', gap: 5, background: 'var(--accent-dim)', border: '1px solid var(--accent-border)', borderRadius: 10, padding: '7px 12px', cursor: 'pointer', fontSize: 13, color: 'var(--accent)', fontWeight: 500 }}>+ Add</div>
       </div>
 
       {/* View tabs — full width row */}
       <div style={{ display: 'flex', background: '#161618', border: '1px solid #242428', borderRadius: 12, overflow: 'hidden', marginBottom: 16 }}>
         {[['today','Today'],['calendar','Calendar'],['routines','Routines'],['stats','Stats']].map(([v,label]) => (
-          <div key={v} onClick={() => setView(v)} style={{ flex: 1, textAlign: 'center', padding: '10px 4px', fontSize: 13, fontWeight: 500, cursor: 'pointer', background: view === v ? '#1e1208' : 'transparent', color: view === v ? '#d4520f' : '#666', transition: 'all 0.15s' }}>
+          <div key={v} onClick={() => setView(v)} style={{ flex: 1, textAlign: 'center', padding: '10px 4px', fontSize: 13, fontWeight: 500, cursor: 'pointer', background: view === v ? 'var(--accent-dim)' : 'transparent', color: view === v ? 'var(--accent)' : '#666', transition: 'all 0.15s' }}>
             {label}
           </div>
         ))}
@@ -374,7 +374,7 @@ export default function Habits() {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 8, marginBottom: 16 }}>
         {[
           ['Today', `${doneToday}/${scheduledHabitsToday.length}`, '#e8e6e1', 'completed'],
-          ['Best streak', Math.max(0,...habits.map(h=>getStreak(h.id))), '#d4520f', 'days'],
+          ['Best streak', Math.max(0,...habits.map(h=>getStreak(h.id))), 'var(--accent)', 'days'],
           ['Total', habits.length, '#a78bfa', 'habits'],
         ].map(([label,val,color,sub]) => (
           <div key={label} style={{ background: '#161618', border: '1px solid #242428', borderRadius: 11, padding: 12 }}>
@@ -410,7 +410,7 @@ export default function Habits() {
                     <div onClick={() => setHabitDetail(habit)} style={{ fontSize: 15, fontWeight: 500, cursor: 'pointer' }}>{habit.name}</div>
                     <div style={{ fontSize: 11, color: '#555', marginTop: 2 }}>{scheduledDays.length === 7 ? 'Every day' : scheduledDays.sort((a,b)=>a-b).map(d=>DAY_LABELS[d]).join(' ')}{!isScheduledToday && <span style={{ color: '#444', marginLeft: 6 }}>· not today</span>}</div>
                   </div>
-                  {streak > 0 && <div style={{ display: 'flex', alignItems: 'center', gap: 5, background: '#1e1208', border: '1px solid #3a2010', borderRadius: 10, padding: '5px 10px', flexShrink: 0 }}><span style={{ fontFamily: "'DM Mono'", fontSize: 14, fontWeight: 500, color: '#d4520f' }}>{streak}</span><span style={{ fontSize: 11, color: '#7a3410' }}>streak</span></div>}
+                  {streak > 0 && <div style={{ display: 'flex', alignItems: 'center', gap: 5, background: 'var(--accent-dim)', border: '1px solid var(--accent-border)', borderRadius: 10, padding: '5px 10px', flexShrink: 0 }}><span style={{ fontFamily: "'DM Mono'", fontSize: 14, fontWeight: 500, color: 'var(--accent)' }}>{streak}</span><span style={{ fontSize: 11, color: 'var(--accent-border)' }}>streak</span></div>}
                   {isScheduledToday && (
                     <div onClick={() => toggleLog(habit.id, todayStr)} style={{ width: 32, height: 32, borderRadius: '50%', border: `2px solid ${done ? '#16a34a' : '#333'}`, background: done ? '#16a34a' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0, transition: 'all 0.2s' }}>
                       <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><polyline points="1.5,6 4.5,9 10.5,3" stroke="white" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round"/></svg>
@@ -498,8 +498,8 @@ export default function Habits() {
         <div>
           <div style={{ fontSize: 12, color: '#444', marginBottom: 16 }}>Daily routines organized by time of day</div>
           <div style={{ marginBottom: 14 }}>
-            <div onClick={() => setRoutineModal('new')} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '12px 16px', background: '#1e1208', border: '1px solid #7a3410', borderRadius: 12, cursor: 'pointer', color: '#e8823a', fontSize: 13, fontWeight: 500 }}>
-              <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><line x1="7" y1="1" x2="7" y2="13" stroke="#e8823a" strokeWidth="1.8" strokeLinecap="round"/><line x1="1" y1="7" x2="13" y2="7" stroke="#e8823a" strokeWidth="1.8" strokeLinecap="round"/></svg>
+            <div onClick={() => setRoutineModal('new')} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '12px 16px', background: 'var(--accent-dim)', border: '1px solid var(--accent-border)', borderRadius: 12, cursor: 'pointer', color: 'var(--accent-text)', fontSize: 13, fontWeight: 500 }}>
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><line x1="7" y1="1" x2="7" y2="13" stroke="var(--accent-text)" strokeWidth="1.8" strokeLinecap="round"/><line x1="1" y1="7" x2="13" y2="7" stroke="var(--accent-text)" strokeWidth="1.8" strokeLinecap="round"/></svg>
               Add routine item
             </div>
           </div>

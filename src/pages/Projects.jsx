@@ -4,9 +4,9 @@ import { supabase } from '../lib/supabase'
 const IMPORTANCE = ['Critical','High','Medium','Low']
 const IMP_STYLES = {
   Critical: { bg: '#2a0a0a', border: '#7a1010', color: '#f87171' },
-  High:     { bg: '#1e1208', border: '#7a3410', color: '#e8823a' },
+  High:     { bg: 'var(--accent-dim)', border: 'var(--accent-border)', color: 'var(--accent-text)' },
   Medium:   { bg: '#1e1a00', border: '#4a3d00', color: '#fcd34d' },
-  Low:      { bg: '#0a1e14', border: '#0f4a2a', color: '#6ee7b7' },
+  Low:      { bg: '#0a1e14', border: '#0f4a2a', color: 'var(--event-color)' },
 }
 const SECTOR_COLORS = {
   business: '#d4520f', 'real estate': '#3b82f6', health: '#10b981',
@@ -78,7 +78,7 @@ function ProjectModal({ onClose, onSaved, project }) {
         <div style={{ display: 'flex', gap: 10, marginTop: 18 }}>
           {isEdit && <>
             <button onClick={handleDelete} style={{ flex: 1, padding: 11, borderRadius: 10, background: '#2a0a0a', border: '1px solid #7a1010', color: '#f87171', fontSize: 13, fontWeight: 500, cursor: 'pointer', fontFamily: "'DM Sans'" }}>Delete</button>
-            <button onClick={handleComplete} style={{ flex: 1, padding: 11, borderRadius: 10, background: '#0a1e14', border: '1px solid #10b981', color: '#6ee7b7', fontSize: 13, fontWeight: 500, cursor: 'pointer', fontFamily: "'DM Sans'" }}>✓ Complete</button>
+            <button onClick={handleComplete} style={{ flex: 1, padding: 11, borderRadius: 10, background: 'var(--event-dim)', border: '1px solid #10b981', color: 'var(--event-color)', fontSize: 13, fontWeight: 500, cursor: 'pointer', fontFamily: "'DM Sans'" }}>✓ Complete</button>
           </>}
           <button className="btn-ghost" style={{ flex: 1 }} onClick={onClose}>Cancel</button>
           <button className="btn-primary" style={{ flex: 2 }} onClick={handleSave} disabled={saving}>{saving ? 'Saving…' : isEdit ? 'Save' : 'Create'}</button>
@@ -153,8 +153,8 @@ function ProjectDetail({ project, onBack, onAddTask, onEditTask, onRefresh }) {
           {project.sector && <div style={{ fontSize: 12, color: '#555', marginTop: 1 }}>{project.sector}</div>}
         </div>
         {project.status !== 'completed' && (
-          <div onClick={async () => { if(window.confirm('Mark as completed?')) { await supabase.from('projects').update({status:'completed'}).eq('id',project.id); onRefresh(); onBack() } }} style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '6px 10px', borderRadius: 10, background: '#0a1e14', border: '1px solid #10b981', color: '#6ee7b7', fontSize: 12, fontWeight: 500, cursor: 'pointer', flexShrink: 0 }}>
-            <svg width="11" height="11" viewBox="0 0 11 11" fill="none"><polyline points="1,5.5 4,8.5 10,2.5" stroke="#6ee7b7" strokeWidth="1.6" fill="none" strokeLinecap="round"/></svg>
+          <div onClick={async () => { if(window.confirm('Mark as completed?')) { await supabase.from('projects').update({status:'completed'}).eq('id',project.id); onRefresh(); onBack() } }} style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '6px 10px', borderRadius: 10, background: 'var(--event-dim)', border: '1px solid #10b981', color: 'var(--event-color)', fontSize: 12, fontWeight: 500, cursor: 'pointer', flexShrink: 0 }}>
+            <svg width="11" height="11" viewBox="0 0 11 11" fill="none"><polyline points="1,5.5 4,8.5 10,2.5" stroke="var(--event-color)" strokeWidth="1.6" fill="none" strokeLinecap="round"/></svg>
             Done
           </div>
         )}
@@ -182,7 +182,7 @@ function ProjectDetail({ project, onBack, onAddTask, onEditTask, onRefresh }) {
 
       <div style={{ marginBottom: 18 }}>
         <div className="action-btn" style={{ background: 'var(--accent-dim)', border: '1px solid var(--accent-border)', color: 'var(--accent-text)', width: '100%' }} onClick={() => onAddTask('today', { defaultProjectId: project.id, defaultSector: project.sector })}>
-          <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><line x1="7.5" y1="1" x2="7.5" y2="14" stroke="#e8823a" strokeWidth="1.8" strokeLinecap="round"/><line x1="1" y1="7.5" x2="14" y2="7.5" stroke="#e8823a" strokeWidth="1.8" strokeLinecap="round"/></svg>
+          <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><line x1="7.5" y1="1" x2="7.5" y2="14" stroke="var(--accent-text)" strokeWidth="1.8" strokeLinecap="round"/><line x1="1" y1="7.5" x2="14" y2="7.5" stroke="var(--accent-text)" strokeWidth="1.8" strokeLinecap="round"/></svg>
           Add Task
         </div>
       </div>
@@ -211,7 +211,7 @@ function ProjectDetail({ project, onBack, onAddTask, onEditTask, onRefresh }) {
 
       <div style={{ display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:10 }}>
         <div className="section-label" style={{ margin:0 }}>Notes</div>
-        <div onClick={()=>setNoteModal('new')} style={{ fontSize:12,color:'#d4520f',cursor:'pointer',padding:'4px 10px',background:'#1e1208',border:'1px solid #7a3410',borderRadius:8 }}>+ Add note</div>
+        <div onClick={()=>setNoteModal('new')} style={{ fontSize:12,color:'var(--accent)',cursor:'pointer',padding:'4px 10px',background:'var(--accent-dim)',border:'1px solid var(--accent-border)',borderRadius:8 }}>+ Add note</div>
       </div>
       {notes.length===0&&<div style={{ textAlign:'center',padding:'16px',color:'#444',fontSize:13,border:'1px dashed #242428',borderRadius:12,marginBottom:18 }}>No notes yet</div>}
       <div style={{ display:'flex',flexDirection:'column',gap:8 }}>
@@ -259,8 +259,8 @@ export default function Projects({ onAddTask, onEditTask }) {
     <div>
       <div style={{ display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:18 }}>
         <div style={{ fontSize:20,fontWeight:500 }}>Projects</div>
-        <div onClick={()=>setShowModal(true)} style={{ display:'flex',alignItems:'center',gap:6,background:'#1e1208',border:'1px solid #7a3410',borderRadius:10,padding:'7px 14px',cursor:'pointer',fontSize:13,color:'#d4520f',fontWeight:500 }}>
-          <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><line x1="6.5" y1="1" x2="6.5" y2="12" stroke="#d4520f" strokeWidth="1.8" strokeLinecap="round"/><line x1="1" y1="6.5" x2="12" y2="6.5" stroke="#d4520f" strokeWidth="1.8" strokeLinecap="round"/></svg>
+        <div onClick={()=>setShowModal(true)} style={{ display:'flex',alignItems:'center',gap:6,background:'var(--accent-dim)',border:'1px solid #7a3410',borderRadius:10,padding:'7px 14px',cursor:'pointer',fontSize:13,color:'#d4520f',fontWeight:500 }}>
+          <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><line x1="6.5" y1="1" x2="6.5" y2="12" stroke="var(--accent)" strokeWidth="1.8" strokeLinecap="round"/><line x1="1" y1="6.5" x2="12" y2="6.5" stroke="var(--accent)" strokeWidth="1.8" strokeLinecap="round"/></svg>
           New project
         </div>
       </div>

@@ -2,9 +2,9 @@ import React from 'react'
 import { useNavigate } from 'react-router-dom'
 
 const MENU_ITEMS = [
-  { label: 'Projects', icon: '📋', desc: 'Track goals and multi-step work', path: '/projects', color: '#d4520f' },
+  { label: 'Projects', icon: '📋', desc: 'Track goals and multi-step work', path: '/projects', color: 'var(--accent)' },
   { label: 'Notes', icon: '📝', desc: 'Quick capture and category notes', path: '/notes', color: '#a78bfa' },
-  { label: 'Finance', icon: '💰', desc: 'Income, bills, subscriptions, savings', path: '/finance', color: '#10b981' },
+  { label: 'Finance', icon: '💰', desc: 'Income, bills, subscriptions, savings', path: '/finance', color: 'var(--event-color)' },
   { label: 'Goals', icon: '🎯', desc: 'Long-term direction and vision', path: '/goals', color: '#f59e0b' },
   { label: 'Real Estate', icon: '🏠', desc: 'Deals, properties, pipeline', path: '/realestate', color: '#3b82f6' },
   { label: 'Settings', icon: '⚙️', desc: 'Colors, themes, preferences', path: '/settings', color: '#888888' },

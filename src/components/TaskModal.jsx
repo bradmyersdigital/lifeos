@@ -4,7 +4,7 @@ import { supabase } from '../lib/supabase'
 const SECTORS = ['Business', 'Real Estate', 'Health', 'Personal Growth', 'Hobbies', 'Family']
 const URGENCIES = ['Low', 'Medium', 'High', 'Urgent']
 const URG_STYLES = {
-  Low:    { bg: '#0a1e14', border: '#0f4a2a', color: '#6ee7b7' },
+  Low:    { bg: '#0a1e14', border: '#0f4a2a', color: 'var(--event-color)' },
   Medium: { bg: '#1e1a00', border: '#4a3d00', color: '#fcd34d' },
   High:   { bg: '#1e1208', border: '#7a3410', color: 'var(--accent-text)' },
   Urgent: { bg: '#2a0a0a', border: '#7a1010', color: '#f87171' },

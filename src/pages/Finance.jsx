@@ -113,7 +113,7 @@ export default function Finance() {
   const TILES = [
     { key: 'subscription', label: 'Subscriptions', icon: '🔄', summary: `${fmt(totalSubs)}/mo · ${subs.filter(s=>s.is_active!==false).length} active`, color: '#a78bfa' },
     { key: 'bill', label: 'Bills', icon: '🧾', summary: `${fmt(totalBills)}/mo · ${bills.filter(b=>b.is_active!==false).length} items`, color: '#3b82f6' },
-    { key: 'income', label: 'Income', icon: '💰', summary: `${fmt(totalIncome)}/mo`, color: '#10b981' },
+    { key: 'income', label: 'Income', icon: '💰', summary: `${fmt(totalIncome)}/mo`, color: 'var(--event-color)' },
     { key: 'savings', label: 'Savings', icon: '🏦', summary: `${fmt(totalSavings)} goal/mo`, color: '#f59e0b' },
   ]
 
@@ -143,7 +143,7 @@ export default function Finance() {
             <div style={{ fontSize: 32, fontWeight: 500, color: leftOver >= 0 ? '#10b981' : '#f87171' }}>{fmt(leftOver)}</div>
             {leftOver < 0 && <div style={{ fontSize: 13, color: '#f87171', marginTop: 6, fontWeight: 500 }}>⚠️ You are overspending by {fmt(Math.abs(leftOver))}</div>}
             {leftOver > 0 && leftOver < totalIncome * 0.1 && <div style={{ fontSize: 13, color: '#f59e0b', marginTop: 6 }}>💡 Tight this month — only {fmt(leftOver)} remaining</div>}
-            {leftOver >= totalIncome * 0.1 && totalIncome > 0 && <div style={{ fontSize: 13, color: '#10b981', marginTop: 6 }}>✅ Looking good! {fmt(leftOver)} left after expenses</div>}
+            {leftOver >= totalIncome * 0.1 && totalIncome > 0 && <div style={{ fontSize: 13, color: 'var(--event-color)', marginTop: 6 }}>✅ Looking good! {fmt(leftOver)} left after expenses</div>}
           </div>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
@@ -168,9 +168,9 @@ export default function Finance() {
         <div style={{ flex: 1 }}>
           <div style={{ fontSize: 11, color: '#555', marginBottom: 4 }}>Current savings balance</div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-            <span style={{ fontSize: 22, fontWeight: 500, color: '#10b981', fontFamily: "'DM Mono'" }}>$</span>
+            <span style={{ fontSize: 22, fontWeight: 500, color: 'var(--event-color)', fontFamily: "'DM Mono'" }}>$</span>
             <input type="number" placeholder="0" value={currentSavings} onChange={e => setCurrentSavings(e.target.value)}
-              style={{ background: 'transparent', border: 'none', outline: 'none', fontSize: 22, fontWeight: 500, color: '#10b981', fontFamily: "'DM Mono'", width: '100%' }} />
+              style={{ background: 'transparent', border: 'none', outline: 'none', fontSize: 22, fontWeight: 500, color: 'var(--event-color)', fontFamily: "'DM Mono'", width: '100%' }} />
           </div>
         </div>
         <div style={{ fontSize: 24 }}>🏦</div>
@@ -223,7 +223,7 @@ export default function Finance() {
                 <div style={{ fontSize: 12, color: '#d4d2cc' }}>{item.name}</div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 2 }}>
                   <div style={{ fontSize: 11, color: '#555', fontFamily: "'DM Mono'" }}>{item.due_date}</div>
-                  <div style={{ fontSize: 11, color: '#d4520f', fontFamily: "'DM Mono'" }}>{fmt(item.amount)}</div>
+                  <div style={{ fontSize: 11, color: 'var(--accent)', fontFamily: "'DM Mono'" }}>{fmt(item.amount)}</div>
                 </div>
               </div>
             ))

@@ -3,9 +3,9 @@ import { supabase } from '../lib/supabase'
 
 const URG_STYLE = {
   urgent: { bg: '#2a0a0a', color: '#f87171' },
-  high:   { bg: '#1e1208', color: '#e8823a' },
+  high:   { bg: '#1e1208', color: 'var(--accent-text)' },
   medium: { bg: '#1e1a00', color: '#fcd34d' },
-  low:    { bg: '#0a1e14', color: '#6ee7b7' },
+  low:    { bg: '#0a1e14', color: 'var(--event-color)' },
 }
 
 export default function Tasks({ onAddTask, onEditTask }) {
@@ -111,7 +111,7 @@ export default function Tasks({ onAddTask, onEditTask }) {
 
       <div style={{ marginBottom: 16 }}>
         <div className="action-btn" style={{ background: 'var(--accent-dim)', border: '1px solid var(--accent-border)', color: 'var(--accent-text)', width: '100%', justifyContent: 'center' }} onClick={() => onAddTask('today')}>
-          <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><line x1="7.5" y1="1" x2="7.5" y2="14" stroke="#e8823a" strokeWidth="1.8" strokeLinecap="round"/><line x1="1" y1="7.5" x2="14" y2="7.5" stroke="#e8823a" strokeWidth="1.8" strokeLinecap="round"/></svg>
+          <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><line x1="7.5" y1="1" x2="7.5" y2="14" stroke="var(--accent-text)" strokeWidth="1.8" strokeLinecap="round"/><line x1="1" y1="7.5" x2="14" y2="7.5" stroke="var(--accent-text)" strokeWidth="1.8" strokeLinecap="round"/></svg>
           Add Task
         </div>
 

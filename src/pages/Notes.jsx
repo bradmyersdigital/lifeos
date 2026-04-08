@@ -3,9 +3,9 @@ import { supabase } from '../lib/supabase'
 
 const CATEGORIES = ['Business', 'Real Estate', 'Health', 'Ideas', 'Personal Growth', 'Gratitude']
 const CAT_STYLES = {
-  business:    { bg: '#1e1208', color: '#e8823a', dot: '#d4520f' },
+  business:    { bg: '#1e1208', color: 'var(--accent-text)', dot: '#d4520f' },
   'real estate': { bg: '#0c1e36', color: '#93c5fd', dot: '#3b82f6' },
-  health:      { bg: '#0a1e14', color: '#6ee7b7', dot: '#10b981' },
+  health:      { bg: '#0a1e14', color: 'var(--event-color)', dot: '#10b981' },
   ideas:       { bg: '#1a0a1a', color: '#f0abfc', dot: '#c084fc' },
   'personal growth': { bg: '#1e1a00', color: '#fcd34d', dot: '#f59e0b' },
   gratitude:   { bg: '#1a1a1e', color: '#c4b5fd', dot: '#a78bfa' },
@@ -77,7 +77,7 @@ export default function Notes() {
               </div>
             )
           })}
-          <button onClick={saveNote} style={{ marginLeft: 'auto', background: '#d4520f', border: 'none', borderRadius: 8, padding: '6px 14px', fontSize: 13, fontWeight: 500, color: '#fff', cursor: 'pointer', fontFamily: "'DM Sans'" }}>Save</button>
+          <button onClick={saveNote} style={{ marginLeft: 'auto', background: 'var(--accent)', border: 'none', borderRadius: 8, padding: '6px 14px', fontSize: 13, fontWeight: 500, color: '#fff', cursor: 'pointer', fontFamily: "'DM Sans'" }}>Save</button>
         </div>
       </div>
 
@@ -88,7 +88,7 @@ export default function Notes() {
           {pinned.map(note => {
             const s = getCatStyle(note.category)
             return (
-              <div key={note.id} style={{ background: '#1e1208', border: '1px solid #3a2010', borderRadius: 12, padding: '12px 14px', marginBottom: 8, cursor: 'pointer' }} onClick={() => pinNote(note)}>
+              <div key={note.id} style={{ background: 'var(--accent-dim)', border: '1px solid #3a2010', borderRadius: 12, padding: '12px 14px', marginBottom: 8, cursor: 'pointer' }} onClick={() => pinNote(note)}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
                   <span style={{ fontSize: 12 }}>📌</span>
                   <span style={{ fontSize: 11, color: '#a0440e', fontWeight: 500 }}>{note.category}</span>

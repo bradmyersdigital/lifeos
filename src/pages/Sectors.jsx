@@ -166,7 +166,7 @@ function SectorDetail({ sector, onEditTask, onAddTask, onBack }) {
           </div>
           {selectedProject.status !== 'completed' && (
             <div onClick={async () => { if(window.confirm('Mark as completed?')) { await supabase.from('projects').update({status:'completed'}).eq('id',selectedProject.id); reload(); setSelectedProject(null) } }} style={{ display:'flex',alignItems:'center',gap:5,padding:'6px 10px',borderRadius:10,background:'#0a1e14',border:'1px solid #10b981',color:'#6ee7b7',fontSize:12,fontWeight:500,cursor:'pointer',flexShrink:0 }}>
-              <svg width="11" height="11" viewBox="0 0 11 11" fill="none"><polyline points="1,5.5 4,8.5 10,2.5" stroke="#6ee7b7" strokeWidth="1.6" fill="none" strokeLinecap="round"/></svg>
+              <svg width="11" height="11" viewBox="0 0 11 11" fill="none"><polyline points="1,5.5 4,8.5 10,2.5" stroke="var(--event-color)" strokeWidth="1.6" fill="none" strokeLinecap="round"/></svg>
               Done
             </div>
           )}
@@ -197,7 +197,7 @@ function SectorDetail({ sector, onEditTask, onAddTask, onBack }) {
         {/* Add Task */}
         <div style={{ marginBottom:18 }}>
           <div className="action-btn" style={{ background:'var(--accent-dim)',border:'1px solid var(--accent-border)',color:'var(--accent-text)',width:'100%',justifyContent:'center' }} onClick={() => setTaskModal({ mode:'today', forProject: selectedProject })}>
-            <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><line x1="7.5" y1="1" x2="7.5" y2="14" stroke="#e8823a" strokeWidth="1.8" strokeLinecap="round"/><line x1="1" y1="7.5" x2="14" y2="7.5" stroke="#e8823a" strokeWidth="1.8" strokeLinecap="round"/></svg>
+            <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><line x1="7.5" y1="1" x2="7.5" y2="14" stroke="var(--accent-text)" strokeWidth="1.8" strokeLinecap="round"/><line x1="1" y1="7.5" x2="14" y2="7.5" stroke="var(--accent-text)" strokeWidth="1.8" strokeLinecap="round"/></svg>
             Add Task
           </div>
         </div>
@@ -228,7 +228,7 @@ function SectorDetail({ sector, onEditTask, onAddTask, onBack }) {
         {/* Notes */}
         <div style={{ display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:10 }}>
           <div className="section-label" style={{margin:0}}>Notes</div>
-          <div onClick={()=>setNoteModal('new')} style={{fontSize:12,color:'#d4520f',cursor:'pointer',padding:'4px 10px',background:'#1e1208',border:'1px solid #7a3410',borderRadius:8}}>+ Add note</div>
+          <div onClick={()=>setNoteModal('new')} style={{fontSize:12,color:'var(--accent)',cursor:'pointer',padding:'4px 10px',background:'var(--accent-dim)',border:'1px solid var(--accent-border)',borderRadius:8}}>+ Add note</div>
         </div>
         {projectNotes.length===0&&<div style={{textAlign:'center',padding:'16px',color:'#444',fontSize:13,border:'1px dashed #242428',borderRadius:12,marginBottom:14}}>No notes yet</div>}
         {projectNotes.map(note=>(
@@ -280,7 +280,7 @@ function SectorDetail({ sector, onEditTask, onAddTask, onBack }) {
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 16 }}>
         <div className="action-btn" style={{ background: 'var(--accent-dim)', border: '1px solid var(--accent-border)', color: 'var(--accent-text)' }} onClick={() => setTaskModal({ mode: 'today' })}>
-          <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><line x1="7.5" y1="1" x2="7.5" y2="14" stroke="#e8823a" strokeWidth="1.8" strokeLinecap="round"/><line x1="1" y1="7.5" x2="14" y2="7.5" stroke="#e8823a" strokeWidth="1.8" strokeLinecap="round"/></svg>
+          <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><line x1="7.5" y1="1" x2="7.5" y2="14" stroke="var(--accent-text)" strokeWidth="1.8" strokeLinecap="round"/><line x1="1" y1="7.5" x2="14" y2="7.5" stroke="var(--accent-text)" strokeWidth="1.8" strokeLinecap="round"/></svg>
           Add Task
         </div>
         <div className="action-btn" style={{ background: '#161618', border: '1px solid #2a2a30', color: '#aaa' }} onClick={async () => {
@@ -451,8 +451,8 @@ export default function Sectors({ onEditTask }) {
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
         <div style={{ fontSize: 20, fontWeight: 500 }}>Sectors</div>
-        <div onClick={() => setSectorModal('new')} style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#1e1208', border: '1px solid #7a3410', borderRadius: 10, padding: '7px 14px', cursor: 'pointer', fontSize: 13, color: 'var(--accent)', fontWeight: 500 }}>
-          <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><line x1="6.5" y1="1" x2="6.5" y2="12" stroke="#d4520f" strokeWidth="1.8" strokeLinecap="round"/><line x1="1" y1="6.5" x2="12" y2="6.5" stroke="#d4520f" strokeWidth="1.8" strokeLinecap="round"/></svg>
+        <div onClick={() => setSectorModal('new')} style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'var(--accent-dim)', border: '1px solid var(--accent-border)', borderRadius: 10, padding: '7px 14px', cursor: 'pointer', fontSize: 13, color: 'var(--accent)', fontWeight: 500 }}>
+          <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><line x1="6.5" y1="1" x2="6.5" y2="12" stroke="var(--accent)" strokeWidth="1.8" strokeLinecap="round"/><line x1="1" y1="6.5" x2="12" y2="6.5" stroke="var(--accent)" strokeWidth="1.8" strokeLinecap="round"/></svg>
           New sector
         </div>
       </div>

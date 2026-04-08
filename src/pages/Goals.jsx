@@ -14,7 +14,7 @@ const TIMEFRAMES = [
 ]
 const SECTIONS = ['Current Focus', 'Near Term', 'Long Term', 'Vision']
 const SECTION_STYLES = {
-  'Current Focus': { borderColor: '#7a3410', bg: '#1e1208', labelColor: '#d4520f' },
+  'Current Focus': { borderColor: 'var(--accent-border)', bg: '#1e1208', labelColor: '#d4520f' },
   'Near Term':     { borderColor: '#1a3a5c', bg: '#0c1a2e', labelColor: '#3b82f6' },
   'Long Term':     { borderColor: '#1a3a2a', bg: '#0a1e14', labelColor: '#10b981' },
   'Vision':        { borderColor: '#2a1a5c', bg: '#16112e', labelColor: '#a78bfa' },
@@ -115,7 +115,7 @@ function GoalDetail({ tf, goal, onBack, onSaved }) {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
         <div className="section-label" style={{ margin: 0 }}>Linked tasks</div>
         <div style={{ display: 'flex', gap: 8 }}>
-          <div onClick={() => setAddTaskModal(true)} style={{ fontSize: 12, color: '#e8823a', cursor: 'pointer', padding: '4px 10px', background: '#1e1208', border: '1px solid #7a3410', borderRadius: 8 }}>+ Create task</div>
+          <div onClick={() => setAddTaskModal(true)} style={{ fontSize: 12, color: 'var(--accent-text)', cursor: 'pointer', padding: '4px 10px', background: 'var(--accent-dim)', border: '1px solid var(--accent-border)', borderRadius: 8 }}>+ Create task</div>
           <div onClick={() => setLinkingTask(!linkingTask)} style={{ fontSize: 12, color: '#555', cursor: 'pointer', padding: '4px 10px', background: '#161618', border: '1px solid #242428', borderRadius: 8 }}>Link existing</div>
         </div>
       </div>
