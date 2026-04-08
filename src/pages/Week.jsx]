@@ -154,11 +154,11 @@ export default function Week({ onAddTask, onEditTask }) {
       </div>
 
       <div className="action-row" style={{ marginBottom: 14 }}>
-        <div className="action-btn btn-task" onClick={() => onAddTask('today')>
+        <div className="action-btn btn-task" onClick={() => onAddTask('today')}>
           <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><line x1="7.5" y1="1" x2="7.5" y2="14" stroke="var(--accent-text)" strokeWidth="1.8" strokeLinecap="round"/><line x1="1" y1="7.5" x2="14" y2="7.5" stroke="var(--accent-text)" strokeWidth="1.8" strokeLinecap="round"/></svg>
           Add task
         </div>
-        <div className="action-btn" className="event-card" style={{ , color: 'var(--event-color)'  }} onClick={() => setEventModal({ event: null, date: todayStr })}>
+        <div className="action-btn btn-event" onClick={() => setEventModal({ event: null, date: todayStr })}>
           <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><rect x="1.5" y="2.5" width="12" height="11" rx="2" stroke="var(--event-color)" strokeWidth="1.4"/><line x1="1.5" y1="6.5" x2="13.5" y2="6.5" stroke="var(--event-color)" strokeWidth="1.4"/><line x1="5" y1="1" x2="5" y2="4" stroke="var(--event-color)" strokeWidth="1.4" strokeLinecap="round"/><line x1="10" y1="1" x2="10" y2="4" stroke="var(--event-color)" strokeWidth="1.4" strokeLinecap="round"/></svg>
           Add event
         </div>
