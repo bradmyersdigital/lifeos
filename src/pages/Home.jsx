@@ -333,7 +333,7 @@ export default function Home({ onAddTask, onEditTask, onAddEvent }) {
           <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><line x1="7.5" y1="1" x2="7.5" y2="14" stroke="var(--accent-text)" strokeWidth="1.8" strokeLinecap="round"/><line x1="1" y1="7.5" x2="14" y2="7.5" stroke="var(--accent-text)" strokeWidth="1.8" strokeLinecap="round"/></svg>
           Add Task
         </div>
-        <div className="action-btn" className="event-card" style={{ , color: 'var(--event-color)'  }} onClick={() => onAddEvent && onAddEvent()}>
+        <div className="action-btn btn-event" onClick={() => onAddEvent && onAddEvent()}>
           <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><rect x="1.5" y="2.5" width="12" height="11" rx="2" stroke="var(--event-color)" strokeWidth="1.4"/><line x1="1.5" y1="6.5" x2="13.5" y2="6.5" stroke="var(--event-color)" strokeWidth="1.4"/><line x1="5" y1="1" x2="5" y2="4" stroke="var(--event-color)" strokeWidth="1.4" strokeLinecap="round"/><line x1="10" y1="1" x2="10" y2="4" stroke="var(--event-color)" strokeWidth="1.4" strokeLinecap="round"/></svg>
           Add Event
         </div>
@@ -460,7 +460,7 @@ export default function Home({ onAddTask, onEditTask, onAddEvent }) {
               const dayName = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][evDate.getDay()]
               const isToday = ev.start_date === todayStr
               return (
-                <div key={ev.id} onClick={() => navigate('/week')} className="event-card" style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '11px 14px', , borderRadius: 12, cursor: 'pointer'  }}>
+                <div key={ev.id} onClick={() => navigate('/week')} className="event-card" style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '11px 14px', borderRadius: 12, cursor: 'pointer'  }}>
                   <div style={{ textAlign: 'center', flexShrink: 0 }}>
                     <div style={{ fontSize: 10, fontWeight: 600, color: isToday ? '#d4520f' : '#1a4a2a', textTransform: 'uppercase' }}>{isToday ? 'Today' : dayName}</div>
                     <div style={{ fontSize: 18, fontWeight: 500, color: isToday ? '#e8823a' : '#6ee7b7' }}>{evDate.getDate()}</div>
