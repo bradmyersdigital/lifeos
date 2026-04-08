@@ -154,11 +154,11 @@ export default function Week({ onAddTask, onEditTask }) {
       </div>
 
       <div className="action-row" style={{ marginBottom: 14 }}>
-        <div className="action-btn" style={{ background: 'var(--accent-dim)', border: '1px solid var(--accent-border)', color: 'var(--accent-text)' }} onClick={() => onAddTask('today')}>
+        <div className="action-btn btn-task" onClick={() => onAddTask('today')>
           <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><line x1="7.5" y1="1" x2="7.5" y2="14" stroke="var(--accent-text)" strokeWidth="1.8" strokeLinecap="round"/><line x1="1" y1="7.5" x2="14" y2="7.5" stroke="var(--accent-text)" strokeWidth="1.8" strokeLinecap="round"/></svg>
           Add task
         </div>
-        <div className="action-btn" style={{ background: 'var(--event-dim)', border: '1px solid var(--event-border)', color: 'var(--event-color)' }} onClick={() => setEventModal({ event: null, date: todayStr })}>
+        <div className="action-btn" className="event-card" style={{ , color: 'var(--event-color)'  }} onClick={() => setEventModal({ event: null, date: todayStr })}>
           <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><rect x="1.5" y="2.5" width="12" height="11" rx="2" stroke="var(--event-color)" strokeWidth="1.4"/><line x1="1.5" y1="6.5" x2="13.5" y2="6.5" stroke="var(--event-color)" strokeWidth="1.4"/><line x1="5" y1="1" x2="5" y2="4" stroke="var(--event-color)" strokeWidth="1.4" strokeLinecap="round"/><line x1="10" y1="1" x2="10" y2="4" stroke="var(--event-color)" strokeWidth="1.4" strokeLinecap="round"/></svg>
           Add event
         </div>
@@ -218,7 +218,7 @@ export default function Week({ onAddTask, onEditTask }) {
               ? <div onClick={() => openDaySheet(date)} style={{ padding: '10px 14px', fontSize: 13, color: '#2a2a2a', border: '1px dashed #1e1e24', borderRadius: 10, textAlign: 'center', cursor: 'pointer' }}>Tap to add</div>
               : <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                   {items.map(item => item._type === 'event' ? (
-                    <div key={item.id} onClick={() => setEventModal({ event: item, date: item.start_date })} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', background: 'var(--event-dim)', border: '1px solid var(--event-border)', borderRadius: 12, cursor: 'pointer' }}>
+                    <div key={item.id} onClick={() => setEventModal({ event: item, date: item.start_date })} className="event-card" style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', , borderRadius: 12, cursor: 'pointer'  }}>
                       <svg width="12" height="12" viewBox="0 0 12 12" fill="none" style={{ flexShrink: 0 }}><circle cx="6" cy="6" r="5" stroke="var(--event-color)" strokeWidth="1.3"/><polyline points="6,3 6,6 8,7.5" stroke="var(--event-color)" strokeWidth="1.3" strokeLinecap="round"/></svg>
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ fontSize: 14, color: 'var(--event-color)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.title}</div>
@@ -312,7 +312,7 @@ export default function Week({ onAddTask, onEditTask }) {
                 <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><line x1="7.5" y1="1" x2="7.5" y2="14" stroke="var(--accent-text)" strokeWidth="1.8" strokeLinecap="round"/><line x1="1" y1="7.5" x2="14" y2="7.5" stroke="var(--accent-text)" strokeWidth="1.8" strokeLinecap="round"/></svg>
                 Add task
               </div>
-              <div onClick={() => { setEventModal({ event: null, date: daySheet.date }); setDaySheet(null) }} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '13px', borderRadius: 12, background: 'var(--event-dim)', border: '1px solid var(--event-border)', color: 'var(--event-color)', fontSize: 14, fontWeight: 500, cursor: 'pointer' }}>
+              <div onClick={() => { setEventModal({ event: null, date: daySheet.date }); setDaySheet(null) }} className="event-card" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '13px', borderRadius: 12, , color: 'var(--event-color)', fontSize: 14, fontWeight: 500, cursor: 'pointer'  }}>
                 <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><rect x="1.5" y="2.5" width="12" height="11" rx="2" stroke="var(--event-color)" strokeWidth="1.4"/><line x1="1.5" y1="6.5" x2="13.5" y2="6.5" stroke="var(--event-color)" strokeWidth="1.4"/><line x1="5" y1="1" x2="5" y2="4" stroke="var(--event-color)" strokeWidth="1.4" strokeLinecap="round"/><line x1="10" y1="1" x2="10" y2="4" stroke="var(--event-color)" strokeWidth="1.4" strokeLinecap="round"/></svg>
                 Add event
               </div>
@@ -323,7 +323,7 @@ export default function Week({ onAddTask, onEditTask }) {
             )}
 
             {daySheet.events.map(ev => (
-              <div key={ev.id} onClick={() => { setDaySheet(null); setEventModal({ event: ev, date: ev.start_date }) }} style={{ display: 'flex', gap: 12, padding: '12px 14px', background: 'var(--event-dim)', border: '1px solid var(--event-border)', borderRadius: 12, marginBottom: 8, cursor: 'pointer' }}>
+              <div key={ev.id} onClick={() => { setDaySheet(null); setEventModal({ event: ev, date: ev.start_date }) }} className="event-card" style={{ display: 'flex', gap: 12, padding: '12px 14px', , borderRadius: 12, marginBottom: 8, cursor: 'pointer'  }}>
                 <svg width="14" height="14" viewBox="0 0 14 14" fill="none" style={{ flexShrink: 0, marginTop: 2 }}><circle cx="7" cy="7" r="6" stroke="var(--event-color)" strokeWidth="1.3"/><polyline points="7,4 7,7 9,8.5" stroke="var(--event-color)" strokeWidth="1.3" strokeLinecap="round"/></svg>
                 <div style={{ flex: 1 }}>
                   <div style={{ fontSize: 14, color: 'var(--event-color)', fontWeight: 500 }}>{ev.title}</div>

@@ -178,3 +178,52 @@ body { overflow: hidden; }
 .urg-medium { background: #1e1a00; border: 1px solid #4a3d00; color: #fcd34d; }
 .urg-high   { background: var(--accent-dim); border: 1px solid var(--accent-border); color: var(--accent-text); }
 .urg-urgent { background: #2a0a0a; border: 1px solid #7a1010; color: #f87171; }
+
+/* ── Themed element classes (these DO respond to CSS var changes) ── */
+.btn-task {
+  background: var(--accent-dim) !important;
+  border: 1px solid var(--accent-border) !important;
+  color: var(--accent-text) !important;
+}
+.btn-task svg line, .btn-task svg path { stroke: var(--accent-text) !important; }
+
+.btn-event {
+  background: var(--event-dim) !important;
+  border: 1px solid var(--event-border) !important;
+  color: var(--event-color) !important;
+}
+.btn-event svg line, .btn-event svg path, .btn-event svg rect { stroke: var(--event-color) !important; }
+
+.pill-active {
+  background: var(--accent-dim) !important;
+  border-color: var(--accent-border) !important;
+  color: var(--accent) !important;
+}
+.pill-inactive {
+  background: #161618;
+  border-color: #242428;
+  color: #666;
+}
+
+.event-card {
+  background: var(--event-dim) !important;
+  border: 1px solid var(--event-border) !important;
+}
+.event-text { color: var(--event-color) !important; }
+.event-time { color: var(--event-border) !important; }
+
+.accent-text { color: var(--accent) !important; }
+.accent-bg { background: var(--accent-dim) !important; }
+.accent-border-el { border-color: var(--accent-border) !important; }
+
+.streak-badge {
+  background: var(--accent-dim) !important;
+  border: 1px solid var(--accent-border) !important;
+}
+.streak-badge span { color: var(--accent) !important; }
+
+.tab-active {
+  background: var(--accent-dim) !important;
+  color: var(--accent) !important;
+}
+.tab-bar { background: #161618; border: 1px solid #242428; border-radius: 12px; overflow: hidden; }
