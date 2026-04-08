@@ -6,7 +6,7 @@ const URGENCIES = ['Low', 'Medium', 'High', 'Urgent']
 const URG_STYLES = {
   Low:    { bg: '#0a1e14', border: '#0f4a2a', color: '#6ee7b7' },
   Medium: { bg: '#1e1a00', border: '#4a3d00', color: '#fcd34d' },
-  High:   { bg: '#1e1208', border: '#7a3410', color: '#e8823a' },
+  High:   { bg: '#1e1208', border: '#7a3410', color: 'var(--accent-text)' },
   Urgent: { bg: '#2a0a0a', border: '#7a1010', color: '#f87171' },
 }
 
@@ -174,7 +174,7 @@ export default function TaskModal({ mode, onClose, onSaved, task, defaultProject
           {showNewProject ? (
             <div style={{ display: 'flex', gap: 8 }}>
               <input type="text" placeholder="New project name..." value={newProjectName} onChange={e => setNewProjectName(e.target.value)} style={{ flex: 1 }} />
-              <button onClick={createNewProject} style={{ background: '#d4520f', border: 'none', borderRadius: 10, padding: '0 14px', color: '#fff', fontSize: 13, fontWeight: 500, cursor: 'pointer', fontFamily: "'DM Sans'" }}>Create</button>
+              <button onClick={createNewProject} style={{ background: 'var(--accent)', border: 'none', borderRadius: 10, padding: '0 14px', color: '#fff', fontSize: 13, fontWeight: 500, cursor: 'pointer', fontFamily: "'DM Sans'" }}>Create</button>
               <button onClick={() => setShowNewProject(false)} style={{ background: '#161618', border: '1px solid #242428', borderRadius: 10, padding: '0 12px', color: '#888', fontSize: 13, cursor: 'pointer', fontFamily: "'DM Sans'" }}>×</button>
             </div>
           ) : (

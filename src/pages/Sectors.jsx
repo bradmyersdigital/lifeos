@@ -196,7 +196,7 @@ function SectorDetail({ sector, onEditTask, onAddTask, onBack }) {
 
         {/* Add Task */}
         <div style={{ marginBottom:18 }}>
-          <div className="action-btn" style={{ background:'#1e1208',border:'1px solid #7a3410',color:'#e8823a',width:'100%',justifyContent:'center' }} onClick={() => setTaskModal({ mode:'today', forProject: selectedProject })}>
+          <div className="action-btn" style={{ background:'var(--accent-dim)',border:'1px solid var(--accent-border)',color:'var(--accent-text)',width:'100%',justifyContent:'center' }} onClick={() => setTaskModal({ mode:'today', forProject: selectedProject })}>
             <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><line x1="7.5" y1="1" x2="7.5" y2="14" stroke="#e8823a" strokeWidth="1.8" strokeLinecap="round"/><line x1="1" y1="7.5" x2="14" y2="7.5" stroke="#e8823a" strokeWidth="1.8" strokeLinecap="round"/></svg>
             Add Task
           </div>
@@ -279,7 +279,7 @@ function SectorDetail({ sector, onEditTask, onAddTask, onBack }) {
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 16 }}>
-        <div className="action-btn" style={{ background: '#1e1208', border: '1px solid #7a3410', color: '#e8823a' }} onClick={() => setTaskModal({ mode: 'today' })}>
+        <div className="action-btn" style={{ background: 'var(--accent-dim)', border: '1px solid var(--accent-border)', color: 'var(--accent-text)' }} onClick={() => setTaskModal({ mode: 'today' })}>
           <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><line x1="7.5" y1="1" x2="7.5" y2="14" stroke="#e8823a" strokeWidth="1.8" strokeLinecap="round"/><line x1="1" y1="7.5" x2="14" y2="7.5" stroke="#e8823a" strokeWidth="1.8" strokeLinecap="round"/></svg>
           Add Task
         </div>
@@ -451,7 +451,7 @@ export default function Sectors({ onEditTask }) {
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
         <div style={{ fontSize: 20, fontWeight: 500 }}>Sectors</div>
-        <div onClick={() => setSectorModal('new')} style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#1e1208', border: '1px solid #7a3410', borderRadius: 10, padding: '7px 14px', cursor: 'pointer', fontSize: 13, color: '#d4520f', fontWeight: 500 }}>
+        <div onClick={() => setSectorModal('new')} style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#1e1208', border: '1px solid #7a3410', borderRadius: 10, padding: '7px 14px', cursor: 'pointer', fontSize: 13, color: 'var(--accent)', fontWeight: 500 }}>
           <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><line x1="6.5" y1="1" x2="6.5" y2="12" stroke="#d4520f" strokeWidth="1.8" strokeLinecap="round"/><line x1="1" y1="6.5" x2="12" y2="6.5" stroke="#d4520f" strokeWidth="1.8" strokeLinecap="round"/></svg>
           New sector
         </div>

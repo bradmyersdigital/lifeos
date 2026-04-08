@@ -154,11 +154,11 @@ export default function Week({ onAddTask, onEditTask }) {
       </div>
 
       <div className="action-row" style={{ marginBottom: 14 }}>
-        <div className="action-btn" style={{ background: '#1e1208', border: '1px solid #7a3410', color: '#e8823a' }} onClick={() => onAddTask('today')}>
+        <div className="action-btn" style={{ background: 'var(--accent-dim)', border: '1px solid var(--accent-border)', color: 'var(--accent-text)' }} onClick={() => onAddTask('today')}>
           <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><line x1="7.5" y1="1" x2="7.5" y2="14" stroke="#e8823a" strokeWidth="1.8" strokeLinecap="round"/><line x1="1" y1="7.5" x2="14" y2="7.5" stroke="#e8823a" strokeWidth="1.8" strokeLinecap="round"/></svg>
           Add task
         </div>
-        <div className="action-btn" style={{ background: '#0a1e14', border: '1px solid #1a4a2a', color: '#6ee7b7' }} onClick={() => setEventModal({ event: null, date: todayStr })}>
+        <div className="action-btn" style={{ background: 'var(--event-dim)', border: '1px solid var(--event-border)', color: 'var(--event-color)' }} onClick={() => setEventModal({ event: null, date: todayStr })}>
           <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><rect x="1.5" y="2.5" width="12" height="11" rx="2" stroke="#6ee7b7" strokeWidth="1.4"/><line x1="1.5" y1="6.5" x2="13.5" y2="6.5" stroke="#6ee7b7" strokeWidth="1.4"/><line x1="5" y1="1" x2="5" y2="4" stroke="#6ee7b7" strokeWidth="1.4" strokeLinecap="round"/><line x1="10" y1="1" x2="10" y2="4" stroke="#6ee7b7" strokeWidth="1.4" strokeLinecap="round"/></svg>
           Add event
         </div>
@@ -238,7 +238,7 @@ export default function Week({ onAddTask, onEditTask }) {
                       <div style={{ width: 7, height: 7, borderRadius: '50%', background: SECTOR_COLORS[item.sector?.toLowerCase()] || '#555', flexShrink: 0 }} />
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ fontSize: 14, color: item.completed ? '#555' : '#d4d2cc', textDecoration: item.completed ? 'line-through' : 'none', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.name}</div>
-                        {item.projects && <div style={{ fontSize: 11, color: '#d4520f', marginTop: 2 }}>{item.projects.name} →</div>}
+                        {item.projects && <div style={{ fontSize: 11, color: 'var(--accent)', marginTop: 2 }}>{item.projects.name} →</div>}
                       </div>
                       {item.time_block && <div style={{ fontFamily: "'DM Mono'", fontSize: 11, color: '#555', flexShrink: 0 }}>{item.time_block}</div>}
                     </div>
@@ -308,11 +308,11 @@ export default function Week({ onAddTask, onEditTask }) {
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 20 }}>
-              <div onClick={() => { setDaySheet(null); onAddTask('scheduled') }} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '13px', borderRadius: 12, background: '#1e1208', border: '1px solid #7a3410', color: '#e8823a', fontSize: 14, fontWeight: 500, cursor: 'pointer' }}>
+              <div onClick={() => { setDaySheet(null); onAddTask('scheduled') }} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '13px', borderRadius: 12, background: 'var(--accent-dim)', border: '1px solid var(--accent-border)', color: 'var(--accent-text)', fontSize: 14, fontWeight: 500, cursor: 'pointer' }}>
                 <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><line x1="7.5" y1="1" x2="7.5" y2="14" stroke="#e8823a" strokeWidth="1.8" strokeLinecap="round"/><line x1="1" y1="7.5" x2="14" y2="7.5" stroke="#e8823a" strokeWidth="1.8" strokeLinecap="round"/></svg>
                 Add task
               </div>
-              <div onClick={() => { setEventModal({ event: null, date: daySheet.date }); setDaySheet(null) }} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '13px', borderRadius: 12, background: '#0a1e14', border: '1px solid #1a4a2a', color: '#6ee7b7', fontSize: 14, fontWeight: 500, cursor: 'pointer' }}>
+              <div onClick={() => { setEventModal({ event: null, date: daySheet.date }); setDaySheet(null) }} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '13px', borderRadius: 12, background: 'var(--event-dim)', border: '1px solid var(--event-border)', color: 'var(--event-color)', fontSize: 14, fontWeight: 500, cursor: 'pointer' }}>
                 <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><rect x="1.5" y="2.5" width="12" height="11" rx="2" stroke="#6ee7b7" strokeWidth="1.4"/><line x1="1.5" y1="6.5" x2="13.5" y2="6.5" stroke="#6ee7b7" strokeWidth="1.4"/><line x1="5" y1="1" x2="5" y2="4" stroke="#6ee7b7" strokeWidth="1.4" strokeLinecap="round"/><line x1="10" y1="1" x2="10" y2="4" stroke="#6ee7b7" strokeWidth="1.4" strokeLinecap="round"/></svg>
                 Add event
               </div>

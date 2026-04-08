@@ -92,7 +92,7 @@ export default function Tasks({ onAddTask, onEditTask }) {
             {task.time_block && <span style={{ fontFamily: "'DM Mono'", fontSize: 11, color: '#555' }}>{task.time_block}</span>}
             {task.start_date && <span style={{ fontFamily: "'DM Mono'", fontSize: 11, color: isOverdue ? '#f87171' : '#555' }}>{isOverdue ? `${task.start_date} ⚠` : task.start_date}</span>}
             <span style={{ fontSize: 10, fontWeight: 600, padding: '2px 7px', borderRadius: 6, background: urg.bg, color: urg.color }}>{task.urgency}</span>
-            {task.projects && <span style={{ fontSize: 11, color: '#d4520f' }}>{task.projects.name} →</span>}
+            {task.projects && <span style={{ fontSize: 11, color: 'var(--accent)' }}>{task.projects.name} →</span>}
           </div>
         </div>
       </div>
@@ -110,7 +110,7 @@ export default function Tasks({ onAddTask, onEditTask }) {
       </div>
 
       <div style={{ marginBottom: 16 }}>
-        <div className="action-btn" style={{ background: '#1e1208', border: '1px solid #7a3410', color: '#e8823a', width: '100%', justifyContent: 'center' }} onClick={() => onAddTask('today')}>
+        <div className="action-btn" style={{ background: 'var(--accent-dim)', border: '1px solid var(--accent-border)', color: 'var(--accent-text)', width: '100%', justifyContent: 'center' }} onClick={() => onAddTask('today')}>
           <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><line x1="7.5" y1="1" x2="7.5" y2="14" stroke="#e8823a" strokeWidth="1.8" strokeLinecap="round"/><line x1="1" y1="7.5" x2="14" y2="7.5" stroke="#e8823a" strokeWidth="1.8" strokeLinecap="round"/></svg>
           Add Task
         </div>

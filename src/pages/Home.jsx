@@ -321,7 +321,7 @@ export default function Home({ onAddTask, onEditTask, onAddEvent }) {
             <div style={{ fontSize: 13, color: '#555', marginBottom: 10, fontFamily: "'DM Mono'" }}>{dateStr}</div>
             <div style={{ background: '#161618', border: '1px solid #1e1208', borderLeft: '3px solid #d4520f', borderRadius: 12, padding: '14px 16px' }}>
               <div style={{ fontSize: 14, color: '#d4d2cc', lineHeight: 1.6, fontStyle: 'italic', marginBottom: 8 }}>"{quote.text}"</div>
-              <div style={{ fontSize: 11, color: '#d4520f', fontWeight: 600, fontFamily: "'DM Mono'" }}>— {quote.author}</div>
+              <div style={{ fontSize: 11, color: 'var(--accent)', fontWeight: 600, fontFamily: "'DM Mono'" }}>— {quote.author}</div>
             </div>
           </div>
         )
@@ -329,11 +329,11 @@ export default function Home({ onAddTask, onEditTask, onAddEvent }) {
 
       {/* Add task buttons */}
       <div className="action-row" style={{ marginBottom: 16 }}>
-        <div className="action-btn" style={{ background: '#1e1208', border: '1px solid #7a3410', color: '#e8823a' }} onClick={() => onAddTask('today')}>
+        <div className="action-btn" style={{ background: 'var(--accent-dim)', border: '1px solid var(--accent-border)', color: 'var(--accent-text)' }} onClick={() => onAddTask('today')}>
           <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><line x1="7.5" y1="1" x2="7.5" y2="14" stroke="#e8823a" strokeWidth="1.8" strokeLinecap="round"/><line x1="1" y1="7.5" x2="14" y2="7.5" stroke="#e8823a" strokeWidth="1.8" strokeLinecap="round"/></svg>
           Add Task
         </div>
-        <div className="action-btn" style={{ background: '#0a1e14', border: '1px solid #1a4a2a', color: '#6ee7b7' }} onClick={() => onAddEvent && onAddEvent()}>
+        <div className="action-btn" style={{ background: 'var(--event-dim)', border: '1px solid var(--event-border)', color: 'var(--event-color)' }} onClick={() => onAddEvent && onAddEvent()}>
           <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><rect x="1.5" y="2.5" width="12" height="11" rx="2" stroke="#6ee7b7" strokeWidth="1.4"/><line x1="1.5" y1="6.5" x2="13.5" y2="6.5" stroke="#6ee7b7" strokeWidth="1.4"/><line x1="5" y1="1" x2="5" y2="4" stroke="#6ee7b7" strokeWidth="1.4" strokeLinecap="round"/><line x1="10" y1="1" x2="10" y2="4" stroke="#6ee7b7" strokeWidth="1.4" strokeLinecap="round"/></svg>
           Add Event
         </div>
@@ -414,7 +414,7 @@ export default function Home({ onAddTask, onEditTask, onAddEvent }) {
           <div className="section-label" style={{ margin: 0 }}>Week at a glance</div>
           <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
             <div onClick={() => setWeekGlanceOffset(o => o-1)} style={{ width: 28, height: 28, borderRadius: 8, background: '#161618', border: '1px solid #242428', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: 14, color: '#888' }}>‹</div>
-            {weekGlanceOffset !== 0 && <div onClick={() => setWeekGlanceOffset(0)} style={{ fontSize: 11, color: '#d4520f', cursor: 'pointer' }}>Today</div>}
+            {weekGlanceOffset !== 0 && <div onClick={() => setWeekGlanceOffset(0)} style={{ fontSize: 11, color: 'var(--accent)', cursor: 'pointer' }}>Today</div>}
             <div onClick={() => setWeekGlanceOffset(o => o+1)} style={{ width: 28, height: 28, borderRadius: 8, background: '#161618', border: '1px solid #242428', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: 14, color: '#888' }}>›</div>
           </div>
         </div>
