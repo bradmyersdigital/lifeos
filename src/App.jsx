@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { ThemeProvider } from './ThemeContext'
+import { ThemeProvider } from './ThemeContext.jsx'
 import { BrowserRouter, Routes, Route, useNavigate, useLocation } from 'react-router-dom'
 import Home from './pages/Home'
 import Week from './pages/Week'

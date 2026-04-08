@@ -174,7 +174,7 @@ export default function Week({ onAddTask, onEditTask }) {
 
       <div style={{ display: 'flex', gap: 6, marginBottom: 16, overflowX: 'auto', paddingBottom: 4 }}>
         {SECTORS.map(s => (
-          <div key={s} onClick={() => setActiveFilter(s)} style={{ padding: '5px 12px', borderRadius: 20, fontSize: 12, fontWeight: 500, cursor: 'pointer', border: '1px solid', whiteSpace: 'nowrap', transition: 'all 0.15s', background: activeFilter === s ? 'var(--accent-dim)' : '#161618', borderColor: activeFilter === s ? 'var(--accent-border)' : '#242428', color: activeFilter === s ? 'var(--accent)' : '#666' }}>
+          <div key={s} onClick={() => setActiveFilter(s)} className={activeFilter === s ? 'pill-active' : 'pill-inactive'} style={{ padding: '5px 12px', borderRadius: 20, fontSize: 12, fontWeight: 500, cursor: 'pointer', border: '1px solid', whiteSpace: 'nowrap' }}>
             {s === 'all' ? 'All' : sectors.find(sec => sec.name.toLowerCase() === s)?.name || s.charAt(0).toUpperCase() + s.slice(1)}
           </div>
         ))}
