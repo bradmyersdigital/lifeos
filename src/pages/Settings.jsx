@@ -1,18 +1,5 @@
-import React, { useState, useEffect } from 'react'
-
-export const DEFAULT_THEME = {
-  accent: '#d4520f',
-  accentDim: '#1e1208',
-  accentBorder: '#7a3410',
-  accentText: '#e8823a',
-  event: '#10b981',
-  eventDim: '#0a1e14',
-  eventBorder: '#1a4a2a',
-  bg: '#0f0f11',
-  bgCard: '#161618',
-  textPrimary: '#e8e6e1',
-  textMuted: '#666666',
-}
+import React, { useState } from 'react'
+import { useTheme, DEFAULT_THEME } from '../ThemeContext'
 
 const PRESETS = [
   { name: 'Default', theme: { ...DEFAULT_THEME } },
@@ -54,52 +41,25 @@ const PRESETS = [
 ]
 
 const COLOR_FIELDS = [
-  { key: 'accent', label: 'Primary accent', desc: 'Tasks, active nav, buttons, highlights' },
+  { key: 'accent', label: 'Primary accent', desc: 'Tasks, active nav, buttons' },
   { key: 'event', label: 'Events color', desc: 'All event-related colors' },
   { key: 'bg', label: 'Page background', desc: 'Main app background' },
-  { key: 'bgCard', label: 'Card background', desc: 'Cards, tiles, modals' },
+  { key: 'bgCard', label: 'Card background', desc: 'Cards and tiles' },
   { key: 'textPrimary', label: 'Primary text', desc: 'Main text color' },
-  { key: 'textMuted', label: 'Muted text', desc: 'Labels and secondary text' },
 ]
 
-export function applyTheme(theme) {
-  const r = document.documentElement.style
-  r.setProperty('--accent', theme.accent)
-  r.setProperty('--accent-dim', theme.accentDim)
-  r.setProperty('--accent-border', theme.accentBorder)
-  r.setProperty('--accent-text', theme.accentText)
-  r.setProperty('--bg', theme.bg)
-  r.setProperty('--bg-card', theme.bgCard)
-  r.setProperty('--bg-input', theme.bg)
-  r.setProperty('--text-primary', theme.textPrimary)
-  r.setProperty('--text-muted', theme.textMuted)
-  // Store event colors as custom props for inline styles to read
-  r.setProperty('--event-color', theme.event)
-  r.setProperty('--event-dim', theme.eventDim)
-  r.setProperty('--event-border', theme.eventBorder)
-}
-
 export default function Settings() {
-  const [theme, setTheme] = useState(() => {
-    try {
-      const s = localStorage.getItem('lifeos_theme')
-      return s ? { ...DEFAULT_THEME, ...JSON.parse(s) } : { ...DEFAULT_THEME }
-    } catch { return { ...DEFAULT_THEME } }
-  })
+  const { theme, updateTheme } = useTheme()
   const [activePreset, setActivePreset] = useState('Default')
 
-  useEffect(() => { applyTheme(theme) }, [])
-
-  const save = (t) => {
-    setTheme(t)
-    applyTheme(t)
-    localStorage.setItem('lifeos_theme', JSON.stringify(t))
+  const applyPreset = (preset) => {
+    setActivePreset(preset.name)
+    updateTheme(preset.theme)
   }
 
   const updateColor = (key, value) => {
     const next = { ...theme, [key]: value }
     if (key === 'accent') {
-      // Auto-derive dim and border by darkening
       next.accentDim = value + '22'
       next.accentBorder = value + '99'
       next.accentText = value
@@ -109,12 +69,7 @@ export default function Settings() {
       next.eventBorder = value + '66'
     }
     setActivePreset(null)
-    save(next)
-  }
-
-  const applyPreset = (preset) => {
-    setActivePreset(preset.name)
-    save(preset.theme)
+    updateTheme(next)
   }
 
   return (
@@ -160,6 +115,10 @@ export default function Settings() {
       <button onClick={() => applyPreset(PRESETS[0])} style={{ width: '100%', padding: 14, borderRadius: 14, background: '#161618', border: '1px solid #242428', color: '#555', fontSize: 14, fontWeight: 500, cursor: 'pointer', fontFamily: "'DM Sans'" }}>
         Reset to default
       </button>
+
+      <div style={{ textAlign: 'center', fontSize: 12, color: '#333', marginTop: 16 }}>
+        Changes apply instantly across the whole app
+      </div>
     </div>
   )
 }
