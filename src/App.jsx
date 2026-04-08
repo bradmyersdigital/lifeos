@@ -34,6 +34,7 @@ function Shell() {
     try {
       const saved = localStorage.getItem('lifeos_theme')
       if (saved) {
+<<<<<<< HEAD
         const t = JSON.parse(saved)
         const r = document.documentElement.style
         if (t.accent) r.setProperty('--accent', t.accent)
@@ -47,6 +48,21 @@ function Shell() {
         if (t.bgCard) r.setProperty('--bg-card', t.bgCard)
         if (t.textPrimary) r.setProperty('--text-primary', t.textPrimary)
         if (t.textMuted) r.setProperty('--text-muted', t.textMuted)
+=======
+        const theme = JSON.parse(saved)
+        const root = document.documentElement
+        if (theme.accent) root.style.setProperty('--accent', theme.accent)
+        if (theme.accentBg) root.style.setProperty('--accent-bg', theme.accentBg)
+        if (theme.accentBorder) root.style.setProperty('--accent-border', theme.accentBorder)
+        if (theme.event) root.style.setProperty('--event', theme.event)
+        if (theme.eventBg) root.style.setProperty('--event-bg', theme.eventBg)
+        if (theme.eventBorder) root.style.setProperty('--event-border', theme.eventBorder)
+        if (theme.navBg) root.style.setProperty('--nav-bg', theme.navBg)
+        if (theme.cardBg) root.style.setProperty('--card-bg', theme.cardBg)
+        if (theme.pageBg) root.style.setProperty('--page-bg', theme.pageBg)
+        if (theme.text) root.style.setProperty('--text', theme.text)
+        if (theme.textMuted) root.style.setProperty('--text-muted', theme.textMuted)
+>>>>>>> 3f15b78d198e66246b30e65bdbebae36c4ed8177
       }
     } catch {}
   }, [])

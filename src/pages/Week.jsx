@@ -265,19 +265,19 @@ export default function Week({ onAddTask, onEditTask }) {
               const isToday = dateStr === todayStr
               const isPast = dateStr < todayStr
               return (
-                <div key={idx} onClick={() => openDaySheet(dateStr)} style={{ background: isToday ? '#1e1208' : '#161618', border: `1px solid ${isToday ? '#7a3410' : '#1e1e24'}`, borderRadius: 10, padding: '5px 3px', height: 60, overflow: 'hidden', cursor: 'pointer' }}>
-                  <div style={{ fontSize: 12, fontWeight: 500, color: isToday ? '#e8823a' : isPast ? '#444' : '#888', textAlign: 'center', marginBottom: 3 }}>{day}</div>
+                <div key={idx} onClick={() => openDaySheet(dateStr)} style={{ background: isToday ? '#1e1208' : '#161618', border: `1px solid ${isToday ? '#7a3410' : '#1e1e24'}`, borderRadius: 10, padding: '6px 4px', minHeight: 72, cursor: 'pointer' }}>
+                  <div style={{ fontSize: 13, fontWeight: 500, color: isToday ? '#e8823a' : isPast ? '#444' : '#888', textAlign: 'center', marginBottom: 4 }}>{day}</div>
                   {de.slice(0,1).map((ev, ti) => (
-                    <div key={ti} style={{ fontSize: 8, padding: '1px 2px', borderRadius: 3, background: '#0a1e14', color: '#10b981', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginBottom: 1, lineHeight: '12px' }}>
-                      {ev.title}
+                    <div key={ti} style={{ fontSize: 9, padding: '2px 4px', borderRadius: 4, background: '#0a1e14', color: '#10b981', border: '1px solid #1a4a2a', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginBottom: 2 }}>
+                      🗓 {ev.title}
                     </div>
                   ))}
-                  {dt.slice(0, de.length > 0 ? 1 : 2).map((t, ti) => (
-                    <div key={ti} style={{ fontSize: 8, padding: '1px 2px', borderRadius: 3, background: (SECTOR_COLORS[t.sector?.toLowerCase()] || '#555') + '33', color: SECTOR_COLORS[t.sector?.toLowerCase()] || '#888', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginBottom: 1, lineHeight: '12px' }}>
+                  {dt.slice(0, 2).map((t, ti) => (
+                    <div key={ti} style={{ fontSize: 9, padding: '2px 4px', borderRadius: 4, background: (SECTOR_COLORS[t.sector?.toLowerCase()] || '#555') + '33', color: SECTOR_COLORS[t.sector?.toLowerCase()] || '#888', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginBottom: 2 }}>
                       {t.name}
                     </div>
                   ))}
-                  {(dt.length + de.length) > 2 && <div style={{ fontSize: 8, color: '#555', textAlign: 'center', lineHeight: '12px' }}>+{dt.length + de.length - 2}</div>}
+                  {(dt.length + de.length) > 3 && <div style={{ fontSize: 9, color: '#555', textAlign: 'center' }}>+{dt.length + de.length - 3}</div>}
                 </div>
               )
             })}

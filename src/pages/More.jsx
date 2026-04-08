@@ -7,6 +7,7 @@ const MENU_ITEMS = [
   { label: 'Finance', icon: '💰', desc: 'Income, bills, subscriptions, savings', path: '/finance', color: '#10b981' },
   { label: 'Goals', icon: '🎯', desc: 'Long-term direction and vision', path: '/goals', color: '#f59e0b' },
   { label: 'Real Estate', icon: '🏠', desc: 'Deals, properties, pipeline', path: '/realestate', color: '#3b82f6' },
+  { label: 'Settings', icon: '⚙️', desc: 'Colors, themes, preferences', path: '/settings', color: '#888888' },
 ]
 
 export default function More() {
@@ -28,7 +29,7 @@ export default function More() {
         ))}
       </div>
       <div style={{ marginTop: 32, padding: '16px 20px', background: '#161618', border: '1px dashed #2a2a30', borderRadius: 16, textAlign: 'center' }}>
-        <div style={{ fontSize: 13, color: '#444', marginBottom: 6 }}>More coming soon</div>
+        <div style={{ fontSize: 13, color: '#444', marginBottom: 6 }}>More sections coming soon</div>
         <div style={{ fontSize: 12, color: '#333' }}>Contacts · Journal · Investments</div>
       </div>
     </div>
