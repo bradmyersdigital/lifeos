@@ -8,9 +8,9 @@ const SECTOR_COLORS = {
 }
 const URG_STYLE = {
   urgent: { bg: '#2a0a0a', color: '#f87171' },
-  high:   { bg: '#1e1208', color: '#e8823a' },
+  high:   { bg: '#1e1208', color: 'var(--accent-text)' },
   medium: { bg: '#1e1a00', color: '#fcd34d' },
-  low:    { bg: '#0a1e14', color: '#6ee7b7' },
+  low:    { bg: '#0a1e14', color: 'var(--event-color)' },
 }
 const DAY_NAMES = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun']
 const EMOJI_PICKS = ['💼','🏠','🏃','📚','🎨','❤️','💰','🌱','⚡','🎯','🔥','✨','🎵','🏋️','🧠','💡','🌍','🚀','📝','🎮','🏆','🛠️','📊','🎭','🧘','🍎','☀️','🌙','💎','🦁']
@@ -330,7 +330,7 @@ export default function Home({ onAddTask, onEditTask, onAddEvent }) {
       {/* Add task buttons */}
       <div className="action-row" style={{ marginBottom: 16 }}>
         <div className="action-btn" style={{ background: 'var(--accent-dim)', border: '1px solid var(--accent-border)', color: 'var(--accent-text)' }} onClick={() => onAddTask('today')}>
-          <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><line x1="7.5" y1="1" x2="7.5" y2="14" stroke="#e8823a" strokeWidth="1.8" strokeLinecap="round"/><line x1="1" y1="7.5" x2="14" y2="7.5" stroke="#e8823a" strokeWidth="1.8" strokeLinecap="round"/></svg>
+          <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><line x1="7.5" y1="1" x2="7.5" y2="14" stroke="var(--accent-text)" strokeWidth="1.8" strokeLinecap="round"/><line x1="1" y1="7.5" x2="14" y2="7.5" stroke="var(--accent-text)" strokeWidth="1.8" strokeLinecap="round"/></svg>
           Add Task
         </div>
         <div className="action-btn" style={{ background: 'var(--event-dim)', border: '1px solid var(--event-border)', color: 'var(--event-color)' }} onClick={() => onAddEvent && onAddEvent()}>
@@ -345,7 +345,7 @@ export default function Home({ onAddTask, onEditTask, onAddEvent }) {
           { label: 'Due today', val: tasks.length + todayEvents.length, color: '#f87171' },
           { label: 'Urgent', val: urgentTasks.length, color: '#f59e0b' },
           { label: 'This week', val: weekTasks.length, color: '#a78bfa' },
-          { label: 'Projects', val: projects.length, color: '#10b981' },
+          { label: 'Projects', val: projects.length, color: 'var(--event-color)' },
         ].map(({ label, val, color }) => (
           <div key={label} style={{ background: '#161618', border: '1px solid #242428', borderRadius: 12, padding: '10px 8px' }}>
             <div style={{ fontSize: 22, fontWeight: 500, color }}>{val}</div>
@@ -374,7 +374,7 @@ export default function Home({ onAddTask, onEditTask, onAddEvent }) {
             : todayAllItems.map(item => item._type === 'event' ? (
               <div key={item.id} style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 7, cursor: 'pointer' }} onClick={() => navigate('/week')}>
                 <svg width="11" height="11" viewBox="0 0 12 12" fill="none" style={{ flexShrink: 0 }}><circle cx="6" cy="6" r="5" stroke="#10b981" strokeWidth="1.3"/><polyline points="6,3 6,6 8,7.5" stroke="#10b981" strokeWidth="1.3" strokeLinecap="round"/></svg>
-                <div style={{ fontSize: 12, color: '#6ee7b7', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.title}</div>
+                <div style={{ fontSize: 12, color: 'var(--event-color)', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.title}</div>
                 <div style={{ fontFamily: "'DM Mono'", fontSize: 10, color: '#1a4a2a', flexShrink: 0 }}>{item.start_time}</div>
               </div>
             ) : (
@@ -460,14 +460,14 @@ export default function Home({ onAddTask, onEditTask, onAddEvent }) {
               const dayName = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][evDate.getDay()]
               const isToday = ev.start_date === todayStr
               return (
-                <div key={ev.id} onClick={() => navigate('/week')} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '11px 14px', background: '#0a1e14', border: '1px solid #1a4a2a', borderRadius: 12, cursor: 'pointer' }}>
+                <div key={ev.id} onClick={() => navigate('/week')} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '11px 14px', background: 'var(--event-dim)', border: '1px solid var(--event-border)', borderRadius: 12, cursor: 'pointer' }}>
                   <div style={{ textAlign: 'center', flexShrink: 0 }}>
                     <div style={{ fontSize: 10, fontWeight: 600, color: isToday ? '#d4520f' : '#1a4a2a', textTransform: 'uppercase' }}>{isToday ? 'Today' : dayName}</div>
                     <div style={{ fontSize: 18, fontWeight: 500, color: isToday ? '#e8823a' : '#6ee7b7' }}>{evDate.getDate()}</div>
                   </div>
                   <div style={{ width: 1, height: 32, background: '#1a4a2a', flexShrink: 0 }} />
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 14, fontWeight: 500, color: '#6ee7b7', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{ev.title}</div>
+                    <div style={{ fontSize: 14, fontWeight: 500, color: 'var(--event-color)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{ev.title}</div>
                     <div style={{ fontSize: 11, color: '#1a4a2a', marginTop: 2, fontFamily: "'DM Mono'" }}>{ev.start_time} → {ev.end_time}{ev.location ? ` · 📍 ${ev.location}` : ''}</div>
                   </div>
                 </div>

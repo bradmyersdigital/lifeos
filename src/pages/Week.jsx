@@ -146,7 +146,7 @@ export default function Week({ onAddTask, onEditTask }) {
         </div>
         <div style={{ display: 'flex', background: '#161618', border: '1px solid #242428', borderRadius: 10, overflow: 'hidden' }}>
           {['week','month'].map(v => (
-            <div key={v} onClick={() => setView(v)} style={{ padding: '7px 14px', fontSize: 12, fontWeight: 500, cursor: 'pointer', background: view === v ? '#1e1208' : 'transparent', color: view === v ? '#d4520f' : '#666', transition: 'all 0.15s' }}>
+            <div key={v} onClick={() => setView(v)} style={{ padding: '7px 14px', fontSize: 12, fontWeight: 500, cursor: 'pointer', background: view === v ? 'var(--accent-dim)' : 'transparent', color: view === v ? 'var(--accent)' : '#666', transition: 'all 0.15s' }}>
               {v.charAt(0).toUpperCase() + v.slice(1)}
             </div>
           ))}
@@ -155,11 +155,11 @@ export default function Week({ onAddTask, onEditTask }) {
 
       <div className="action-row" style={{ marginBottom: 14 }}>
         <div className="action-btn" style={{ background: 'var(--accent-dim)', border: '1px solid var(--accent-border)', color: 'var(--accent-text)' }} onClick={() => onAddTask('today')}>
-          <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><line x1="7.5" y1="1" x2="7.5" y2="14" stroke="#e8823a" strokeWidth="1.8" strokeLinecap="round"/><line x1="1" y1="7.5" x2="14" y2="7.5" stroke="#e8823a" strokeWidth="1.8" strokeLinecap="round"/></svg>
+          <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><line x1="7.5" y1="1" x2="7.5" y2="14" stroke="var(--accent-text)" strokeWidth="1.8" strokeLinecap="round"/><line x1="1" y1="7.5" x2="14" y2="7.5" stroke="var(--accent-text)" strokeWidth="1.8" strokeLinecap="round"/></svg>
           Add task
         </div>
         <div className="action-btn" style={{ background: 'var(--event-dim)', border: '1px solid var(--event-border)', color: 'var(--event-color)' }} onClick={() => setEventModal({ event: null, date: todayStr })}>
-          <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><rect x="1.5" y="2.5" width="12" height="11" rx="2" stroke="#6ee7b7" strokeWidth="1.4"/><line x1="1.5" y1="6.5" x2="13.5" y2="6.5" stroke="#6ee7b7" strokeWidth="1.4"/><line x1="5" y1="1" x2="5" y2="4" stroke="#6ee7b7" strokeWidth="1.4" strokeLinecap="round"/><line x1="10" y1="1" x2="10" y2="4" stroke="#6ee7b7" strokeWidth="1.4" strokeLinecap="round"/></svg>
+          <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><rect x="1.5" y="2.5" width="12" height="11" rx="2" stroke="var(--event-color)" strokeWidth="1.4"/><line x1="1.5" y1="6.5" x2="13.5" y2="6.5" stroke="var(--event-color)" strokeWidth="1.4"/><line x1="5" y1="1" x2="5" y2="4" stroke="var(--event-color)" strokeWidth="1.4" strokeLinecap="round"/><line x1="10" y1="1" x2="10" y2="4" stroke="var(--event-color)" strokeWidth="1.4" strokeLinecap="round"/></svg>
           Add event
         </div>
       </div>
@@ -174,7 +174,7 @@ export default function Week({ onAddTask, onEditTask }) {
 
       <div style={{ display: 'flex', gap: 6, marginBottom: 16, overflowX: 'auto', paddingBottom: 4 }}>
         {SECTORS.map(s => (
-          <div key={s} onClick={() => setActiveFilter(s)} style={{ padding: '5px 12px', borderRadius: 20, fontSize: 12, fontWeight: 500, cursor: 'pointer', border: '1px solid', whiteSpace: 'nowrap', transition: 'all 0.15s', background: activeFilter === s ? '#1e1208' : '#161618', borderColor: activeFilter === s ? '#7a3410' : '#242428', color: activeFilter === s ? '#d4520f' : '#666' }}>
+          <div key={s} onClick={() => setActiveFilter(s)} style={{ padding: '5px 12px', borderRadius: 20, fontSize: 12, fontWeight: 500, cursor: 'pointer', border: '1px solid', whiteSpace: 'nowrap', transition: 'all 0.15s', background: activeFilter === s ? 'var(--accent-dim)' : '#161618', borderColor: activeFilter === s ? 'var(--accent-border)' : '#242428', color: activeFilter === s ? 'var(--accent)' : '#666' }}>
             {s === 'all' ? 'All' : sectors.find(sec => sec.name.toLowerCase() === s)?.name || s.charAt(0).toUpperCase() + s.slice(1)}
           </div>
         ))}
@@ -182,7 +182,7 @@ export default function Week({ onAddTask, onEditTask }) {
 
       {/* Routines toggle */}
       <div style={{ marginBottom: 12 }}>
-        <div onClick={() => setShowRoutines(!showRoutines)} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '5px 12px', borderRadius: 20, fontSize: 12, fontWeight: 500, cursor: 'pointer', border: '1px solid', background: showRoutines ? '#1e1208' : '#161618', borderColor: showRoutines ? '#7a3410' : '#242428', color: showRoutines ? '#d4520f' : '#666' }}>
+        <div onClick={() => setShowRoutines(!showRoutines)} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '5px 12px', borderRadius: 20, fontSize: 12, fontWeight: 500, cursor: 'pointer', border: '1px solid', background: showRoutines ? 'var(--accent-dim)' : '#161618', borderColor: showRoutines ? 'var(--accent-border)' : '#242428', color: showRoutines ? 'var(--accent)' : '#666' }}>
           🕐 {showRoutines ? 'Hide routines' : 'Show routines'}
         </div>
       </div>
@@ -190,10 +190,10 @@ export default function Week({ onAddTask, onEditTask }) {
       {/* Legend */}
       <div style={{ display: 'flex', gap: 12, marginBottom: 14 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, color: '#555' }}>
-          <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#d4520f' }} /> Tasks
+          <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--accent)' }} /> Tasks
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, color: '#555' }}>
-          <div style={{ width: 20, height: 8, borderRadius: 4, background: '#1a4a2a', border: '1px solid #10b981' }} /> Events
+          <div style={{ width: 20, height: 8, borderRadius: 4, background: 'var(--event-dim)', border: '1px solid var(--event-color)' }} /> Events
         </div>
       </div>
 
@@ -209,8 +209,8 @@ export default function Week({ onAddTask, onEditTask }) {
         return (
           <div key={date} style={{ marginBottom: 14 }}>
             <div onClick={() => openDaySheet(date)} style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8, cursor: 'pointer' }}>
-              <div style={{ width: 36, height: 36, borderRadius: '50%', background: isToday ? '#d4520f' : 'transparent', border: isToday ? 'none' : `1px solid ${isPast ? '#1e1e24' : '#242428'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 500, color: isToday ? '#fff' : isPast ? '#444' : '#888', flexShrink: 0 }}>{d.getDate()}</div>
-              <div style={{ fontSize: 13, fontWeight: 500, color: isToday ? '#d4520f' : isPast ? '#444' : '#888' }}>{DAY_NAMES[i]}</div>
+              <div style={{ width: 36, height: 36, borderRadius: '50%', background: isToday ? 'var(--accent)' : 'transparent', border: isToday ? 'none' : `1px solid ${isPast ? '#1e1e24' : '#242428'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 500, color: isToday ? '#fff' : isPast ? '#444' : '#888', flexShrink: 0 }}>{d.getDate()}</div>
+              <div style={{ fontSize: 13, fontWeight: 500, color: isToday ? 'var(--accent)' : isPast ? '#444' : '#888' }}>{DAY_NAMES[i]}</div>
               {total > 0 && <div style={{ fontSize: 11, color: '#444', fontFamily: "'DM Mono'", marginLeft: 'auto' }}>{total} item{total > 1 ? 's' : ''}</div>}
               <div style={{ fontSize: 18, color: '#333' }}>+</div>
             </div>
@@ -218,13 +218,13 @@ export default function Week({ onAddTask, onEditTask }) {
               ? <div onClick={() => openDaySheet(date)} style={{ padding: '10px 14px', fontSize: 13, color: '#2a2a2a', border: '1px dashed #1e1e24', borderRadius: 10, textAlign: 'center', cursor: 'pointer' }}>Tap to add</div>
               : <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                   {items.map(item => item._type === 'event' ? (
-                    <div key={item.id} onClick={() => setEventModal({ event: item, date: item.start_date })} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', background: '#0a1e14', border: '1px solid #1a4a2a', borderRadius: 12, cursor: 'pointer' }}>
-                      <svg width="12" height="12" viewBox="0 0 12 12" fill="none" style={{ flexShrink: 0 }}><circle cx="6" cy="6" r="5" stroke="#10b981" strokeWidth="1.3"/><polyline points="6,3 6,6 8,7.5" stroke="#10b981" strokeWidth="1.3" strokeLinecap="round"/></svg>
+                    <div key={item.id} onClick={() => setEventModal({ event: item, date: item.start_date })} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', background: 'var(--event-dim)', border: '1px solid var(--event-border)', borderRadius: 12, cursor: 'pointer' }}>
+                      <svg width="12" height="12" viewBox="0 0 12 12" fill="none" style={{ flexShrink: 0 }}><circle cx="6" cy="6" r="5" stroke="var(--event-color)" strokeWidth="1.3"/><polyline points="6,3 6,6 8,7.5" stroke="var(--event-color)" strokeWidth="1.3" strokeLinecap="round"/></svg>
                       <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontSize: 14, color: '#6ee7b7', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.title}</div>
-                        {item.location && <div style={{ fontSize: 11, color: '#1a4a2a', marginTop: 2 }}>📍 {item.location}</div>}
+                        <div style={{ fontSize: 14, color: 'var(--event-color)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.title}</div>
+                        {item.location && <div style={{ fontSize: 11, color: 'var(--event-border)', marginTop: 2 }}>📍 {item.location}</div>}
                       </div>
-                      <div style={{ fontFamily: "'DM Mono'", fontSize: 11, color: '#1a4a2a', flexShrink: 0, textAlign: 'right' }}>{item.start_time}{item.end_time ? ` → ${item.end_time}` : ''}</div>
+                      <div style={{ fontFamily: "'DM Mono'", fontSize: 11, color: 'var(--event-border)', flexShrink: 0, textAlign: 'right' }}>{item.start_time}{item.end_time ? ` → ${item.end_time}` : ''}</div>
                     </div>
                   ) : item._type === 'routine' ? (
                     <div key={item.id + '-r'} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 14px', background: '#161618', border: '1px dashed #2a1a5c', borderRadius: 12, opacity: 0.75 }}>
@@ -266,12 +266,12 @@ export default function Week({ onAddTask, onEditTask }) {
               const isPast = dateStr < todayStr
               return (
                 <div key={idx} onClick={() => openDaySheet(dateStr)}
-                  style={{ background: isToday ? '#1e1208' : '#161618', border: `1px solid ${isToday ? '#7a3410' : '#1e1e24'}`, borderRadius: 8, padding: '4px 2px', height: 54, overflow: 'hidden', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                  <div style={{ fontSize: 11, fontWeight: isToday ? 600 : 400, color: isToday ? '#e8823a' : isPast ? '#444' : '#888', marginBottom: 4 }}>{day}</div>
+                  style={{ background: isToday ? 'var(--accent-dim)' : '#161618', border: `1px solid ${isToday ? 'var(--accent-border)' : '#1e1e24'}`, borderRadius: 8, padding: '4px 2px', height: 54, overflow: 'hidden', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                  <div style={{ fontSize: 11, fontWeight: isToday ? 600 : 400, color: isToday ? 'var(--accent-text)' : isPast ? '#444' : '#888', marginBottom: 4 }}>{day}</div>
                   {/* Color dots for items */}
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 2, justifyContent: 'center' }}>
                     {de.slice(0,3).map((ev, ti) => (
-                      <div key={'e'+ti} style={{ width: 6, height: 6, borderRadius: '50%', background: '#10b981', flexShrink: 0 }} />
+                      <div key={'e'+ti} style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--event-color)', flexShrink: 0 }} />
                     ))}
                     {dt.slice(0,4).map((t, ti) => (
                       <div key={'t'+ti} style={{ width: 6, height: 6, borderRadius: '50%', background: SECTOR_COLORS[t.sector?.toLowerCase()] || '#555', flexShrink: 0 }} />
@@ -287,7 +287,7 @@ export default function Week({ onAddTask, onEditTask }) {
           <div style={{ marginTop: 20 }}>
             <div className="section-label">This month</div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 8 }}>
-              {[['Tasks', tasks.length, '#e8e6e1'],['Events', events.length, '#6ee7b7'],['Done', tasks.filter(t=>t.completed).length, '#10b981'],['Left', tasks.filter(t=>!t.completed).length, '#d4520f']].map(([label,val,color]) => (
+              {[['Tasks', tasks.length, '#e8e6e1'],['Events', events.length, 'var(--event-color)'],['Done', tasks.filter(t=>t.completed).length, 'var(--accent)'],['Left', tasks.filter(t=>!t.completed).length, '#d4520f']].map(([label,val,color]) => (
                 <div key={label} style={{ background: '#161618', border: '1px solid #242428', borderRadius: 12, padding: 12 }}>
                   <div style={{ fontSize: 11, color: '#555', marginBottom: 3 }}>{label}</div>
                   <div style={{ fontSize: 20, fontWeight: 500, color }}>{val}</div>
@@ -309,11 +309,11 @@ export default function Week({ onAddTask, onEditTask }) {
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 20 }}>
               <div onClick={() => { setDaySheet(null); onAddTask('scheduled') }} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '13px', borderRadius: 12, background: 'var(--accent-dim)', border: '1px solid var(--accent-border)', color: 'var(--accent-text)', fontSize: 14, fontWeight: 500, cursor: 'pointer' }}>
-                <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><line x1="7.5" y1="1" x2="7.5" y2="14" stroke="#e8823a" strokeWidth="1.8" strokeLinecap="round"/><line x1="1" y1="7.5" x2="14" y2="7.5" stroke="#e8823a" strokeWidth="1.8" strokeLinecap="round"/></svg>
+                <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><line x1="7.5" y1="1" x2="7.5" y2="14" stroke="var(--accent-text)" strokeWidth="1.8" strokeLinecap="round"/><line x1="1" y1="7.5" x2="14" y2="7.5" stroke="var(--accent-text)" strokeWidth="1.8" strokeLinecap="round"/></svg>
                 Add task
               </div>
               <div onClick={() => { setEventModal({ event: null, date: daySheet.date }); setDaySheet(null) }} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '13px', borderRadius: 12, background: 'var(--event-dim)', border: '1px solid var(--event-border)', color: 'var(--event-color)', fontSize: 14, fontWeight: 500, cursor: 'pointer' }}>
-                <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><rect x="1.5" y="2.5" width="12" height="11" rx="2" stroke="#6ee7b7" strokeWidth="1.4"/><line x1="1.5" y1="6.5" x2="13.5" y2="6.5" stroke="#6ee7b7" strokeWidth="1.4"/><line x1="5" y1="1" x2="5" y2="4" stroke="#6ee7b7" strokeWidth="1.4" strokeLinecap="round"/><line x1="10" y1="1" x2="10" y2="4" stroke="#6ee7b7" strokeWidth="1.4" strokeLinecap="round"/></svg>
+                <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><rect x="1.5" y="2.5" width="12" height="11" rx="2" stroke="var(--event-color)" strokeWidth="1.4"/><line x1="1.5" y1="6.5" x2="13.5" y2="6.5" stroke="var(--event-color)" strokeWidth="1.4"/><line x1="5" y1="1" x2="5" y2="4" stroke="var(--event-color)" strokeWidth="1.4" strokeLinecap="round"/><line x1="10" y1="1" x2="10" y2="4" stroke="var(--event-color)" strokeWidth="1.4" strokeLinecap="round"/></svg>
                 Add event
               </div>
             </div>
@@ -323,12 +323,12 @@ export default function Week({ onAddTask, onEditTask }) {
             )}
 
             {daySheet.events.map(ev => (
-              <div key={ev.id} onClick={() => { setDaySheet(null); setEventModal({ event: ev, date: ev.start_date }) }} style={{ display: 'flex', gap: 12, padding: '12px 14px', background: '#0a1e14', border: '1px solid #1a4a2a', borderRadius: 12, marginBottom: 8, cursor: 'pointer' }}>
-                <svg width="14" height="14" viewBox="0 0 14 14" fill="none" style={{ flexShrink: 0, marginTop: 2 }}><circle cx="7" cy="7" r="6" stroke="#10b981" strokeWidth="1.3"/><polyline points="7,4 7,7 9,8.5" stroke="#10b981" strokeWidth="1.3" strokeLinecap="round"/></svg>
+              <div key={ev.id} onClick={() => { setDaySheet(null); setEventModal({ event: ev, date: ev.start_date }) }} style={{ display: 'flex', gap: 12, padding: '12px 14px', background: 'var(--event-dim)', border: '1px solid var(--event-border)', borderRadius: 12, marginBottom: 8, cursor: 'pointer' }}>
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none" style={{ flexShrink: 0, marginTop: 2 }}><circle cx="7" cy="7" r="6" stroke="var(--event-color)" strokeWidth="1.3"/><polyline points="7,4 7,7 9,8.5" stroke="var(--event-color)" strokeWidth="1.3" strokeLinecap="round"/></svg>
                 <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 14, color: '#6ee7b7', fontWeight: 500 }}>{ev.title}</div>
-                  {ev.start_time && <div style={{ fontSize: 12, color: '#1a4a2a', fontFamily: "'DM Mono'", marginTop: 2 }}>{ev.start_time} → {ev.end_time}</div>}
-                  {ev.location && <div style={{ fontSize: 12, color: '#1a4a2a', marginTop: 2 }}>📍 {ev.location}</div>}
+                  <div style={{ fontSize: 14, color: 'var(--event-color)', fontWeight: 500 }}>{ev.title}</div>
+                  {ev.start_time && <div style={{ fontSize: 12, color: 'var(--event-border)', fontFamily: "'DM Mono'", marginTop: 2 }}>{ev.start_time} → {ev.end_time}</div>}
+                  {ev.location && <div style={{ fontSize: 12, color: 'var(--event-border)', marginTop: 2 }}>📍 {ev.location}</div>}
                 </div>
               </div>
             ))}
