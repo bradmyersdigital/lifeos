@@ -89,6 +89,77 @@ function HabitModal({ habit, onClose, onSaved }) {
 }
 
 
+
+function HabitStats({ habits, logs, isLogged, getStreak, statsPeriod, setStatsPeriod }) {
+  const now = new Date()
+  const days = statsPeriod === 'week' ? 7 : 30
+  const dates = Array.from({length: days}, (_, i) => {
+    const d = new Date(now); d.setDate(d.getDate() - (days - 1 - i))
+    const yr = d.getFullYear(), mo = String(d.getMonth()+1).padStart(2,'0'), dy = String(d.getDate()).padStart(2,'0')
+    return { str: `${yr}-${mo}-${dy}`, label: String(d.getDate()), day: d.getDay() }
+  })
+
+  return (
+    <div>
+      <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
+        {[['week','This week'],['month','30 days']].map(([p,label]) => (
+          <div key={p} onClick={() => setStatsPeriod(p)} style={{ padding: '6px 16px', borderRadius: 20, fontSize: 13, fontWeight: 500, cursor: 'pointer', border: '1px solid', background: statsPeriod === p ? '#1e1208' : '#161618', borderColor: statsPeriod === p ? '#7a3410' : '#242428', color: statsPeriod === p ? '#d4520f' : '#666' }}>
+            {label}
+          </div>
+        ))}
+      </div>
+      {habits.map(habit => {
+        const scheduledDays = habit.days_of_week?.map(d => parseInt(d)) || [0,1,2,3,4,5,6]
+        const scheduledDates = dates.filter(d => {
+          const dow = d.day === 0 ? 6 : d.day - 1
+          return scheduledDays.includes(dow)
+        })
+        const loggedDates = scheduledDates.filter(d => isLogged(habit.id, d.str))
+        const pct = scheduledDates.length ? Math.round(loggedDates.length / scheduledDates.length * 100) : 0
+        const streak = getStreak(habit.id)
+        const pctColor = pct >= 80 ? '#10b981' : pct >= 50 ? '#f59e0b' : '#f87171'
+
+        return (
+          <div key={habit.id} style={{ background: '#161618', border: '1px solid #242428', borderRadius: 14, padding: 16, marginBottom: 12 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
+              <div style={{ fontSize: 22 }}>{habit.icon}</div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 15, fontWeight: 500 }}>{habit.name}</div>
+                <div style={{ fontSize: 11, color: '#555', marginTop: 2 }}>{loggedDates.length}/{scheduledDates.length} days · {streak} day streak</div>
+              </div>
+              <div style={{ fontSize: 22, fontWeight: 600, color: pctColor, fontFamily: "'DM Mono'" }}>{pct}%</div>
+            </div>
+
+            {/* Bar chart */}
+            <div style={{ display: 'flex', gap: 2, alignItems: 'flex-end', height: 52, marginBottom: 8 }}>
+              {dates.map(d => {
+                const dow = d.day === 0 ? 6 : d.day - 1
+                const isScheduled = scheduledDays.includes(dow)
+                const logged = isLogged(habit.id, d.str)
+                return (
+                  <div key={d.str} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
+                    <div style={{ width: '100%', height: logged ? 44 : isScheduled ? 8 : 3, borderRadius: 3, background: logged ? pctColor : isScheduled ? '#1e1e24' : '#0f0f11', transition: 'height 0.3s' }} />
+                    {days <= 7 && <div style={{ fontSize: 9, color: '#444', fontFamily: "'DM Mono'" }}>{d.label}</div>}
+                  </div>
+                )
+              })}
+            </div>
+
+            {/* Completion bar */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <div style={{ flex: 1, height: 5, background: '#1e1e24', borderRadius: 3, overflow: 'hidden' }}>
+                <div style={{ height: '100%', width: pct + '%', background: pctColor, borderRadius: 3, transition: 'width 0.5s' }} />
+              </div>
+              <div style={{ fontFamily: "'DM Mono'", fontSize: 11, color: '#666', minWidth: 32 }}>{loggedDates.length}/{scheduledDates.length}</div>
+            </div>
+          </div>
+        )
+      })}
+      {habits.length === 0 && <div style={{ textAlign: 'center', padding: '40px', color: '#444', fontSize: 13 }}>No habits to show stats for</div>}
+    </div>
+  )
+}
+
 function RoutineModal({ routine, onClose, onSaved }) {
   const isEdit = !!routine
   const [name, setName] = useState(routine?.name || '')
@@ -378,23 +449,22 @@ export default function Habits() {
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 8, marginBottom: 20 }}>
-        {[
-          ['Today', `${doneToday}/${scheduledHabitsToday.length}`, '#e8e6e1', 'completed'],
-          ['Best streak', Math.max(0,...habits.map(h=>getStreak(h.id))), '#d4520f','days'],
-          ['Total', habits.length, '#a78bfa','habits'],
-        ].map(([label,val,color,sub])=>(
-          <div key={label} style={{ background: '#161618', border: '1px solid #242428', borderRadius: 11, padding: 12 }}>
-            <div style={{ fontSize: 11, color: '#555', marginBottom: 3 }}>{label}</div>
-            <div style={{ fontSize: 18, fontWeight: 500, color }}>{val}</div>
-            <div style={{ fontSize: 11, color: '#444', marginTop: 2, fontFamily: "'DM Mono'" }}>{sub}</div>
-          </div>
-        ))}
-      </div>
-
       {view === 'today' && (
         <div>
-          <div style={{ fontSize: 12, color: '#444', marginBottom: 12 }}>Hold to reorder · tap icon to edit · tap day dots to log past days</div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 8, marginBottom: 16 }}>
+            {[
+              ['Today', `${doneToday}/${scheduledHabitsToday.length}`, '#e8e6e1', 'completed'],
+              ['Best streak', Math.max(0,...habits.map(h=>getStreak(h.id))), '#d4520f','days'],
+              ['Total', habits.length, '#a78bfa','habits'],
+            ].map(([label,val,color,sub])=>(
+              <div key={label} style={{ background: '#161618', border: '1px solid #242428', borderRadius: 11, padding: 12 }}>
+                <div style={{ fontSize: 11, color: '#555', marginBottom: 3 }}>{label}</div>
+                <div style={{ fontSize: 18, fontWeight: 500, color }}>{val}</div>
+                <div style={{ fontSize: 11, color: '#444', marginTop: 2, fontFamily: "'DM Mono'" }}>{sub}</div>
+              </div>
+            ))}
+          </div>
+          <div style={{ fontSize: 12, color: '#444', marginBottom: 12 }}>Hold icon to reorder · tap name to view history · tap day dots to log</div>
           {habits.map((habit, idx) => {
             const isScheduledToday = habitScheduledToday(habit, todayIdx)
             const done = isLogged(habit.id, todayStr)
@@ -586,74 +656,7 @@ export default function Habits() {
         />
       )}
 
-      {view === 'stats' && (() => {
-        const now = new Date()
-        const days = statsPeriod === 'week' ? 7 : 30
-        const dates = Array.from({length: days}, (_, i) => {
-          const d = new Date(now); d.setDate(d.getDate() - (days - 1 - i))
-          const yr = d.getFullYear(), mo = String(d.getMonth()+1).padStart(2,'0'), dy = String(d.getDate()).padStart(2,'0')
-          return { str: `${yr}-${mo}-${dy}`, label: String(d.getDate()), day: d.getDay() }
-        })
-
-        return (
-          <div>
-            <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
-              {[['week','This week'],['month','30 days']].map(([p,label]) => (
-                <div key={p} onClick={() => setStatsPeriod(p)} style={{ padding: '6px 16px', borderRadius: 20, fontSize: 13, fontWeight: 500, cursor: 'pointer', border: '1px solid', background: statsPeriod === p ? '#1e1208' : '#161618', borderColor: statsPeriod === p ? '#7a3410' : '#242428', color: statsPeriod === p ? '#d4520f' : '#666' }}>
-                  {label}
-                </div>
-              ))}
-            </div>
-
-            {habits.map(habit => {
-              const scheduledDays = habit.days_of_week?.map(d => parseInt(d)) || [0,1,2,3,4,5,6]
-              const scheduledDates = dates.filter(d => {
-                const dow = d.day === 0 ? 6 : d.day - 1
-                return scheduledDays.includes(dow)
-              })
-              const loggedDates = scheduledDates.filter(d => isLogged(habit.id, d.str))
-              const pct = scheduledDates.length ? Math.round(loggedDates.length / scheduledDates.length * 100) : 0
-              const streak = getStreak(habit.id)
-
-              return (
-                <div key={habit.id} style={{ background: '#161618', border: '1px solid #242428', borderRadius: 14, padding: 16, marginBottom: 12 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
-                    <div style={{ fontSize: 22 }}>{habit.icon}</div>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: 15, fontWeight: 500 }}>{habit.name}</div>
-                      <div style={{ fontSize: 11, color: '#555', marginTop: 2 }}>{loggedDates.length}/{scheduledDates.length} days · {streak} day streak</div>
-                    </div>
-                    <div style={{ fontSize: 20, fontWeight: 500, color: pct >= 80 ? '#10b981' : pct >= 50 ? '#f59e0b' : '#f87171', fontFamily: "'DM Mono'" }}>{pct}%</div>
-                  </div>
-
-                  {/* Bar chart — one bar per day */}
-                  <div style={{ display: 'flex', gap: 3, alignItems: 'flex-end', height: 48 }}>
-                    {dates.map(d => {
-                      const dow = d.day === 0 ? 6 : d.day - 1
-                      const isScheduled = scheduledDays.includes(dow)
-                      const logged = isLogged(habit.id, d.str)
-                      return (
-                        <div key={d.str} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
-                          <div style={{ width: '100%', height: logged ? 40 : isScheduled ? 8 : 4, borderRadius: 4, background: logged ? '#10b981' : isScheduled ? '#1e1e24' : '#0f0f11', transition: 'height 0.3s' }} />
-                          {days <= 7 && <div style={{ fontSize: 9, color: '#444', fontFamily: "'DM Mono'" }}>{d.label}</div>}
-                        </div>
-                      )
-                    })}
-                  </div>
-
-                  {/* Completion bar */}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 10 }}>
-                    <div style={{ flex: 1, height: 6, background: '#1e1e24', borderRadius: 3, overflow: 'hidden' }}>
-                      <div style={{ height: '100%', width: pct + '%', background: pct >= 80 ? '#10b981' : pct >= 50 ? '#f59e0b' : '#f87171', borderRadius: 3, transition: 'width 0.4s' }} />
-                    </div>
-                    <div style={{ fontFamily: "'DM Mono'", fontSize: 11, color: '#666', minWidth: 32 }}>{pct}%</div>
-                  </div>
-                </div>
-              )
-            })}
-          </div>
-        )
-      })()}
+      {view === 'stats' && <HabitStats habits={habits} logs={logs} isLogged={isLogged} getStreak={getStreak} statsPeriod={statsPeriod} setStatsPeriod={setStatsPeriod} />}
 
       {habitModal && <HabitModal habit={habitModal === 'new' ? null : habitModal} onClose={() => setHabitModal(null)} onSaved={loadAll} />}
     </div>

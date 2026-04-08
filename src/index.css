@@ -19,6 +19,10 @@
   --font-mono: 'DM Mono', monospace;
   --nav-height: 64px;
   --safe-bottom: env(safe-area-inset-bottom, 0px);
+  /* Theme-overridable event colors */
+  --event-color: #10b981;
+  --event-dim: #0a1e14;
+  --event-border: #1a4a2a;
 }
 
 html, body, #root {
@@ -61,7 +65,7 @@ body {
   max-width: 820px;
   height: calc(var(--nav-height) + var(--safe-bottom));
   padding-bottom: var(--safe-bottom);
-  background: var(--bg);
+  background: var(--bg-card);
   border-top: 1px solid #1e1e22;
   display: flex;
   justify-content: space-around;

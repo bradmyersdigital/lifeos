@@ -265,19 +265,21 @@ export default function Week({ onAddTask, onEditTask }) {
               const isToday = dateStr === todayStr
               const isPast = dateStr < todayStr
               return (
-                <div key={idx} onClick={() => openDaySheet(dateStr)} style={{ background: isToday ? '#1e1208' : '#161618', border: `1px solid ${isToday ? '#7a3410' : '#1e1e24'}`, borderRadius: 10, padding: '6px 4px', minHeight: 72, cursor: 'pointer' }}>
-                  <div style={{ fontSize: 13, fontWeight: 500, color: isToday ? '#e8823a' : isPast ? '#444' : '#888', textAlign: 'center', marginBottom: 4 }}>{day}</div>
-                  {de.slice(0,1).map((ev, ti) => (
-                    <div key={ti} style={{ fontSize: 9, padding: '2px 4px', borderRadius: 4, background: '#0a1e14', color: '#10b981', border: '1px solid #1a4a2a', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginBottom: 2 }}>
-                      🗓 {ev.title}
-                    </div>
-                  ))}
-                  {dt.slice(0, 2).map((t, ti) => (
-                    <div key={ti} style={{ fontSize: 9, padding: '2px 4px', borderRadius: 4, background: (SECTOR_COLORS[t.sector?.toLowerCase()] || '#555') + '33', color: SECTOR_COLORS[t.sector?.toLowerCase()] || '#888', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginBottom: 2 }}>
-                      {t.name}
-                    </div>
-                  ))}
-                  {(dt.length + de.length) > 3 && <div style={{ fontSize: 9, color: '#555', textAlign: 'center' }}>+{dt.length + de.length - 3}</div>}
+                <div key={idx} onClick={() => openDaySheet(dateStr)}
+                  style={{ background: isToday ? '#1e1208' : '#161618', border: `1px solid ${isToday ? '#7a3410' : '#1e1e24'}`, borderRadius: 8, padding: '4px 2px', height: 54, overflow: 'hidden', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                  <div style={{ fontSize: 11, fontWeight: isToday ? 600 : 400, color: isToday ? '#e8823a' : isPast ? '#444' : '#888', marginBottom: 4 }}>{day}</div>
+                  {/* Color dots for items */}
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 2, justifyContent: 'center' }}>
+                    {de.slice(0,3).map((ev, ti) => (
+                      <div key={'e'+ti} style={{ width: 6, height: 6, borderRadius: '50%', background: '#10b981', flexShrink: 0 }} />
+                    ))}
+                    {dt.slice(0,4).map((t, ti) => (
+                      <div key={'t'+ti} style={{ width: 6, height: 6, borderRadius: '50%', background: SECTOR_COLORS[t.sector?.toLowerCase()] || '#555', flexShrink: 0 }} />
+                    ))}
+                  </div>
+                  {(dt.length + de.length) > 0 && (
+                    <div style={{ fontSize: 8, color: '#444', marginTop: 3, fontFamily: "'DM Mono'" }}>{dt.length + de.length}</div>
+                  )}
                 </div>
               )
             })}
