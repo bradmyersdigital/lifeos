@@ -9,6 +9,7 @@ import Notes from './pages/Notes'
 import Habits from './pages/Habits'
 import More from './pages/More'
 import Finance from './pages/Finance'
+import Settings from './pages/Settings'
 import Goals from './pages/Goals'
 import TaskModal from './components/TaskModal'
 import EventModal from './components/EventModal'
@@ -22,12 +23,33 @@ const NAV = [
   { path: '/more',    label: 'More',    icon: MoreIcon },
 ]
 
-const MORE_PATHS = ['/projects','/notes','/finance','/goals','/realestate']
+const MORE_PATHS = ['/projects','/notes','/finance','/goals','/realestate','/settings']
 
   // Ensure browser back button works naturally by not overriding history
 
 function Shell() {
   const navigate = useNavigate()
+  // Apply saved theme on load
+  React.useEffect(() => {
+    try {
+      const saved = localStorage.getItem('lifeos_theme')
+      if (saved) {
+        const t = JSON.parse(saved)
+        const r = document.documentElement.style
+        if (t.accent) r.setProperty('--accent', t.accent)
+        if (t.accentDim) r.setProperty('--accent-dim', t.accentDim)
+        if (t.accentBorder) r.setProperty('--accent-border', t.accentBorder)
+        if (t.accentText) r.setProperty('--accent-text', t.accentText)
+        if (t.event) r.setProperty('--event-color', t.event)
+        if (t.eventDim) r.setProperty('--event-dim', t.eventDim)
+        if (t.eventBorder) r.setProperty('--event-border', t.eventBorder)
+        if (t.bg) r.setProperty('--bg', t.bg)
+        if (t.bgCard) r.setProperty('--bg-card', t.bgCard)
+        if (t.textPrimary) r.setProperty('--text-primary', t.textPrimary)
+        if (t.textMuted) r.setProperty('--text-muted', t.textMuted)
+      }
+    } catch {}
+  }, [])
   const location = useLocation()
   const [taskModal, setTaskModal] = useState(null)
   const [eventModal, setEventModal] = useState(null)
@@ -63,6 +85,7 @@ function Shell() {
           <Route path="/goals"       element={<Goals key={refreshKey} />} />
           <Route path="/more"        element={<More />} />
           <Route path="/realestate"  element={<More />} />
+          <Route path="/settings"    element={<Settings />} />
         </Routes>
       </div>
       <nav className="bottom-nav">

@@ -80,7 +80,7 @@ function SectorModal({ sector, onClose, onSaved }) {
   )
 }
 
-function SectorDetail({ sector, onEditTask, onAddTask }) {
+function SectorDetail({ sector, onEditTask, onAddTask, onBack }) {
   const navigate = useNavigate()
   const [tasks, setTasks] = useState([])
   const [notes, setNotes] = useState([])
@@ -273,7 +273,7 @@ function SectorDetail({ sector, onEditTask, onAddTask }) {
   return (
     <div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
-        <div onClick={() => navigate(-1)} style={{ width: 34, height: 34, borderRadius: 10, background: '#161618', border: '1px solid #242428', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: 18, color: '#888' }}>‹</div>
+        <div onClick={() => onBack()} style={{ width: 34, height: 34, borderRadius: 10, background: '#161618', border: '1px solid #242428', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: 18, color: '#888' }}>‹</div>
         <div style={{ fontSize: 28 }}>{sector.icon}</div>
         <div><div style={{ fontSize: 20, fontWeight: 500 }}>{sector.name}</div><div style={{ fontSize: 12, color: '#555', marginTop: 1 }}>{tasks.length} tasks · {notes.length} notes · {projects.length} projects</div></div>
       </div>
@@ -445,7 +445,7 @@ export default function Sectors({ onEditTask }) {
     touchStartY.current = null
   }
 
-  if (selected) return <SectorDetail sector={selected} onEditTask={onEditTask} onAddTask={() => {}} />
+  if (selected) return <SectorDetail sector={selected} onEditTask={onEditTask} onAddTask={() => {}} onBack={() => setSelected(null)} />
 
   return (
     <div>
