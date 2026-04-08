@@ -355,18 +355,19 @@ export default function Habits() {
   return (
     <div>
       {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18 }}>
+      {/* Header row */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
         <div style={{ fontSize: 20, fontWeight: 500 }}>Habits</div>
-        <div style={{ display: 'flex', gap: 8 }}>
-          <div style={{ display: 'flex', background: '#161618', border: '1px solid #242428', borderRadius: 10, overflow: 'hidden' }}>
-            {[['today','Today'],['calendar','Cal'],['routines','Routines'],['stats','Stats']].map(([v,label]) => (
-              <div key={v} onClick={() => setView(v)} style={{ padding: '7px 10px', fontSize: 12, fontWeight: 500, cursor: 'pointer', background: view === v ? '#1e1208' : 'transparent', color: view === v ? '#d4520f' : '#666' }}>
-                {label}
-              </div>
-            ))}
+        <div onClick={() => setHabitModal('new')} style={{ display: 'flex', alignItems: 'center', gap: 5, background: '#1e1208', border: '1px solid #7a3410', borderRadius: 10, padding: '7px 12px', cursor: 'pointer', fontSize: 13, color: '#d4520f', fontWeight: 500 }}>+ Add</div>
+      </div>
+
+      {/* View tabs — full width row */}
+      <div style={{ display: 'flex', background: '#161618', border: '1px solid #242428', borderRadius: 12, overflow: 'hidden', marginBottom: 16 }}>
+        {[['today','Today'],['calendar','Calendar'],['routines','Routines'],['stats','Stats']].map(([v,label]) => (
+          <div key={v} onClick={() => setView(v)} style={{ flex: 1, textAlign: 'center', padding: '10px 4px', fontSize: 13, fontWeight: 500, cursor: 'pointer', background: view === v ? '#1e1208' : 'transparent', color: view === v ? '#d4520f' : '#666', transition: 'all 0.15s' }}>
+            {label}
           </div>
-          <div onClick={() => setHabitModal('new')} style={{ display: 'flex', alignItems: 'center', gap: 5, background: '#1e1208', border: '1px solid #7a3410', borderRadius: 10, padding: '7px 12px', cursor: 'pointer', fontSize: 13, color: '#d4520f', fontWeight: 500 }}>+ Add</div>
-        </div>
+        ))}
       </div>
 
       {/* Stat chips — always visible below header */}
