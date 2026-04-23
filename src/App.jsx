@@ -14,7 +14,6 @@ import Settings from './pages/Settings'
 import Goals from './pages/Goals'
 import Grocery from './pages/Grocery'
 import FocusTimer from './pages/FocusTimer'
-import Library from './pages/Library'
 import TaskModal from './components/TaskModal'
 import EventModal from './components/EventModal'
 
@@ -27,7 +26,7 @@ const NAV = [
   { path: '/more',    label: 'More',    icon: MoreIcon },
 ]
 
-const MORE_PATHS = ['/projects','/notes','/finance','/goals','/realestate','/settings','/grocery','/focus','/library']
+const MORE_PATHS = ['/projects','/notes','/finance','/goals','/realestate','/settings','/grocery','/focus',]
 
 function Shell() {
   const navigate = useNavigate()
@@ -66,7 +65,6 @@ function Shell() {
           <Route path="/goals"       element={<Goals key={refreshKey} />} />
           <Route path="/grocery"     element={<Grocery key={refreshKey} />} />
           <Route path="/focus"       element={<FocusTimer key={refreshKey} />} />
-          <Route path="/library"     element={<Library key={refreshKey} />} />
           <Route path="/more"        element={<More />} />
           <Route path="/realestate"  element={<More />} />
           <Route path="/settings"    element={<Settings />} />

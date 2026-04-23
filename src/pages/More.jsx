@@ -8,7 +8,6 @@ const ITEMS = [
   { label: 'Goals', icon: '🎯', desc: 'Short and long-term goals', path: '/goals', color: '#f59e0b' },
   { label: 'Grocery List', icon: '🛒', desc: 'Shopping list by category', path: '/grocery', color: '#06b6d4' },
   { label: 'Focus Timer', icon: '⏱️', desc: 'Pomodoro & focus sessions', path: '/focus', color: '#8b5cf6' },
-  { label: 'Library', icon: '📸', desc: 'Photos, videos, memories', path: '/library', color: '#ec4899' },
   { label: 'Real Estate', icon: '🏠', desc: 'Deals, properties, pipeline', path: '/realestate', color: '#3b82f6' },
   { label: 'Settings', icon: '⚙️', desc: 'Colors, themes, preferences', path: '/settings', color: '#888888' },
 ]

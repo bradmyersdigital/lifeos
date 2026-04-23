@@ -28,9 +28,11 @@ export default function Week({ onAddTask, onEditTask }) {
   const [monthOffset, setMonthOffset] = useState(0)
   const [activeFilter, setActiveFilter] = useState('All')
   const [showRoutines, setShowRoutines] = useState(false)
+  const [showOverdue, setShowOverdue] = useState(false)
   const [eventModal, setEventModal] = useState(null)
   const [daySheet, setDaySheet] = useState(null)
   const touchStartX = useRef(null)
+  const todayRef = useRef(null)
 
   const today = new Date()
   const todayStr = toStr(today)
@@ -43,6 +45,14 @@ export default function Week({ onAddTask, onEditTask }) {
     d.setDate(today.getDate() - daysFromMon + i + weekOffset * 7)
     return toStr(d)
   })
+
+  useEffect(() => {
+    if (view === 'week' && weekOffset === 0 && todayRef.current) {
+      setTimeout(() => {
+        todayRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      }, 100)
+    }
+  }, [view, weekOffset])
 
   useEffect(() => {
     // Fetch wide range to cover recurring events
@@ -183,7 +193,7 @@ export default function Week({ onAddTask, onEditTask }) {
             const d = new Date(date + 'T00:00:00')
             const items = allItemsForDay(date)
             return (
-              <div key={date} style={{ marginBottom: 16 }}>
+              <div key={date} ref={isToday ? todayRef : null} style={{ marginBottom: 16 }}>
                 {/* Day header */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
                   <div style={{ width: 36, height: 36, borderRadius: '50%', background: isToday ? 'var(--accent)' : 'transparent', border: isToday ? 'none' : `1px solid ${isPast ? '#1e1e24' : '#242428'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 500, color: isToday ? '#fff' : isPast ? '#444' : '#888', flexShrink: 0 }}>{d.getDate()}</div>
@@ -243,24 +253,27 @@ export default function Week({ onAddTask, onEditTask }) {
 
           {/* ── OVERDUE SECTION ── */}
           {overdueTasks.length > 0 && (
-            <div style={{ marginTop: 8, marginBottom: 16 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12, paddingTop: 16, borderTop: '1px solid #1e1e24' }}>
+            <div style={{ marginTop: 8, marginBottom: 16, paddingTop: 16, borderTop: '1px solid #1e1e24' }}>
+              <div onClick={() => setShowOverdue(o => !o)} style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: showOverdue ? 12 : 0, cursor: 'pointer' }}>
                 <div style={{ fontSize: 16 }}>⚠️</div>
-                <div style={{ fontSize: 16, fontWeight: 500, color: '#f87171' }}>Overdue</div>
-                <div style={{ fontSize: 12, color: '#555' }}>{overdueTasks.length} task{overdueTasks.length > 1 ? 's' : ''}</div>
+                <div style={{ fontSize: 15, fontWeight: 500, color: '#f87171' }}>Overdue</div>
+                <div style={{ fontSize: 12, color: '#555', flex: 1 }}>{overdueTasks.length} task{overdueTasks.length > 1 ? 's' : ''}</div>
+                <div style={{ fontSize: 18, color: '#555', transform: showOverdue ? 'rotate(90deg)' : 'none', transition: 'transform 0.2s' }}>›</div>
               </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                {overdueTasks.map(task => (
-                  <div key={task.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', background: '#1a0a0a', border: '1px solid #3a1010', borderRadius: 12 }}>
-                    <div onClick={() => toggleTask(task)} style={{ width: 20, height: 20, borderRadius: '50%', border: '1.5px solid #f87171', background: 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, cursor: 'pointer' }} />
-                    <div onClick={() => onEditTask(task)} style={{ flex: 1, minWidth: 0, cursor: 'pointer' }}>
-                      <div style={{ fontSize: 14, color: '#d4d2cc', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{task.name}</div>
-                      <div style={{ fontSize: 11, color: '#f87171', fontFamily: "'DM Mono'", marginTop: 2 }}>Was due {task.start_date}</div>
+              {showOverdue && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  {overdueTasks.map(task => (
+                    <div key={task.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', background: '#1a0a0a', border: '1px solid #3a1010', borderRadius: 12 }}>
+                      <div onClick={() => toggleTask(task)} style={{ width: 20, height: 20, borderRadius: '50%', border: '1.5px solid #f87171', background: 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, cursor: 'pointer' }} />
+                      <div onClick={() => onEditTask(task)} style={{ flex: 1, minWidth: 0, cursor: 'pointer' }}>
+                        <div style={{ fontSize: 14, color: '#d4d2cc', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{task.name}</div>
+                        <div style={{ fontSize: 11, color: '#f87171', fontFamily: "'DM Mono'", marginTop: 2 }}>Was due {task.start_date}</div>
+                      </div>
+                      {task.time_block && <div style={{ fontFamily: "'DM Mono'", fontSize: 11, color: '#555', flexShrink: 0 }}>{fmtTime(task.time_block)}</div>}
                     </div>
-                    {task.time_block && <div style={{ fontFamily: "'DM Mono'", fontSize: 11, color: '#555', flexShrink: 0 }}>{fmtTime(task.time_block)}</div>}
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
 

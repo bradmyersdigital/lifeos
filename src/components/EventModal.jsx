@@ -19,6 +19,7 @@ export default function EventModal({ event, date, onClose, onSaved, sectors = []
   const [recurring, setRecurring] = useState(event?.recurring || '')
   const [recurringDays, setRecurringDays] = useState(event?.recurring_days || [])
   const [recurringDayOfMonth, setRecurringDayOfMonth] = useState(event?.recurring_day_of_month || new Date().getDate())
+  const [yearlyDate, setYearlyDate] = useState(event?.recurring_yearly_date || eventDate || '')
   const [saving, setSaving] = useState(false)
 
   useEffect(() => {
@@ -38,6 +39,7 @@ export default function EventModal({ event, date, onClose, onSaved, sectors = []
       project_id: projectId || null, recurring: recurring || null,
       recurring_days: recurring === 'weekly' ? recurringDays : null,
       recurring_day_of_month: recurring === 'monthly' ? recurringDayOfMonth : null,
+      recurring_yearly_date: recurring === 'yearly' ? yearlyDate : null,
     }
     if (isEdit) await supabase.from('events').update(payload).eq('id', event.id)
     else await supabase.from('events').insert(payload)
@@ -115,6 +117,21 @@ export default function EventModal({ event, date, onClose, onSaved, sectors = []
             </div>
           )}
 
+          {/* Biweekly day selector - same as weekly */}
+          {recurring === 'biweekly' && (
+            <div>
+              <div style={{ fontSize: 12, color: '#555', marginBottom: 8 }}>Which days?</div>
+              <div style={{ display: 'flex', gap: 6 }}>
+                {DAY_SHORT.map((label, i) => (
+                  <div key={i} onClick={() => toggleDay(i)}
+                    style={{ flex: 1, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 10, fontSize: 12, fontWeight: 600, cursor: 'pointer', background: recurringDays.includes(i) ? 'var(--accent-dim)' : '#0f0f11', border: `1px solid ${recurringDays.includes(i) ? 'var(--accent-border)' : '#242428'}`, color: recurringDays.includes(i) ? 'var(--accent)' : '#444' }}>
+                    {label}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Monthly day selector */}
           {recurring === 'monthly' && (
             <div>
@@ -128,6 +145,17 @@ export default function EventModal({ event, date, onClose, onSaved, sectors = []
                 ))}
               </div>
               <div style={{ fontSize: 11, color: '#555', marginTop: 6 }}>Repeats on the {ordinal(recurringDayOfMonth)} of each month</div>
+            </div>
+          )}
+
+          {recurring === 'yearly' && (
+            <div>
+              <div style={{ fontSize: 12, color: '#555', marginBottom: 8 }}>Which date each year?</div>
+              <input type="date" value={yearlyDate} onChange={e => setYearlyDate(e.target.value)}
+                style={{ width: '100%', background: '#0f0f11', border: '1px solid #242428', borderRadius: 10, padding: '10px 12px', fontSize: 15, color: '#e8e6e1', fontFamily: "'DM Sans'", outline: 'none', WebkitAppearance: 'none' }} />
+              <div style={{ fontSize: 11, color: '#555', marginTop: 6 }}>
+                {yearlyDate ? `Repeats every year on ${new Date(yearlyDate + 'T00:00:00').toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}` : 'Pick a date above'}
+              </div>
             </div>
           )}
         </div>
