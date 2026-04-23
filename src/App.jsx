@@ -66,7 +66,6 @@ function Shell() {
           <Route path="/grocery"     element={<Grocery key={refreshKey} />} />
           <Route path="/focus"       element={<FocusTimer key={refreshKey} />} />
           <Route path="/more"        element={<More />} />
-          <Route path="/realestate"  element={<More />} />
           <Route path="/settings"    element={<Settings />} />
         </Routes>
       </div>
