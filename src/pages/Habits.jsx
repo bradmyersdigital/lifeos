@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { supabase } from '../lib/supabase'
+import { fmtTime } from '../utils'
 
 const DAY_LABELS = ['M','T','W','T','F','S','S']
 const DAY_NAMES = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday']
@@ -515,7 +516,7 @@ export default function Habits() {
                   ? <div style={{ padding: '10px 14px', fontSize: 13, color: '#2a2a2a', border: '1px dashed #1e1e24', borderRadius: 10, textAlign: 'center' }}>Nothing yet</div>
                   : items.map(item => (
                     <div key={item.id} onClick={() => setRoutineModal(item)} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', background: '#161618', border: '1px solid #1e1e24', borderRadius: 12, marginBottom: 6, cursor: 'pointer' }}>
-                      <div style={{ fontFamily: "'DM Mono'", fontSize: 12, color: period.color, minWidth: 55, flexShrink: 0 }}>{item.time}</div>
+                      <div style={{ fontFamily: "'DM Mono'", fontSize: 12, color: period.color, minWidth: 55, flexShrink: 0 }}>{fmtTime(item.time)}</div>
                       <div style={{ width: 1, height: 28, background: '#2a2a30', flexShrink: 0 }} />
                       <div style={{ flex: 1 }}>
                         <div style={{ fontSize: 14, color: '#d4d2cc', fontWeight: 500 }}>{item.icon && item.icon + ' '}{item.name}</div>

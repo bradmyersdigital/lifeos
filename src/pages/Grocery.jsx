@@ -10,6 +10,8 @@ export default function Grocery() {
   const [newCat, setNewCat] = useState('Other')
   const [filter, setFilter] = useState('all')
   const [editItem, setEditItem] = useState(null)
+  const [showAddCat, setShowAddCat] = useState(false)
+  const [newCatName, setNewCatName] = useState('')
   const [loading, setLoading] = useState(true)
 
   useEffect(() => { load() }, [])
@@ -33,6 +35,12 @@ export default function Grocery() {
   const deleteItem = async (id) => {
     await supabase.from('grocery_items').delete().eq('id', id)
     setItems(prev => prev.filter(i => i.id !== id))
+  }
+
+  const addCat = () => {
+    if (!newCatName.trim() || DEFAULT_CATEGORIES.includes(newCatName.trim())) return
+    DEFAULT_CATEGORIES.push(newCatName.trim())
+    setNewCatName(''); setShowAddCat(false)
   }
 
   const clearChecked = async () => {
@@ -83,14 +91,27 @@ export default function Grocery() {
       </div>
 
       {/* Filter */}
-      <div style={{ display: 'flex', gap: 8, marginBottom: 18 }}>
+      <div style={{ display: 'flex', gap: 8, marginBottom: 10, flexWrap: 'wrap' }}>
         {[['all','All'],['unchecked','Remaining'],['checked','Checked']].map(([val, label]) => (
           <div key={val} onClick={() => setFilter(val)}
             style={{ padding: '6px 14px', borderRadius: 20, fontSize: 12, fontWeight: 500, cursor: 'pointer', border: '1px solid', background: filter === val ? 'var(--accent-dim)' : '#161618', borderColor: filter === val ? 'var(--accent-border)' : '#242428', color: filter === val ? 'var(--accent)' : '#666' }}>
             {label}
           </div>
         ))}
+        <div onClick={() => setShowAddCat(!showAddCat)}
+          style={{ padding: '6px 14px', borderRadius: 20, fontSize: 12, fontWeight: 500, cursor: 'pointer', border: '1px solid var(--accent-border)', background: 'var(--accent-dim)', color: 'var(--accent)' }}>
+          + Category
+        </div>
       </div>
+      {showAddCat && (
+        <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
+          <input type="text" placeholder="New category name..." value={newCatName} onChange={e => setNewCatName(e.target.value)} onKeyDown={e => e.key==='Enter' && addCat()}
+            style={{ flex: 1, background: '#0f0f11', border: '1px solid #242428', borderRadius: 10, padding: '10px 12px', fontSize: 15, color: '#e8e6e1', fontFamily: "'DM Sans'", outline: 'none' }} />
+          <button onClick={addCat} className="btn-primary" style={{ padding: '0 16px', borderRadius: 10, fontSize: 14, cursor: 'pointer', border: 'none', fontFamily: "'DM Sans'" }}>Add</button>
+          <button onClick={() => setShowAddCat(false)} style={{ padding: '0 14px', borderRadius: 10, background: '#161618', border: '1px solid #242428', color: '#666', fontSize: 20, cursor: 'pointer', fontFamily: "'DM Sans'" }}>×</button>
+        </div>
+      )}
+      <div style={{ marginBottom: 8 }} />
 
       {/* Items grouped by category */}
       {loading && <div style={{ textAlign: 'center', padding: 40, color: '#444' }}>Loading...</div>}
