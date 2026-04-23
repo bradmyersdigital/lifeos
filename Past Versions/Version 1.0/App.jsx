@@ -12,9 +12,6 @@ import More from './pages/More'
 import Finance from './pages/Finance'
 import Settings from './pages/Settings'
 import Goals from './pages/Goals'
-import Grocery from './pages/Grocery'
-import FocusTimer from './pages/FocusTimer'
-import Library from './pages/Library'
 import TaskModal from './components/TaskModal'
 import EventModal from './components/EventModal'
 
@@ -27,10 +24,13 @@ const NAV = [
   { path: '/more',    label: 'More',    icon: MoreIcon },
 ]
 
-const MORE_PATHS = ['/projects','/notes','/finance','/goals','/realestate','/settings','/grocery','/focus','/library']
+const MORE_PATHS = ['/projects','/notes','/finance','/goals','/realestate','/settings']
+
+  // Ensure browser back button works naturally by not overriding history
 
 function Shell() {
   const navigate = useNavigate()
+
   const location = useLocation()
   const [taskModal, setTaskModal] = useState(null)
   const [eventModal, setEventModal] = useState(null)
@@ -64,9 +64,6 @@ function Shell() {
           <Route path="/habits"      element={<Habits key={refreshKey} />} />
           <Route path="/finance"     element={<Finance key={refreshKey} />} />
           <Route path="/goals"       element={<Goals key={refreshKey} />} />
-          <Route path="/grocery"     element={<Grocery key={refreshKey} />} />
-          <Route path="/focus"       element={<FocusTimer key={refreshKey} />} />
-          <Route path="/library"     element={<Library key={refreshKey} />} />
           <Route path="/more"        element={<More />} />
           <Route path="/realestate"  element={<More />} />
           <Route path="/settings"    element={<Settings />} />
