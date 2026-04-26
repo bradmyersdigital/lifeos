@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 
-const FREQ_MULT = { weekly: 52/12, biweekly: 26/12, monthly: 1, yearly: 1/12 }
+const FREQ_MULT = { weekly: 4, biweekly: 2, monthly: 1, yearly: 1/12 }
 const toMonthly = (amount, freq) => (parseFloat(amount) || 0) * (FREQ_MULT[freq] || 1)
-const toYearly = (amount, freq) => (parseFloat(amount) || 0) * ({ weekly: 52, biweekly: 26, monthly: 12, yearly: 1 }[freq] || 12)
+const toYearly = (amount, freq) => (parseFloat(amount) || 0) * ({ weekly: 48, biweekly: 24, monthly: 12, yearly: 1 }[freq] || 12)
 const fmt = (n) => '$' + Math.abs(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 
 const SUB_CATEGORIES = ['Entertainment','Music','News & Reading','Health & Fitness','Productivity','Cloud Storage','Food & Drink','Shopping','Finance','Gaming','Education','Other']
@@ -47,7 +47,8 @@ function getServiceIcon(name) {
 }
 
 // ── Sub Modal ────────────────────────────────────────────────────────────────
-function SubModal({ item, onClose, onSaved }) {
+function SubModal({ item, onClose, onSaved, categories }) {
+  const allCats = categories?.length ? categories : SUB_CATEGORIES.map(n => ({ name: n, color: CAT_COLORS[n]||'#555' }))
   const isEdit = !!item
   const [name, setName] = useState(item?.name || '')
   const [amount, setAmount] = useState(item?.amount || '')
@@ -109,15 +110,17 @@ function SubModal({ item, onClose, onSaved }) {
         <div className="field">
           <div className="field-label">Category</div>
           <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-            {SUB_CATEGORIES.map(cat => (
+            {allCats.map(catDef => {
+              const cat = catDef.name; const col = catDef.color || CAT_COLORS[cat] || '#555'
+              return (
               <div key={cat} onClick={() => setCategory(cat)}
                 style={{ padding: '6px 12px', borderRadius: 20, fontSize: 12, fontWeight: 500, cursor: 'pointer', border: '1px solid', display: 'flex', alignItems: 'center', gap: 5,
-                  background: category === cat ? CAT_COLORS[cat] + '22' : '#0f0f11',
-                  borderColor: category === cat ? CAT_COLORS[cat] : '#242428',
-                  color: category === cat ? CAT_COLORS[cat] : '#555' }}>
-                <span>{CAT_ICONS[cat]}</span> {cat}
+                  background: category === cat ? col + '22' : '#0f0f11',
+                  borderColor: category === cat ? col : '#242428',
+                  color: category === cat ? col : '#555' }}>
+                <span>{CAT_ICONS[cat]||'📦'}</span> {cat}
               </div>
-            ))}
+            )})}
           </div>
         </div>
 
@@ -202,7 +205,16 @@ export default function Finance() {
   const [modal, setModal] = useState(null)
   const [subModal, setSubModal] = useState(null)
   const [subFilter, setSubFilter] = useState('All')
-  const [subSort, setSubSort] = useState('name') // 'name' | 'amount' | 'category'
+  const [subSort, setSubSort] = useState('name') // 'name' | 'amount' | 'category' | 'billing'
+  const [manageCats, setManageCats] = useState(false)
+  const [showNewCat, setShowNewCat] = useState(false)
+  const [newCatName, setNewCatName] = useState('')
+  const [newCatColor, setNewCatColor] = useState('#a78bfa')
+  const [editingCat, setEditingCat] = useState(null)
+  const [customCats, setCustomCats] = useState(() => {
+    try { const s = localStorage.getItem('lifeos_sub_cats'); return s ? JSON.parse(s) : [...SUB_CATEGORIES.map(n => ({ name: n, color: CAT_COLORS[n] || '#555' }))] }
+    catch { return SUB_CATEGORIES.map(n => ({ name: n, color: CAT_COLORS[n] || '#555' })) }
+  })
 
   useEffect(() => { load() }, [])
 
@@ -219,6 +231,30 @@ export default function Finance() {
     setSavings(sav.data || [])
   }
 
+  const saveCats = (cats) => {
+    setCustomCats(cats)
+    localStorage.setItem('lifeos_sub_cats', JSON.stringify(cats))
+  }
+  const addSubCategory = () => {
+    if (!newCatName.trim() || customCats.find(c => c.name === newCatName.trim())) return
+    saveCats([...customCats, { name: newCatName.trim(), color: newCatColor }])
+    setNewCatName(''); setShowNewCat(false)
+  }
+  const renameSubCat = (oldName, newName) => {
+    if (!newName.trim() || newName === oldName) { setEditingCat(null); return }
+    saveCats(customCats.map(c => c.name === oldName ? { ...c, name: newName.trim() } : c))
+    // Update subs with this category
+    subs.filter(s => s.category === oldName).forEach(s => supabase.from('finance_subscriptions').update({ category: newName.trim() }).eq('id', s.id))
+    setSubs(prev => prev.map(s => s.category === oldName ? { ...s, category: newName.trim() } : s))
+    setEditingCat(null)
+  }
+  const deleteSubCat = (name) => {
+    if (!window.confirm(`Delete "${name}"? Subs will move to Other.`)) return
+    saveCats(customCats.filter(c => c.name !== name))
+    subs.filter(s => s.category === name).forEach(s => supabase.from('finance_subscriptions').update({ category: 'Other' }).eq('id', s.id))
+    setSubs(prev => prev.map(s => s.category === name ? { ...s, category: 'Other' } : s))
+  }
+
   const activeSubs = subs.filter(s => s.is_active !== false)
   const totalMonthly = activeSubs.reduce((sum, s) => sum + toMonthly(s.amount, s.frequency), 0)
   const totalYearly = activeSubs.reduce((sum, s) => sum + toYearly(s.amount, s.frequency), 0)
@@ -226,11 +262,15 @@ export default function Finance() {
   const totalBills = bills.filter(b => b.is_active !== false).reduce((sum, b) => sum + toMonthly(b.amount, b.frequency), 0)
 
   // Group subs by category
-  const allCategories = ['All', ...Array.from(new Set(subs.map(s => s.category || 'Other')))]
+  const allCategories = ['All', ...Array.from(new Set([...customCats.map(c=>c.name), ...subs.map(s => s.category || 'Other')]))]
   const filteredSubs = (subFilter === 'All' ? subs : subs.filter(s => (s.category || 'Other') === subFilter))
     .sort((a, b) => {
       if (subSort === 'amount') return toMonthly(b.amount, b.frequency) - toMonthly(a.amount, a.frequency)
       if (subSort === 'category') return (a.category || 'Other').localeCompare(b.category || 'Other')
+      if (subSort === 'billing') {
+        const ad = a.billing_day || 99, bd = b.billing_day || 99
+        return ad - bd
+      }
       return a.name.localeCompare(b.name)
     })
 
@@ -322,30 +362,85 @@ export default function Finance() {
           {/* Sort + Filter */}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
             <div style={{ display: 'flex', gap: 6, overflowX: 'auto', flex: 1, WebkitOverflowScrolling: 'touch' }}>
-              {allCategories.map(cat => (
-                <div key={cat} onClick={() => setSubFilter(cat)}
-                  style={{ padding: '5px 12px', borderRadius: 20, fontSize: 11, fontWeight: 500, cursor: 'pointer', border: '1px solid', whiteSpace: 'nowrap',
-                    background: subFilter===cat ? (CAT_COLORS[cat]||'var(--accent-dim)') + '22' : '#161618',
-                    borderColor: subFilter===cat ? (CAT_COLORS[cat]||'var(--accent-border)') : '#242428',
-                    color: subFilter===cat ? (CAT_COLORS[cat]||'var(--accent)') : '#666' }}>
-                  {cat !== 'All' ? CAT_ICONS[cat]||'📦' : ''} {cat}
-                </div>
-              ))}
+              {allCategories.map(cat => {
+                const catDef = customCats.find(c => c.name === cat)
+                const col = catDef?.color || CAT_COLORS[cat] || '#555'
+                return (
+                  <div key={cat} onClick={() => setSubFilter(cat)}
+                    style={{ padding: '5px 12px', borderRadius: 20, fontSize: 11, fontWeight: 500, cursor: 'pointer', border: '1px solid', whiteSpace: 'nowrap',
+                      background: subFilter===cat ? col + '22' : '#161618',
+                      borderColor: subFilter===cat ? col : '#242428',
+                      color: subFilter===cat ? col : '#666' }}>
+                    {cat !== 'All' ? (CAT_ICONS[cat]||'📦') : ''} {cat}
+                  </div>
+                )
+              })}
             </div>
             <div style={{ marginLeft: 8, flexShrink: 0 }}>
               <select value={subSort} onChange={e => setSubSort(e.target.value)} style={{ background: '#161618', border: '1px solid #242428', borderRadius: 8, padding: '5px 8px', color: '#888', fontSize: 11, outline: 'none', fontFamily: "'DM Sans'" }}>
                 <option value="name">A–Z</option>
                 <option value="amount">$ High</option>
                 <option value="category">Category</option>
+                <option value="billing">Bill date</option>
               </select>
             </div>
           </div>
 
-          {/* Add button */}
-          <div className="action-btn btn-task" style={{ marginBottom: 16, justifyContent: 'center', width: '100%' }} onClick={() => setSubModal('new')}>
-            <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><line x1="7" y1="1" x2="7" y2="13" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/><line x1="1" y1="7" x2="13" y2="7" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/></svg>
-            Add subscription
+          {/* Add + manage buttons */}
+          <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
+            <div className="action-btn btn-task" style={{ flex: 1, justifyContent: 'center' }} onClick={() => setSubModal('new')}>
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><line x1="7" y1="1" x2="7" y2="13" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/><line x1="1" y1="7" x2="13" y2="7" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/></svg>
+              Add subscription
+            </div>
+            <div onClick={() => setManageCats(!manageCats)} style={{ padding: '10px 14px', borderRadius: 12, background: manageCats ? 'var(--accent-dim)' : '#161618', border: `1px solid ${manageCats ? 'var(--accent-border)' : '#242428'}`, color: manageCats ? 'var(--accent)' : '#888', fontSize: 13, fontWeight: 500, cursor: 'pointer', flexShrink: 0 }}>
+              ✏️ Categories
+            </div>
           </div>
+
+          {/* Category manager */}
+          {manageCats && (
+            <div style={{ background: '#161618', border: '1px solid #242428', borderRadius: 14, padding: 16, marginBottom: 16 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                <div style={{ fontSize: 14, fontWeight: 500 }}>Manage categories</div>
+                <div onClick={() => setShowNewCat(!showNewCat)} style={{ fontSize: 12, color: 'var(--accent)', cursor: 'pointer', padding: '4px 10px', background: 'var(--accent-dim)', border: '1px solid var(--accent-border)', borderRadius: 8 }}>+ Add</div>
+              </div>
+              {showNewCat && (
+                <div style={{ display: 'flex', gap: 8, marginBottom: 12, alignItems: 'center' }}>
+                  <input type="text" placeholder="Category name…" value={newCatName} onChange={e => setNewCatName(e.target.value)} onKeyDown={e => e.key==='Enter' && addSubCategory()}
+                    style={{ flex: 1, background: '#0f0f11', border: '1px solid #242428', borderRadius: 10, padding: '9px 12px', fontSize: 14, color: '#e8e6e1', fontFamily: "'DM Sans'", outline: 'none' }} />
+                  <div style={{ position: 'relative', width: 34, height: 34, flexShrink: 0 }}>
+                    <div style={{ width: 34, height: 34, borderRadius: 10, background: newCatColor, border: '2px solid #333' }} />
+                    <input type="color" value={newCatColor} onChange={e => setNewCatColor(e.target.value)} style={{ opacity: 0, position: 'absolute', inset: 0, cursor: 'pointer', border: 'none', padding: 0 }} />
+                  </div>
+                  <button onClick={addSubCategory} className="btn-primary" style={{ padding: '0 14px', height: 36, borderRadius: 10, fontSize: 13, cursor: 'pointer', border: 'none', fontFamily: "'DM Sans'" }}>Add</button>
+                  <button onClick={() => setShowNewCat(false)} style={{ padding: '0 12px', height: 36, borderRadius: 10, background: '#0f0f11', border: '1px solid #242428', color: '#666', fontSize: 18, cursor: 'pointer', fontFamily: "'DM Sans'" }}>×</button>
+                </div>
+              )}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                {customCats.map(cat => (
+                  <div key={cat.name} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', background: '#0f0f11', borderRadius: 10, border: '1px solid #242428' }}>
+                    <div style={{ width: 10, height: 10, borderRadius: '50%', background: cat.color, flexShrink: 0 }} />
+                    {editingCat?.name === cat.name ? (
+                      <>
+                        <input type="text" value={editingCat.newName} onChange={e => setEditingCat({...editingCat, newName: e.target.value})}
+                          onKeyDown={e => { if(e.key==='Enter') renameSubCat(cat.name, editingCat.newName); if(e.key==='Escape') setEditingCat(null) }}
+                          autoFocus style={{ flex: 1, background: '#161618', border: '1px solid var(--accent-border)', borderRadius: 8, padding: '5px 10px', fontSize: 14, color: '#e8e6e1', fontFamily: "'DM Sans'", outline: 'none' }} />
+                        <div onClick={() => renameSubCat(cat.name, editingCat.newName)} style={{ fontSize: 12, color: '#10b981', cursor: 'pointer', padding: '3px 8px', background: '#0a1e14', border: '1px solid #1a4a2a', borderRadius: 7 }}>Save</div>
+                        <div onClick={() => setEditingCat(null)} style={{ fontSize: 16, color: '#555', cursor: 'pointer' }}>×</div>
+                      </>
+                    ) : (
+                      <>
+                        <div style={{ flex: 1, fontSize: 14, color: '#d4d2cc' }}>{cat.name}</div>
+                        <div style={{ fontSize: 11, color: '#444', fontFamily: "'DM Mono'" }}>{subs.filter(s => (s.category||'Other') === cat.name).length} subs</div>
+                        <div onClick={() => setEditingCat({ name: cat.name, newName: cat.name })} style={{ fontSize: 12, color: '#888', cursor: 'pointer', padding: '3px 8px', borderRadius: 6, background: '#161618', border: '1px solid #242428' }}>✏️</div>
+                        <div onClick={() => deleteSubCat(cat.name)} style={{ fontSize: 12, color: '#f87171', cursor: 'pointer', padding: '3px 8px', borderRadius: 6, background: '#2a0a0a', border: '1px solid #7a1010' }}>✕</div>
+                      </>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Grouped subscription list */}
           {subSort === 'category' ? (
@@ -455,7 +550,7 @@ export default function Finance() {
       )}
 
       {modal && <EntryModal type={modal.type} item={modal.item} onClose={() => setModal(null)} onSaved={() => { setModal(null); load() }} />}
-      {subModal && <SubModal item={subModal === 'new' ? null : subModal} onClose={() => setSubModal(null)} onSaved={() => { setSubModal(null); load() }} />}
+      {subModal && <SubModal item={subModal === 'new' ? null : subModal} categories={customCats} onClose={() => setSubModal(null)} onSaved={() => { setSubModal(null); load() }} />}
     </div>
   )
 }
