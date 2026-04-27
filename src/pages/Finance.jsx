@@ -48,8 +48,8 @@ function getServiceIcon(name) {
 
 // ── Sub Modal ────────────────────────────────────────────────────────────────
 function SubModal({ item, onClose, onSaved, categories }) {
-  const allCats = categories?.length ? categories : SUB_CATEGORIES.map(n => ({ name: n, color: CAT_COLORS[n]||'#555' }))
   const isEdit = !!item
+  const allCats = categories?.length ? categories : SUB_CATEGORIES.map(n => ({ name: n, color: CAT_COLORS[n]||'#555' }))
   const [name, setName] = useState(item?.name || '')
   const [amount, setAmount] = useState(item?.amount || '')
   const [frequency, setFrequency] = useState(item?.frequency || 'monthly')
@@ -58,6 +58,7 @@ function SubModal({ item, onClose, onSaved, categories }) {
   const [isActive, setIsActive] = useState(item?.is_active !== false)
   const [customIcon, setCustomIcon] = useState(item?.icon || '')
   const [saving, setSaving] = useState(false)
+  const fileRef = React.useRef(null)
 
   const handleSave = async () => {
     if (!name.trim()) return
@@ -74,7 +75,18 @@ function SubModal({ item, onClose, onSaved, categories }) {
     onSaved(); onClose()
   }
 
-  const serviceIcon = getServiceIcon(name)
+  const handleImageUpload = (e) => {
+    const file = e.target.files?.[0]; if (!file) return
+    const reader = new FileReader()
+    reader.onload = ev => setCustomIcon(ev.target.result)
+    reader.readAsDataURL(file)
+  }
+
+  const autoIcon = getServiceIcon(name)
+  const displayIcon = customIcon || autoIcon || '📦'
+  const isImageIcon = displayIcon.startsWith('data:')
+
+  const QUICK_EMOJIS = ['🎬','🎵','📺','🎮','📚','💪','☁️','🍔','💊','🎧','📰','⚡','🛍️','💳','🔑','🤖','🏠','✈️','🚗','🐶','🌿','🏋️','🎨','📱']
 
   return (
     <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
@@ -82,46 +94,13 @@ function SubModal({ item, onClose, onSaved, categories }) {
         <div className="modal-handle" />
         <div className="modal-title">{isEdit ? 'Edit subscription' : 'Add subscription'}<div className="modal-close" onClick={onClose}>×</div></div>
 
-        {/* Name + icon */}
+        {/* 1. Service name */}
         <div className="field">
           <div className="field-label">Service name</div>
           <input type="text" placeholder="e.g. Netflix, Spotify…" value={name} onChange={e => setName(e.target.value)} />
         </div>
 
-        <div className="field">
-          <div className="field-label">Icon</div>
-          <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-            {/* Preview */}
-            <div style={{ width: 52, height: 52, borderRadius: 14, background: '#1e1e24', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 26, flexShrink: 0, overflow: 'hidden', border: '1px solid #242428' }}>
-              {customIcon && customIcon.startsWith('data:')
-                ? <img src={customIcon} alt="icon" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                : (customIcon || serviceIcon || '📦')}
-            </div>
-            <div style={{ flex: 1 }}>
-              <input type="text" placeholder="Paste emoji e.g. 🎮" value={customIcon && !customIcon.startsWith('data:') ? customIcon : ''} onChange={e => setCustomIcon(e.target.value)}
-                style={{ marginBottom: 8 }} />
-              <div style={{ display: 'flex', gap: 8 }}>
-                <label style={{ flex: 1, padding: '8px', borderRadius: 10, background: '#161618', border: '1px solid #242428', color: '#888', fontSize: 12, cursor: 'pointer', textAlign: 'center', fontFamily: "'DM Sans'" }}>
-                  📁 Upload image
-                  <input type="file" accept="image/*" style={{ display: 'none' }} onChange={e => {
-                    const file = e.target.files?.[0]; if (!file) return
-                    const reader = new FileReader()
-                    reader.onload = ev => setCustomIcon(ev.target.result)
-                    reader.readAsDataURL(file)
-                  }} />
-                </label>
-                {customIcon && <div onClick={() => setCustomIcon('')} style={{ padding: '8px 12px', borderRadius: 10, background: '#2a0a0a', border: '1px solid #7a1010', color: '#f87171', fontSize: 12, cursor: 'pointer' }}>Clear</div>}
-              </div>
-            </div>
-          </div>
-          {/* Quick emoji picks */}
-          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 10 }}>
-            {['🎬','🎵','📺','🎮','📚','💪','☁️','🍔','💊','🎧','📰','⚡','🛍️','💳','🔑','🤖'].map(e => (
-              <div key={e} onClick={() => setCustomIcon(e)} style={{ width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, borderRadius: 9, background: customIcon===e ? 'var(--accent-dim)' : '#0f0f11', border: `1px solid ${customIcon===e ? 'var(--accent-border)' : '#242428'}`, cursor: 'pointer' }}>{e}</div>
-            ))}
-          </div>
-        </div>
-
+        {/* 2. Amount + frequency */}
         <div className="field-row">
           <div className="field">
             <div className="field-label">Amount ($)</div>
@@ -138,26 +117,10 @@ function SubModal({ item, onClose, onSaved, categories }) {
           </div>
         </div>
 
-        <div className="field">
-          <div className="field-label">Category</div>
-          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-            {allCats.map(catDef => {
-              const cat = catDef.name; const col = catDef.color || CAT_COLORS[cat] || '#555'
-              return (
-              <div key={cat} onClick={() => setCategory(cat)}
-                style={{ padding: '6px 12px', borderRadius: 20, fontSize: 12, fontWeight: 500, cursor: 'pointer', border: '1px solid', display: 'flex', alignItems: 'center', gap: 5,
-                  background: category === cat ? col + '22' : '#0f0f11',
-                  borderColor: category === cat ? col : '#242428',
-                  color: category === cat ? col : '#555' }}>
-                <span>{CAT_ICONS[cat]||'📦'}</span> {cat}
-              </div>
-            )})}
-          </div>
-        </div>
-
+        {/* 3. Billing day + status */}
         <div className="field-row">
           <div className="field">
-            <div className="field-label">Billing day (optional)</div>
+            <div className="field-label">Billing day</div>
             <input type="number" placeholder="e.g. 15" min="1" max="31" value={billingDay} onChange={e => setBillingDay(e.target.value)} />
           </div>
           <div className="field">
@@ -171,6 +134,61 @@ function SubModal({ item, onClose, onSaved, categories }) {
           </div>
         </div>
 
+        {/* 4. Icon */}
+        <div className="field">
+          <div className="field-label">Icon</div>
+          <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginBottom: 12 }}>
+            {/* Preview */}
+            <div style={{ width: 56, height: 56, borderRadius: 14, background: '#1e1e24', border: '1px solid #242428', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28, flexShrink: 0, overflow: 'hidden' }}>
+              {isImageIcon
+                ? <img src={displayIcon} alt="icon" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                : displayIcon}
+            </div>
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <input type="text" placeholder="Paste emoji…" value={customIcon && !customIcon.startsWith('data:') ? customIcon : ''} onChange={e => setCustomIcon(e.target.value)}
+                style={{ fontSize: 18 }} />
+              <div style={{ display: 'flex', gap: 8 }}>
+                <label style={{ flex: 1, padding: '8px', borderRadius: 10, background: '#161618', border: '1px solid #242428', color: '#888', fontSize: 12, cursor: 'pointer', textAlign: 'center', fontFamily: "'DM Sans'" }}>
+                  📁 Upload image
+                  <input type="file" accept="image/*" style={{ display: 'none' }} onChange={handleImageUpload} />
+                </label>
+                {customIcon && (
+                  <div onClick={() => setCustomIcon('')} style={{ padding: '8px 12px', borderRadius: 10, background: '#2a0a0a', border: '1px solid #7a1010', color: '#f87171', fontSize: 12, cursor: 'pointer', whiteSpace: 'nowrap' }}>Clear</div>
+                )}
+              </div>
+            </div>
+          </div>
+          {/* Quick emoji grid */}
+          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+            {QUICK_EMOJIS.map(e => (
+              <div key={e} onClick={() => setCustomIcon(e)}
+                style={{ width: 38, height: 38, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, borderRadius: 9, background: customIcon===e ? 'var(--accent-dim)' : '#0f0f11', border: `1px solid ${customIcon===e ? 'var(--accent-border)' : '#242428'}`, cursor: 'pointer' }}>
+                {e}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* 5. Category */}
+        <div className="field">
+          <div className="field-label">Category</div>
+          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+            {allCats.map(catDef => {
+              const col = catDef.color || '#555'
+              const isSelected = category === catDef.name
+              return (
+                <div key={catDef.name} onClick={() => setCategory(catDef.name)}
+                  style={{ padding: '6px 12px', borderRadius: 20, fontSize: 12, fontWeight: 500, cursor: 'pointer', border: '1px solid', display: 'flex', alignItems: 'center', gap: 5,
+                    background: isSelected ? col + '22' : '#0f0f11',
+                    borderColor: isSelected ? col : '#242428',
+                    color: isSelected ? col : '#555' }}>
+                  {CAT_ICONS[catDef.name] || '📦'} {catDef.name}
+                </div>
+              )
+            })}
+          </div>
+        </div>
+
         <div style={{ display: 'flex', gap: 10, marginTop: 18 }}>
           {isEdit && <button onClick={handleDelete} style={{ flex:1, padding:11, borderRadius:10, background:'#2a0a0a', border:'1px solid #7a1010', color:'#f87171', fontSize:14, fontWeight:500, cursor:'pointer', fontFamily:"'DM Sans'" }}>Delete</button>}
           <button className="btn-ghost" style={{ flex: 1 }} onClick={onClose}>Cancel</button>
@@ -180,6 +198,7 @@ function SubModal({ item, onClose, onSaved, categories }) {
     </div>
   )
 }
+
 
 // ── Finance Modal (income/bills/savings) ─────────────────────────────────────
 function EntryModal({ type, item, onClose, onSaved }) {
@@ -472,6 +491,12 @@ export default function Finance() {
                       <>
                         <div style={{ flex: 1, fontSize: 14, color: '#d4d2cc' }}>{cat.name}</div>
                         <div style={{ fontSize: 11, color: '#444', fontFamily: "'DM Mono'" }}>{subs.filter(s=>(s.category||'Other')===cat.name).length}</div>
+                        <select value={CAT_ICONS[cat.name]||'📦'} onChange={e => {
+                          CAT_ICONS[cat.name] = e.target.value
+                          saveCats([...customCats])
+                        }} style={{ fontSize: 18, background: '#161618', border: '1px solid #242428', borderRadius: 8, padding: '2px 4px', outline: 'none', cursor: 'pointer' }}>
+                          {['🎬','🎵','📺','🎮','📚','💪','☁️','🍔','💊','🎧','📰','⚡','🛍️','💳','🔑','🤖','🏠','✈️','🚗','🐶','🌿','🏋️','🎨','📱','📦','🔄','💡','🎯'].map(e => <option key={e} value={e}>{e}</option>)}
+                        </select>
                         <div onClick={() => setEditingCat({ name: cat.name, newName: cat.name })} style={{ fontSize: 12, color: '#888', cursor: 'pointer', padding: '3px 8px', borderRadius: 6, background: '#161618', border: '1px solid #242428' }}>✏️</div>
                         <div onClick={() => deleteSubCat(cat.name)} style={{ fontSize: 12, color: '#f87171', cursor: 'pointer', padding: '3px 8px', borderRadius: 6, background: '#2a0a0a', border: '1px solid #7a1010' }}>✕</div>
                       </>
@@ -495,9 +520,16 @@ export default function Finance() {
                     const daysUntil = sub.billing_day >= todayDay ? sub.billing_day - todayDay : 31 - todayDay + sub.billing_day
                     return (
                       <div key={sub.id} onClick={() => setSubModal(sub)} style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '14px 16px', background: '#161618', border: `1px solid ${daysUntil <= 3 ? '#3a1010' : '#242428'}`, borderRadius: 14, cursor: 'pointer' }}>
-                        <div style={{ width: 44, height: 44, borderRadius: 12, background: (customCats.find(c=>c.name===(sub.category||'Other'))?.color || CAT_COLORS[sub.category||'Other'] || '#555') + '22', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, flexShrink: 0 }}>
-                          {sub.icon || getServiceIcon(sub.name) || CAT_ICONS[sub.category||'Other'] || '📦'}
-                        </div>
+                        {(() => {
+                          const icon = sub.icon || getServiceIcon(sub.name) || CAT_ICONS[sub.category||'Other'] || '📦'
+                          const isImg = typeof icon === 'string' && icon.startsWith('data:')
+                          const col = (customCats.find(c=>c.name===(sub.category||'Other'))?.color || CAT_COLORS[sub.category||'Other'] || '#555') + '22'
+                          return (
+                            <div style={{ width: 44, height: 44, borderRadius: 12, background: col, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, flexShrink: 0, overflow: 'hidden' }}>
+                              {isImg ? <img src={icon} alt={sub.name} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 12 }} /> : icon}
+                            </div>
+                          )
+                        })()}
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <div style={{ fontSize: 15, fontWeight: 500, color: '#e8e6e1' }}>{sub.name}</div>
                           <div style={{ fontSize: 12, color: daysUntil <= 3 ? '#f87171' : '#555', marginTop: 2 }}>
