@@ -99,45 +99,79 @@ function SectorModal({ sector, onClose, onSaved }) {
   )
 }
 
-function DueSoonSection() {
-  const [items, setItems] = useState([])
-  const today = new Date()
-  const todayStr = today.toISOString().split('T')[0]
-  const soon = new Date(today); soon.setDate(today.getDate() + 7)
-  const soonStr = soon.toISOString().split('T')[0]
+const SERVICE_ICONS_HOME = {
+  netflix: '🎬', spotify: '🎵', 'apple music': '🎵', hulu: '📺', 'disney+': '🏰', 'disney plus': '🏰',
+  'hbo max': '🎭', youtube: '▶️', 'youtube premium': '▶️', amazon: '📦', 'amazon prime': '📦',
+  icloud: '☁️', 'google one': '☁️', dropbox: '☁️', 'microsoft 365': '💼', office: '💼',
+  adobe: '🎨', figma: '🎨', notion: '📝', slack: '💬', zoom: '📹', audible: '🎧',
+  duolingo: '🦜', calm: '🧘', headspace: '🧘', chatgpt: '🤖', 'chatgpt plus': '🤖',
+  '1password': '🔑', nintendo: '🎮', xbox: '🎮', playstation: '🎮',
+}
+function getSubIcon(sub) {
+  if (sub.icon && !sub.icon.startsWith('data:')) return sub.icon
+  const lower = (sub.name || '').toLowerCase()
+  for (const [k, v] of Object.entries(SERVICE_ICONS_HOME)) { if (lower.includes(k)) return v }
+  return '🔄'
+}
+
+function UpcomingSubsSection({ onNavigate }) {
+  const [subs, setSubs] = useState([])
+  const todayDay = new Date().getDate()
 
   useEffect(() => {
-    const load = async () => {
-      const [{ data: s }, { data: b }] = await Promise.all([
-        supabase.from('finance_subscriptions').select('*').gte('due_date', todayStr).lte('due_date', soonStr).eq('is_active', true),
-        supabase.from('finance_bills').select('*').gte('due_date', todayStr).lte('due_date', soonStr).eq('is_active', true),
-      ])
-      const merged = [...(s||[]).map(x=>({...x,_type:'sub'})),...(b||[]).map(x=>({...x,_type:'bill'}))]
-        .sort((a,b) => a.due_date?.localeCompare(b.due_date))
-      setItems(merged)
-    }
-    load()
+    supabase.from('finance_subscriptions').select('*').then(({ data }) => {
+      const active = (data || []).filter(s => s.is_active !== false && s.billing_day)
+      const upcoming = active.filter(s => {
+        const d = s.billing_day >= todayDay ? s.billing_day - todayDay : 31 - todayDay + s.billing_day
+        return d <= 7
+      }).sort((a, b) => {
+        const da = a.billing_day >= todayDay ? a.billing_day - todayDay : 31 - todayDay + a.billing_day
+        const db = b.billing_day >= todayDay ? b.billing_day - todayDay : 31 - todayDay + b.billing_day
+        return da - db
+      })
+      setSubs(upcoming)
+    })
   }, [])
 
-  if (items.length === 0) return null
+  if (subs.length === 0) return null
+
+  const totalDue = subs.reduce((sum, s) => sum + (parseFloat(s.amount) || 0), 0)
 
   return (
     <div style={{ marginBottom: 18 }}>
-      <div className="section-label">Due soon</div>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-        {items.map(item => (
-          <div key={item.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px', background: '#161618', border: '1px solid #242428', borderRadius: 12 }}>
-            <div style={{ fontSize: 18 }}>{item._type === 'sub' ? '🔄' : '🧾'}</div>
-            <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 13, color: '#d4d2cc', fontWeight: 500 }}>{item.name}</div>
-              <div style={{ fontSize: 11, color: '#555', fontFamily: "'DM Mono'", marginTop: 2 }}>{item._type === 'sub' ? 'Subscription' : 'Bill'}</div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+        <div className="section-label" style={{ margin: 0 }}>Upcoming subscriptions</div>
+        <div onClick={() => onNavigate('/finance')} style={{ fontSize: 12, color: '#555', cursor: 'pointer' }}>See all →</div>
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        {subs.map(sub => {
+          const daysUntil = sub.billing_day >= todayDay ? sub.billing_day - todayDay : 31 - todayDay + sub.billing_day
+          const icon = sub.icon?.startsWith('data:') ? null : getSubIcon(sub)
+          const isUrgent = daysUntil <= 2
+          return (
+            <div key={sub.id} onClick={() => onNavigate('/finance')} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', background: '#161618', border: `1px solid ${isUrgent ? '#3a1010' : '#242428'}`, borderRadius: 13, cursor: 'pointer' }}>
+              <div style={{ width: 40, height: 40, borderRadius: 11, background: '#1e1e24', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, flexShrink: 0, overflow: 'hidden' }}>
+                {sub.icon?.startsWith('data:')
+                  ? <img src={sub.icon} alt={sub.name} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 11 }} />
+                  : icon}
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 14, fontWeight: 500, color: '#e8e6e1', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{sub.name}</div>
+                <div style={{ fontSize: 11, color: isUrgent ? '#f87171' : '#555', fontFamily: "'DM Mono'", marginTop: 2 }}>
+                  {daysUntil === 0 ? '🔴 Due today' : daysUntil === 1 ? '🟡 Tomorrow' : `In ${daysUntil} days · ${sub.billing_day}${['st','nd','rd'][sub.billing_day-1]||'th'}`}
+                </div>
+              </div>
+              <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                <div style={{ fontSize: 15, fontWeight: 600, color: '#e8e6e1', fontFamily: "'DM Mono'" }}>${parseFloat(sub.amount).toFixed(2)}</div>
+                <div style={{ fontSize: 10, color: '#555', marginTop: 2 }}>{sub.frequency}</div>
+              </div>
             </div>
-            <div style={{ textAlign: 'right' }}>
-              <div style={{ fontSize: 13, color: '#f59e0b', fontFamily: "'DM Mono'", fontWeight: 500 }}>${parseFloat(item.amount).toFixed(0)}</div>
-              <div style={{ fontSize: 11, color: '#555', fontFamily: "'DM Mono'", marginTop: 2 }}>Due {item.due_date}</div>
-            </div>
-          </div>
-        ))}
+          )
+        })}
+        <div style={{ padding: '8px 14px', background: '#0f0f11', border: '1px solid #242428', borderRadius: 10, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div style={{ fontSize: 12, color: '#555' }}>Total due this week</div>
+          <div style={{ fontSize: 14, fontWeight: 600, color: '#f87171', fontFamily: "'DM Mono'" }}>${totalDue.toFixed(2)}</div>
+        </div>
       </div>
     </div>
   )
@@ -533,8 +567,8 @@ export default function Home({ onAddTask, onEditTask, onAddEvent }) {
         </div>
       </div>
 
-      {/* Bills & Subs due soon */}
-      <DueSoonSection />
+      {/* Upcoming subscriptions */}
+      <UpcomingSubsSection onNavigate={navigate} />
 
       {/* Sectors */}
       <div style={{ marginBottom: 8 }}>

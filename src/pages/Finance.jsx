@@ -55,6 +55,7 @@ function SubModal({ item, onClose, onSaved, categories }) {
   const [frequency, setFrequency] = useState(item?.frequency || 'monthly')
   const [category, setCategory] = useState(item?.category || 'Entertainment')
   const [billingDay, setBillingDay] = useState(item?.billing_day || '')
+  const [billingMonth, setBillingMonth] = useState(item?.billing_month || 1)
   const [isActive, setIsActive] = useState(item?.is_active !== false)
   const [customIcon, setCustomIcon] = useState(item?.icon || '')
   const [accountEmail, setAccountEmail] = useState(item?.account_email || '')
@@ -65,7 +66,7 @@ function SubModal({ item, onClose, onSaved, categories }) {
   const handleSave = async () => {
     if (!name.trim()) return
     setSaving(true)
-    const payload = { name: name.trim(), amount: parseFloat(amount)||0, frequency, category, billing_day: parseInt(billingDay)||null, is_active: isActive, icon: customIcon || null, account_email: accountEmail || null, payment_method: paymentMethod || null }
+    const payload = { name: name.trim(), amount: parseFloat(amount)||0, frequency, category, billing_day: parseInt(billingDay)||null, billing_month: frequency==='yearly' ? parseInt(billingMonth)||1 : null, is_active: isActive, icon: customIcon || null, account_email: accountEmail || null, payment_method: paymentMethod || null }
     if (isEdit) await supabase.from('finance_subscriptions').update(payload).eq('id', item.id)
     else await supabase.from('finance_subscriptions').insert(payload)
     setSaving(false); onSaved(); onClose()
@@ -122,8 +123,22 @@ function SubModal({ item, onClose, onSaved, categories }) {
         {/* 3. Billing day + status */}
         <div className="field-row">
           <div className="field">
-            <div className="field-label">Billing day</div>
-            <input type="number" placeholder="e.g. 15" min="1" max="31" value={billingDay} onChange={e => setBillingDay(e.target.value)} />
+            <div className="field-label">{frequency === 'yearly' ? 'Billing date' : 'Billing day'}</div>
+            {frequency === 'yearly' ? (
+              <div style={{ display: 'flex', gap: 6 }}>
+                <select value={billingMonth} onChange={e => setBillingMonth(e.target.value)} style={{ flex: 1 }}>
+                  {['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'].map((m,i) => (
+                    <option key={i} value={i+1}>{m}</option>
+                  ))}
+                </select>
+                <select value={billingDay} onChange={e => setBillingDay(e.target.value)} style={{ flex: 1 }}>
+                  <option value="">Day</option>
+                  {Array.from({length:31},(_,i)=>i+1).map(d => <option key={d} value={d}>{d}</option>)}
+                </select>
+              </div>
+            ) : (
+              <input type="number" placeholder="e.g. 15" min="1" max="31" value={billingDay} onChange={e => setBillingDay(e.target.value)} />
+            )}
           </div>
           <div className="field">
             <div className="field-label">Status</div>
@@ -272,7 +287,7 @@ export default function Finance() {
   const [modal, setModal] = useState(null)
   const [subModal, setSubModal] = useState(null)
   const [subFilter, setSubFilter] = useState('All')
-  const [subView, setSubView] = useState('all') // 'all' | 'upcoming'
+  const [subView, setSubView] = useState('all') // 'all' | 'upcoming' | 'calendar'
   const [catOrder, setCatOrder] = useState(() => { try { const s = localStorage.getItem('lifeos_cat_order'); return s ? JSON.parse(s) : [] } catch { return [] } })
   const [draggingCat, setDraggingCat] = useState(null)
   const [dragOverCat, setDragOverCat] = useState(null)
@@ -438,12 +453,13 @@ export default function Finance() {
             )}
           </div>
 
-          {/* All / Upcoming toggle */}
+          {/* All / Upcoming / Calendar toggle */}
           <div style={{ display: 'flex', background: '#161618', border: '1px solid #242428', borderRadius: 12, overflow: 'hidden', marginBottom: 16 }}>
             <div onClick={() => setSubView('all')} style={{ flex: 1, textAlign: 'center', padding: '10px', fontSize: 13, fontWeight: 500, cursor: 'pointer', background: subView==='all' ? 'var(--accent-dim)' : 'transparent', color: subView==='all' ? 'var(--accent)' : '#666' }}>All</div>
             <div onClick={() => setSubView('upcoming')} style={{ flex: 1, textAlign: 'center', padding: '10px', fontSize: 13, fontWeight: 500, cursor: 'pointer', background: subView==='upcoming' ? 'var(--accent-dim)' : 'transparent', color: subView==='upcoming' ? 'var(--accent)' : '#666' }}>
               Upcoming {upcomingSubs.length > 0 && <span style={{ marginLeft: 4, background: '#f87171', color: '#fff', borderRadius: 20, padding: '1px 6px', fontSize: 10 }}>{upcomingSubs.length}</span>}
             </div>
+            <div onClick={() => setSubView('calendar')} style={{ flex: 1, textAlign: 'center', padding: '10px', fontSize: 13, fontWeight: 500, cursor: 'pointer', background: subView==='calendar' ? 'var(--accent-dim)' : 'transparent', color: subView==='calendar' ? 'var(--accent)' : '#666' }}>📅 Cal</div>
           </div>
 
           {/* Add + manage buttons */}
@@ -563,6 +579,75 @@ export default function Finance() {
               )}
             </div>
           )}
+
+          {/* CALENDAR VIEW */}
+          {subView === 'calendar' && (() => {
+            const now = new Date()
+            const year = now.getFullYear(), month = now.getMonth()
+            const daysInMonth = new Date(year, month + 1, 0).getDate()
+            const MONTH_NAMES = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
+            const [calDay, setCalDay] = React.useState(null)
+
+            // Build day -> subs map
+            const dayMap = {}
+            subs.forEach(s => {
+              if (!s.billing_day || s.is_active === false) return
+              const d = s.billing_day
+              if (!dayMap[d]) dayMap[d] = []
+              dayMap[d].push(s)
+            })
+
+            return (
+              <div>
+                <div style={{ fontSize: 14, fontWeight: 500, color: '#888', marginBottom: 14 }}>{MONTH_NAMES[month]} {year}</div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', gap: 2, marginBottom: 4 }}>
+                  {['M','T','W','T','F','S','S'].map((d,i) => <div key={i} style={{ textAlign:'center', fontSize:10, color:'#444', padding:'3px 0', fontWeight:600 }}>{d}</div>)}
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', gap: 3, marginBottom: 20 }}>
+                  {Array.from({length: (new Date(year,month,1).getDay()+6)%7}).map((_,i) => <div key={'e'+i} />)}
+                  {Array.from({length: daysInMonth}, (_,i) => {
+                    const day = i+1
+                    const daySubs = dayMap[day] || []
+                    const isToday = day === now.getDate()
+                    return (
+                      <div key={day} onClick={() => daySubs.length && setCalDay(calDay===day ? null : day)}
+                        style={{ borderRadius: 8, padding: '5px 2px', minHeight: 54, background: isToday ? 'var(--accent-dim)' : '#161618', border: `1px solid ${isToday ? 'var(--accent-border)' : '#1e1e24'}`, cursor: daySubs.length ? 'pointer' : 'default', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                        <div style={{ fontSize: 11, color: isToday ? 'var(--accent)' : '#666', marginBottom: 3 }}>{day}</div>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 1, justifyContent: 'center' }}>
+                          {daySubs.slice(0,4).map(s => {
+                            const icon = s.icon?.startsWith('data:') ? null : (s.icon || getServiceIcon(s.name) || '📦')
+                            return (
+                              <div key={s.id} style={{ width: 18, height: 18, borderRadius: 5, background: '#1e1e24', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, overflow: 'hidden' }}>
+                                {s.icon?.startsWith('data:')
+                                  ? <img src={s.icon} alt="" style={{ width:'100%', height:'100%', objectFit:'cover' }} />
+                                  : icon}
+                              </div>
+                            )
+                          })}
+                          {daySubs.length > 4 && <div style={{ fontSize: 8, color: '#555' }}>+{daySubs.length-4}</div>}
+                        </div>
+                        {daySubs.length > 0 && (
+                          <div style={{ fontSize: 8, color: '#f87171', fontFamily:"'DM Mono'", marginTop: 2 }}>
+                            ${daySubs.reduce((s,x)=>s+(parseFloat(x.amount)||0),0).toFixed(0)}
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
+
+                {/* Day detail */}
+                {calDay && dayMap[calDay] && (
+                  <div style={{ marginBottom: 16 }}>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: '#888', marginBottom: 10 }}>
+                      {MONTH_NAMES[month]} {calDay} — {dayMap[calDay].length} subscription{dayMap[calDay].length>1?'s':''}
+                    </div>
+                    {dayMap[calDay].map(sub => <SubCard key={sub.id} sub={sub} customCats={customCats} onEdit={() => setSubModal(sub)} />)}
+                  </div>
+                )}
+              </div>
+            )
+          })()}
 
           {/* ALL VIEW - grouped by category */}
           {subView === 'all' && (
