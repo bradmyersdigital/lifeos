@@ -580,74 +580,7 @@ export default function Finance() {
             </div>
           )}
 
-          {/* CALENDAR VIEW */}
-          {subView === 'calendar' && (() => {
-            const now = new Date()
-            const year = now.getFullYear(), month = now.getMonth()
-            const daysInMonth = new Date(year, month + 1, 0).getDate()
-            const MONTH_NAMES = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
-            const [calDay, setCalDay] = React.useState(null)
-
-            // Build day -> subs map
-            const dayMap = {}
-            subs.forEach(s => {
-              if (!s.billing_day || s.is_active === false) return
-              const d = s.billing_day
-              if (!dayMap[d]) dayMap[d] = []
-              dayMap[d].push(s)
-            })
-
-            return (
-              <div>
-                <div style={{ fontSize: 14, fontWeight: 500, color: '#888', marginBottom: 14 }}>{MONTH_NAMES[month]} {year}</div>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', gap: 2, marginBottom: 4 }}>
-                  {['M','T','W','T','F','S','S'].map((d,i) => <div key={i} style={{ textAlign:'center', fontSize:10, color:'#444', padding:'3px 0', fontWeight:600 }}>{d}</div>)}
-                </div>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', gap: 3, marginBottom: 20 }}>
-                  {Array.from({length: (new Date(year,month,1).getDay()+6)%7}).map((_,i) => <div key={'e'+i} />)}
-                  {Array.from({length: daysInMonth}, (_,i) => {
-                    const day = i+1
-                    const daySubs = dayMap[day] || []
-                    const isToday = day === now.getDate()
-                    return (
-                      <div key={day} onClick={() => daySubs.length && setCalDay(calDay===day ? null : day)}
-                        style={{ borderRadius: 8, padding: '5px 2px', minHeight: 54, background: isToday ? 'var(--accent-dim)' : '#161618', border: `1px solid ${isToday ? 'var(--accent-border)' : '#1e1e24'}`, cursor: daySubs.length ? 'pointer' : 'default', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                        <div style={{ fontSize: 11, color: isToday ? 'var(--accent)' : '#666', marginBottom: 3 }}>{day}</div>
-                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 1, justifyContent: 'center' }}>
-                          {daySubs.slice(0,4).map(s => {
-                            const icon = s.icon?.startsWith('data:') ? null : (s.icon || getServiceIcon(s.name) || '📦')
-                            return (
-                              <div key={s.id} style={{ width: 18, height: 18, borderRadius: 5, background: '#1e1e24', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, overflow: 'hidden' }}>
-                                {s.icon?.startsWith('data:')
-                                  ? <img src={s.icon} alt="" style={{ width:'100%', height:'100%', objectFit:'cover' }} />
-                                  : icon}
-                              </div>
-                            )
-                          })}
-                          {daySubs.length > 4 && <div style={{ fontSize: 8, color: '#555' }}>+{daySubs.length-4}</div>}
-                        </div>
-                        {daySubs.length > 0 && (
-                          <div style={{ fontSize: 8, color: '#f87171', fontFamily:"'DM Mono'", marginTop: 2 }}>
-                            ${daySubs.reduce((s,x)=>s+(parseFloat(x.amount)||0),0).toFixed(0)}
-                          </div>
-                        )}
-                      </div>
-                    )
-                  })}
-                </div>
-
-                {/* Day detail */}
-                {calDay && dayMap[calDay] && (
-                  <div style={{ marginBottom: 16 }}>
-                    <div style={{ fontSize: 13, fontWeight: 600, color: '#888', marginBottom: 10 }}>
-                      {MONTH_NAMES[month]} {calDay} — {dayMap[calDay].length} subscription{dayMap[calDay].length>1?'s':''}
-                    </div>
-                    {dayMap[calDay].map(sub => <SubCard key={sub.id} sub={sub} customCats={customCats} onEdit={() => setSubModal(sub)} />)}
-                  </div>
-                )}
-              </div>
-            )
-          })()}
+          {subView === 'calendar' && <SubCalendar subs={subs} customCats={customCats} onEdit={setSubModal} />}
 
           {/* ALL VIEW - grouped by category */}
           {subView === 'all' && (
@@ -760,6 +693,91 @@ export default function Finance() {
 
       {modal && <EntryModal type={modal.type} item={modal.item} onClose={() => setModal(null)} onSaved={() => { setModal(null); load() }} />}
       {subModal && <SubModal item={subModal === 'new' ? null : subModal} categories={customCats} onClose={() => setSubModal(null)} onSaved={() => { setSubModal(null); load() }} />}
+    </div>
+  )
+}
+
+
+// ── Sub Calendar ──────────────────────────────────────────────────────────────
+function SubCalendar({ subs, customCats, onEdit }) {
+  const [calDay, setCalDay] = useState(null)
+  const now = new Date()
+  const year = now.getFullYear()
+  const month = now.getMonth()
+  const daysInMonth = new Date(year, month + 1, 0).getDate()
+  const firstDow = (new Date(year, month, 1).getDay() + 6) % 7
+  const MONTH_NAMES = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
+
+  const dayMap = {}
+  subs.forEach(s => {
+    if (!s.billing_day || s.is_active === false) return
+    const d = s.billing_day
+    if (!dayMap[d]) dayMap[d] = []
+    dayMap[d].push(s)
+  })
+
+  return (
+    <div>
+      <div style={{ fontSize: 14, fontWeight: 500, color: '#888', marginBottom: 14 }}>{MONTH_NAMES[month]} {year}</div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', gap: 2, marginBottom: 4 }}>
+        {['M','T','W','T','F','S','S'].map((d,i) => (
+          <div key={i} style={{ textAlign:'center', fontSize:10, color:'#444', padding:'3px 0', fontWeight:600 }}>{d}</div>
+        ))}
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', gap: 3, marginBottom: 20 }}>
+        {Array.from({length: firstDow}).map((_,i) => <div key={'e'+i} />)}
+        {Array.from({length: daysInMonth}, (_, i) => {
+          const day = i + 1
+          const daySubs = dayMap[day] || []
+          const isToday = day === now.getDate()
+          const isSelected = calDay === day
+          return (
+            <div key={day} onClick={() => daySubs.length && setCalDay(isSelected ? null : day)}
+              style={{ borderRadius: 8, padding: '5px 2px', minHeight: 54, background: isToday ? 'var(--accent-dim)' : isSelected ? '#1e1e2a' : '#161618', border: `1px solid ${isToday ? 'var(--accent-border)' : isSelected ? '#3a3a5a' : '#1e1e24'}`, cursor: daySubs.length ? 'pointer' : 'default', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+              <div style={{ fontSize: 11, color: isToday ? 'var(--accent)' : '#666', marginBottom: 3 }}>{day}</div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 1, justifyContent: 'center' }}>
+                {daySubs.slice(0, 4).map(s => {
+                  const isImg = s.icon?.startsWith('data:')
+                  const icon = isImg ? null : (s.icon || getServiceIcon(s.name) || '📦')
+                  return (
+                    <div key={s.id} style={{ width: 18, height: 18, borderRadius: 5, background: '#1e1e24', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, overflow: 'hidden' }}>
+                      {isImg ? <img src={s.icon} alt="" style={{ width:'100%', height:'100%', objectFit:'cover' }} /> : icon}
+                    </div>
+                  )
+                })}
+                {daySubs.length > 4 && <div style={{ fontSize: 8, color: '#555' }}>+{daySubs.length - 4}</div>}
+              </div>
+              {daySubs.length > 0 && (
+                <div style={{ fontSize: 8, color: '#f87171', fontFamily:"'DM Mono'", marginTop: 2 }}>
+                  ${daySubs.reduce((s, x) => s + (parseFloat(x.amount) || 0), 0).toFixed(0)}
+                </div>
+              )}
+            </div>
+          )
+        })}
+      </div>
+
+      {calDay && dayMap[calDay] && (
+        <div style={{ marginBottom: 16 }}>
+          <div style={{ fontSize: 13, fontWeight: 600, color: '#888', marginBottom: 10 }}>
+            {MONTH_NAMES[month]} {calDay} — {dayMap[calDay].length} subscription{dayMap[calDay].length > 1 ? 's' : ''}
+            <span style={{ fontFamily:"'DM Mono'", color:'#f87171', marginLeft: 10 }}>
+              ${dayMap[calDay].reduce((s,x)=>s+(parseFloat(x.amount)||0),0).toFixed(2)} due
+            </span>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {dayMap[calDay].map(sub => (
+              <SubCard key={sub.id} sub={sub} customCats={customCats} onEdit={() => onEdit(sub)} />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {Object.keys(dayMap).length === 0 && (
+        <div style={{ textAlign: 'center', padding: '30px 20px', color: '#444', fontSize: 13, border: '1px dashed #242428', borderRadius: 12 }}>
+          Add billing days to your subscriptions to see them on the calendar
+        </div>
+      )}
     </div>
   )
 }
