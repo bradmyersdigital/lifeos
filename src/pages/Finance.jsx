@@ -57,13 +57,15 @@ function SubModal({ item, onClose, onSaved, categories }) {
   const [billingDay, setBillingDay] = useState(item?.billing_day || '')
   const [isActive, setIsActive] = useState(item?.is_active !== false)
   const [customIcon, setCustomIcon] = useState(item?.icon || '')
+  const [accountEmail, setAccountEmail] = useState(item?.account_email || '')
+  const [paymentMethod, setPaymentMethod] = useState(item?.payment_method || '')
   const [saving, setSaving] = useState(false)
   const fileRef = React.useRef(null)
 
   const handleSave = async () => {
     if (!name.trim()) return
     setSaving(true)
-    const payload = { name: name.trim(), amount: parseFloat(amount)||0, frequency, category, billing_day: parseInt(billingDay)||null, is_active: isActive, icon: customIcon || null }
+    const payload = { name: name.trim(), amount: parseFloat(amount)||0, frequency, category, billing_day: parseInt(billingDay)||null, is_active: isActive, icon: customIcon || null, account_email: accountEmail || null, payment_method: paymentMethod || null }
     if (isEdit) await supabase.from('finance_subscriptions').update(payload).eq('id', item.id)
     else await supabase.from('finance_subscriptions').insert(payload)
     setSaving(false); onSaved(); onClose()
@@ -131,6 +133,18 @@ function SubModal({ item, onClose, onSaved, categories }) {
               </div>
               <span style={{ fontSize: 13, color: isActive ? 'var(--accent)' : '#555' }}>{isActive ? 'Active' : 'Paused'}</span>
             </div>
+          </div>
+        </div>
+
+        {/* Account + Payment method */}
+        <div className="field-row">
+          <div className="field">
+            <div className="field-label">Account</div>
+            <input type="text" placeholder="email@example.com" value={accountEmail} onChange={e => setAccountEmail(e.target.value)} />
+          </div>
+          <div className="field">
+            <div className="field-label">Payment method</div>
+            <input type="text" placeholder="e.g. Visa ••4242" value={paymentMethod} onChange={e => setPaymentMethod(e.target.value)} />
           </div>
         </div>
 
@@ -209,6 +223,8 @@ function EntryModal({ type, item, onClose, onSaved }) {
   const [frequency, setFrequency] = useState(item?.frequency || 'monthly')
   const [isActive, setIsActive] = useState(item?.is_active !== false)
   const [customIcon, setCustomIcon] = useState(item?.icon || '')
+  const [accountEmail, setAccountEmail] = useState(item?.account_email || '')
+  const [paymentMethod, setPaymentMethod] = useState(item?.payment_method || '')
   const [saving, setSaving] = useState(false)
   const table = type === 'income' ? 'finance_income' : type === 'bill' ? 'finance_bills' : 'finance_savings'
   const handleSave = async () => {
