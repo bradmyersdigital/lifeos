@@ -56,12 +56,13 @@ function SubModal({ item, onClose, onSaved, categories }) {
   const [category, setCategory] = useState(item?.category || 'Entertainment')
   const [billingDay, setBillingDay] = useState(item?.billing_day || '')
   const [isActive, setIsActive] = useState(item?.is_active !== false)
+  const [customIcon, setCustomIcon] = useState(item?.icon || '')
   const [saving, setSaving] = useState(false)
 
   const handleSave = async () => {
     if (!name.trim()) return
     setSaving(true)
-    const payload = { name: name.trim(), amount: parseFloat(amount)||0, frequency, category, billing_day: parseInt(billingDay)||null, is_active: isActive }
+    const payload = { name: name.trim(), amount: parseFloat(amount)||0, frequency, category, billing_day: parseInt(billingDay)||null, is_active: isActive, icon: customIcon || null }
     if (isEdit) await supabase.from('finance_subscriptions').update(payload).eq('id', item.id)
     else await supabase.from('finance_subscriptions').insert(payload)
     setSaving(false); onSaved(); onClose()
@@ -81,13 +82,43 @@ function SubModal({ item, onClose, onSaved, categories }) {
         <div className="modal-handle" />
         <div className="modal-title">{isEdit ? 'Edit subscription' : 'Add subscription'}<div className="modal-close" onClick={onClose}>×</div></div>
 
-        {/* Name with auto-icon preview */}
+        {/* Name + icon */}
         <div className="field">
           <div className="field-label">Service name</div>
-          <div style={{ position: 'relative' }}>
-            {serviceIcon && <div style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', fontSize: 18 }}>{serviceIcon}</div>}
-            <input type="text" placeholder="e.g. Netflix, Spotify…" value={name} onChange={e => setName(e.target.value)}
-              style={{ paddingLeft: serviceIcon ? 38 : 12 }} />
+          <input type="text" placeholder="e.g. Netflix, Spotify…" value={name} onChange={e => setName(e.target.value)} />
+        </div>
+
+        <div className="field">
+          <div className="field-label">Icon</div>
+          <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+            {/* Preview */}
+            <div style={{ width: 52, height: 52, borderRadius: 14, background: '#1e1e24', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 26, flexShrink: 0, overflow: 'hidden', border: '1px solid #242428' }}>
+              {customIcon && customIcon.startsWith('data:')
+                ? <img src={customIcon} alt="icon" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                : (customIcon || serviceIcon || '📦')}
+            </div>
+            <div style={{ flex: 1 }}>
+              <input type="text" placeholder="Paste emoji e.g. 🎮" value={customIcon && !customIcon.startsWith('data:') ? customIcon : ''} onChange={e => setCustomIcon(e.target.value)}
+                style={{ marginBottom: 8 }} />
+              <div style={{ display: 'flex', gap: 8 }}>
+                <label style={{ flex: 1, padding: '8px', borderRadius: 10, background: '#161618', border: '1px solid #242428', color: '#888', fontSize: 12, cursor: 'pointer', textAlign: 'center', fontFamily: "'DM Sans'" }}>
+                  📁 Upload image
+                  <input type="file" accept="image/*" style={{ display: 'none' }} onChange={e => {
+                    const file = e.target.files?.[0]; if (!file) return
+                    const reader = new FileReader()
+                    reader.onload = ev => setCustomIcon(ev.target.result)
+                    reader.readAsDataURL(file)
+                  }} />
+                </label>
+                {customIcon && <div onClick={() => setCustomIcon('')} style={{ padding: '8px 12px', borderRadius: 10, background: '#2a0a0a', border: '1px solid #7a1010', color: '#f87171', fontSize: 12, cursor: 'pointer' }}>Clear</div>}
+              </div>
+            </div>
+          </div>
+          {/* Quick emoji picks */}
+          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 10 }}>
+            {['🎬','🎵','📺','🎮','📚','💪','☁️','🍔','💊','🎧','📰','⚡','🛍️','💳','🔑','🤖'].map(e => (
+              <div key={e} onClick={() => setCustomIcon(e)} style={{ width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, borderRadius: 9, background: customIcon===e ? 'var(--accent-dim)' : '#0f0f11', border: `1px solid ${customIcon===e ? 'var(--accent-border)' : '#242428'}`, cursor: 'pointer' }}>{e}</div>
+            ))}
           </div>
         </div>
 
@@ -158,6 +189,7 @@ function EntryModal({ type, item, onClose, onSaved }) {
   const [dueDate, setDueDate] = useState(item?.due_date || '')
   const [frequency, setFrequency] = useState(item?.frequency || 'monthly')
   const [isActive, setIsActive] = useState(item?.is_active !== false)
+  const [customIcon, setCustomIcon] = useState(item?.icon || '')
   const [saving, setSaving] = useState(false)
   const table = type === 'income' ? 'finance_income' : type === 'bill' ? 'finance_bills' : 'finance_savings'
   const handleSave = async () => {
@@ -205,7 +237,10 @@ export default function Finance() {
   const [modal, setModal] = useState(null)
   const [subModal, setSubModal] = useState(null)
   const [subFilter, setSubFilter] = useState('All')
-  const [subSort, setSubSort] = useState('name') // 'name' | 'amount' | 'category' | 'billing'
+  const [subView, setSubView] = useState('all') // 'all' | 'upcoming'
+  const [catOrder, setCatOrder] = useState(() => { try { const s = localStorage.getItem('lifeos_cat_order'); return s ? JSON.parse(s) : [] } catch { return [] } })
+  const [draggingCat, setDraggingCat] = useState(null)
+  const [dragOverCat, setDragOverCat] = useState(null)
   const [manageCats, setManageCats] = useState(false)
   const [showNewCat, setShowNewCat] = useState(false)
   const [newCatName, setNewCatName] = useState('')
@@ -262,22 +297,31 @@ export default function Finance() {
   const totalBills = bills.filter(b => b.is_active !== false).reduce((sum, b) => sum + toMonthly(b.amount, b.frequency), 0)
 
   // Group subs by category
-  const allCategories = ['All', ...Array.from(new Set([...customCats.map(c=>c.name), ...subs.map(s => s.category || 'Other')]))]
-  const filteredSubs = (subFilter === 'All' ? subs : subs.filter(s => (s.category || 'Other') === subFilter))
-    .sort((a, b) => {
-      if (subSort === 'amount') return toMonthly(b.amount, b.frequency) - toMonthly(a.amount, a.frequency)
-      if (subSort === 'category') return (a.category || 'Other').localeCompare(b.category || 'Other')
-      if (subSort === 'billing') {
-        const ad = a.billing_day || 99, bd = b.billing_day || 99
-        return ad - bd
-      }
-      return a.name.localeCompare(b.name)
-    })
+  // Categories present in subs, ordered by catOrder preference
+  const rawCats = Array.from(new Set([...subs.map(s => s.category || 'Other')]))
+  const orderedCats = [
+    ...catOrder.filter(c => rawCats.includes(c)),
+    ...rawCats.filter(c => !catOrder.includes(c))
+  ]
+  const saveCatOrder = (order) => { setCatOrder(order); localStorage.setItem('lifeos_cat_order', JSON.stringify(order)) }
+  // Today's day of month for upcoming
+  const todayDay = new Date().getDate()
+  const upcomingSubs = subs.filter(s => {
+    if (s.is_active === false) return false
+    if (!s.billing_day) return false
+    const daysUntil = s.billing_day >= todayDay ? s.billing_day - todayDay : (31 - todayDay + s.billing_day)
+    return daysUntil <= 14
+  }).sort((a,b) => {
+    const da = a.billing_day >= todayDay ? a.billing_day - todayDay : 31 - todayDay + a.billing_day
+    const db = b.billing_day >= todayDay ? b.billing_day - todayDay : 31 - todayDay + b.billing_day
+    return da - db
+  })
 
-  const groupedSubs = filteredSubs.reduce((acc, s) => {
-    const cat = s.category || 'Other'
-    if (!acc[cat]) acc[cat] = []
-    acc[cat].push(s)
+  // Group all subs by category, sorted by billing_day within each category
+  const groupedSubs = orderedCats.reduce((acc, cat) => {
+    const items = subs.filter(s => (s.category || 'Other') === cat)
+      .sort((a,b) => (a.billing_day||99) - (b.billing_day||99))
+    if (items.length) acc[cat] = items
     return acc
   }, {})
 
@@ -327,28 +371,28 @@ export default function Finance() {
       {/* ── SUBSCRIPTIONS TAB ── */}
       {tab === 'subscriptions' && (
         <div>
-          {/* Sub header */}
+          {/* Hero card */}
           <div style={{ background: 'linear-gradient(135deg, #1a0a24 0%, #0f0f11 100%)', border: '1px solid #2a1a4a', borderRadius: 16, padding: 20, marginBottom: 18 }}>
             <div style={{ fontSize: 13, color: '#a78bfa', fontWeight: 500, marginBottom: 4 }}>Monthly subscriptions</div>
             <div style={{ fontSize: 36, fontWeight: 700, color: '#e8e6e1', marginBottom: 2 }}>{fmt(totalMonthly)}</div>
-            <div style={{ fontSize: 13, color: '#666' }}>{fmt(totalYearly)} per year · {activeSubs.length} active, {subs.filter(s=>s.is_active===false).length} paused</div>
-
-            {/* Monthly bar breakdown */}
+            <div style={{ fontSize: 13, color: '#666' }}>{fmt(totalYearly)} per year · {activeSubs.length} active</div>
             {totalMonthly > 0 && (
-              <div style={{ marginTop: 16 }}>
+              <div style={{ marginTop: 14 }}>
                 <div style={{ height: 8, borderRadius: 4, overflow: 'hidden', background: '#1e1e24', display: 'flex' }}>
-                  {Object.entries(groupedSubs).map(([cat, items]) => {
-                    const catTotal = items.filter(s=>s.is_active!==false).reduce((sum,s)=>sum+toMonthly(s.amount,s.frequency),0)
+                  {orderedCats.map(cat => {
+                    const catTotal = (groupedSubs[cat]||[]).filter(s=>s.is_active!==false).reduce((sum,s)=>sum+toMonthly(s.amount,s.frequency),0)
                     const pct = (catTotal/totalMonthly)*100
-                    return pct > 0 ? <div key={cat} style={{ width: pct+'%', background: CAT_COLORS[cat]||'#555', transition: 'width 0.4s' }} /> : null
+                    const col = customCats.find(c=>c.name===cat)?.color || CAT_COLORS[cat] || '#555'
+                    return pct > 0 ? <div key={cat} style={{ width: pct+'%', background: col }} /> : null
                   })}
                 </div>
                 <div style={{ display: 'flex', gap: 10, marginTop: 10, flexWrap: 'wrap' }}>
-                  {Object.entries(groupedSubs).map(([cat, items]) => {
-                    const catTotal = items.filter(s=>s.is_active!==false).reduce((sum,s)=>sum+toMonthly(s.amount,s.frequency),0)
+                  {orderedCats.map(cat => {
+                    const catTotal = (groupedSubs[cat]||[]).filter(s=>s.is_active!==false).reduce((sum,s)=>sum+toMonthly(s.amount,s.frequency),0)
+                    const col = customCats.find(c=>c.name===cat)?.color || CAT_COLORS[cat] || '#555'
                     return catTotal > 0 ? (
                       <div key={cat} style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11 }}>
-                        <div style={{ width: 8, height: 8, borderRadius: '50%', background: CAT_COLORS[cat]||'#555', flexShrink: 0 }} />
+                        <div style={{ width: 8, height: 8, borderRadius: '50%', background: col, flexShrink: 0 }} />
                         <span style={{ color: '#666' }}>{cat}</span>
                         <span style={{ color: '#aaa', fontFamily: "'DM Mono'" }}>{fmt(catTotal)}</span>
                       </div>
@@ -359,30 +403,11 @@ export default function Finance() {
             )}
           </div>
 
-          {/* Sort + Filter */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-            <div style={{ display: 'flex', gap: 6, overflowX: 'auto', flex: 1, WebkitOverflowScrolling: 'touch' }}>
-              {allCategories.map(cat => {
-                const catDef = customCats.find(c => c.name === cat)
-                const col = catDef?.color || CAT_COLORS[cat] || '#555'
-                return (
-                  <div key={cat} onClick={() => setSubFilter(cat)}
-                    style={{ padding: '5px 12px', borderRadius: 20, fontSize: 11, fontWeight: 500, cursor: 'pointer', border: '1px solid', whiteSpace: 'nowrap',
-                      background: subFilter===cat ? col + '22' : '#161618',
-                      borderColor: subFilter===cat ? col : '#242428',
-                      color: subFilter===cat ? col : '#666' }}>
-                    {cat !== 'All' ? (CAT_ICONS[cat]||'📦') : ''} {cat}
-                  </div>
-                )
-              })}
-            </div>
-            <div style={{ marginLeft: 8, flexShrink: 0 }}>
-              <select value={subSort} onChange={e => setSubSort(e.target.value)} style={{ background: '#161618', border: '1px solid #242428', borderRadius: 8, padding: '5px 8px', color: '#888', fontSize: 11, outline: 'none', fontFamily: "'DM Sans'" }}>
-                <option value="name">A–Z</option>
-                <option value="amount">$ High</option>
-                <option value="category">Category</option>
-                <option value="billing">Bill date</option>
-              </select>
+          {/* All / Upcoming toggle */}
+          <div style={{ display: 'flex', background: '#161618', border: '1px solid #242428', borderRadius: 12, overflow: 'hidden', marginBottom: 16 }}>
+            <div onClick={() => setSubView('all')} style={{ flex: 1, textAlign: 'center', padding: '10px', fontSize: 13, fontWeight: 500, cursor: 'pointer', background: subView==='all' ? 'var(--accent-dim)' : 'transparent', color: subView==='all' ? 'var(--accent)' : '#666' }}>All</div>
+            <div onClick={() => setSubView('upcoming')} style={{ flex: 1, textAlign: 'center', padding: '10px', fontSize: 13, fontWeight: 500, cursor: 'pointer', background: subView==='upcoming' ? 'var(--accent-dim)' : 'transparent', color: subView==='upcoming' ? 'var(--accent)' : '#666' }}>
+              Upcoming {upcomingSubs.length > 0 && <span style={{ marginLeft: 4, background: '#f87171', color: '#fff', borderRadius: 20, padding: '1px 6px', fontSize: 10 }}>{upcomingSubs.length}</span>}
             </div>
           </div>
 
@@ -401,7 +426,7 @@ export default function Finance() {
           {manageCats && (
             <div style={{ background: '#161618', border: '1px solid #242428', borderRadius: 14, padding: 16, marginBottom: 16 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                <div style={{ fontSize: 14, fontWeight: 500 }}>Manage categories</div>
+                <div style={{ fontSize: 14, fontWeight: 500 }}>Categories <span style={{ fontSize: 11, color: '#555' }}>drag to reorder</span></div>
                 <div onClick={() => setShowNewCat(!showNewCat)} style={{ fontSize: 12, color: 'var(--accent)', cursor: 'pointer', padding: '4px 10px', background: 'var(--accent-dim)', border: '1px solid var(--accent-border)', borderRadius: 8 }}>+ Add</div>
               </div>
               {showNewCat && (
@@ -417,8 +442,23 @@ export default function Finance() {
                 </div>
               )}
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                {customCats.map(cat => (
-                  <div key={cat.name} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', background: '#0f0f11', borderRadius: 10, border: '1px solid #242428' }}>
+                {customCats.map((cat, idx) => (
+                  <div key={cat.name}
+                    draggable
+                    onDragStart={() => setDraggingCat(idx)}
+                    onDragEnter={() => setDragOverCat(idx)}
+                    onDragEnd={() => {
+                      if (draggingCat === null || dragOverCat === null || draggingCat === dragOverCat) { setDraggingCat(null); setDragOverCat(null); return }
+                      const newOrder = [...customCats]
+                      const [moved] = newOrder.splice(draggingCat, 1)
+                      newOrder.splice(dragOverCat, 0, moved)
+                      saveCats(newOrder)
+                      saveCatOrder(newOrder.map(c => c.name))
+                      setDraggingCat(null); setDragOverCat(null)
+                    }}
+                    onDragOver={e => e.preventDefault()}
+                    style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', background: draggingCat === idx ? 'var(--accent-dim)' : '#0f0f11', borderRadius: 10, border: `1px solid ${draggingCat === idx ? 'var(--accent-border)' : '#242428'}`, cursor: 'grab' }}>
+                    <div style={{ fontSize: 14, color: '#333', cursor: 'grab', padding: '0 4px' }}>⠿</div>
                     <div style={{ width: 10, height: 10, borderRadius: '50%', background: cat.color, flexShrink: 0 }} />
                     {editingCat?.name === cat.name ? (
                       <>
@@ -431,7 +471,7 @@ export default function Finance() {
                     ) : (
                       <>
                         <div style={{ flex: 1, fontSize: 14, color: '#d4d2cc' }}>{cat.name}</div>
-                        <div style={{ fontSize: 11, color: '#444', fontFamily: "'DM Mono'" }}>{subs.filter(s => (s.category||'Other') === cat.name).length} subs</div>
+                        <div style={{ fontSize: 11, color: '#444', fontFamily: "'DM Mono'" }}>{subs.filter(s=>(s.category||'Other')===cat.name).length}</div>
                         <div onClick={() => setEditingCat({ name: cat.name, newName: cat.name })} style={{ fontSize: 12, color: '#888', cursor: 'pointer', padding: '3px 8px', borderRadius: 6, background: '#161618', border: '1px solid #242428' }}>✏️</div>
                         <div onClick={() => deleteSubCat(cat.name)} style={{ fontSize: 12, color: '#f87171', cursor: 'pointer', padding: '3px 8px', borderRadius: 6, background: '#2a0a0a', border: '1px solid #7a1010' }}>✕</div>
                       </>
@@ -442,36 +482,72 @@ export default function Finance() {
             </div>
           )}
 
-          {/* Grouped subscription list */}
-          {subSort === 'category' ? (
-            Object.entries(groupedSubs).map(([cat, items]) => (
-              <div key={cat} style={{ marginBottom: 20 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <div style={{ fontSize: 16 }}>{CAT_ICONS[cat]||'📦'}</div>
-                    <div style={{ fontSize: 13, fontWeight: 600, color: CAT_COLORS[cat]||'#888', textTransform: 'uppercase', letterSpacing: '0.06em', fontSize: 11 }}>{cat}</div>
-                  </div>
-                  <div style={{ fontSize: 12, color: '#555', fontFamily: "'DM Mono'" }}>
-                    {fmt(items.filter(s=>s.is_active!==false).reduce((sum,s)=>sum+toMonthly(s.amount,s.frequency),0))}/mo
-                  </div>
+          {/* UPCOMING VIEW */}
+          {subView === 'upcoming' && (
+            <div>
+              {upcomingSubs.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '40px 20px', color: '#444', fontSize: 14, border: '1px dashed #242428', borderRadius: 14 }}>
+                  No subscriptions with billing dates in the next 14 days.<br/>Add a billing day to your subscriptions to see them here.
                 </div>
-                {items.map(sub => <SubCard key={sub.id} sub={sub} onEdit={() => setSubModal(sub)} />)}
-              </div>
-            ))
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              {filteredSubs.map(sub => <SubCard key={sub.id} sub={sub} onEdit={() => setSubModal(sub)} />)}
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  {upcomingSubs.map(sub => {
+                    const daysUntil = sub.billing_day >= todayDay ? sub.billing_day - todayDay : 31 - todayDay + sub.billing_day
+                    return (
+                      <div key={sub.id} onClick={() => setSubModal(sub)} style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '14px 16px', background: '#161618', border: `1px solid ${daysUntil <= 3 ? '#3a1010' : '#242428'}`, borderRadius: 14, cursor: 'pointer' }}>
+                        <div style={{ width: 44, height: 44, borderRadius: 12, background: (customCats.find(c=>c.name===(sub.category||'Other'))?.color || CAT_COLORS[sub.category||'Other'] || '#555') + '22', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, flexShrink: 0 }}>
+                          {sub.icon || getServiceIcon(sub.name) || CAT_ICONS[sub.category||'Other'] || '📦'}
+                        </div>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontSize: 15, fontWeight: 500, color: '#e8e6e1' }}>{sub.name}</div>
+                          <div style={{ fontSize: 12, color: daysUntil <= 3 ? '#f87171' : '#555', marginTop: 2 }}>
+                            {daysUntil === 0 ? '🔴 Due today' : daysUntil === 1 ? '🟡 Due tomorrow' : `Due in ${daysUntil} days · ${sub.billing_day}${['st','nd','rd'][sub.billing_day-1]||'th'}`}
+                          </div>
+                        </div>
+                        <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                          <div style={{ fontSize: 16, fontWeight: 600, color: '#e8e6e1', fontFamily: "'DM Mono'" }}>{fmt(sub.amount)}</div>
+                          <div style={{ fontSize: 10, color: '#555' }}>{sub.frequency}</div>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
             </div>
           )}
 
-          {subs.length === 0 && (
-            <div style={{ textAlign: 'center', padding: '40px 20px', color: '#444', fontSize: 14, border: '1px dashed #242428', borderRadius: 14 }}>
-              No subscriptions yet — add one above
+          {/* ALL VIEW - grouped by category */}
+          {subView === 'all' && (
+            <div>
+              {orderedCats.length === 0 && (
+                <div style={{ textAlign: 'center', padding: '40px 20px', color: '#444', fontSize: 14, border: '1px dashed #242428', borderRadius: 14 }}>
+                  No subscriptions yet — add one above
+                </div>
+              )}
+              {orderedCats.filter(cat => groupedSubs[cat]).map(cat => {
+                const catDef = customCats.find(c => c.name === cat)
+                const col = catDef?.color || CAT_COLORS[cat] || '#555'
+                const catItems = groupedSubs[cat] || []
+                const catMonthly = catItems.filter(s=>s.is_active!==false).reduce((sum,s)=>sum+toMonthly(s.amount,s.frequency),0)
+                return (
+                  <div key={cat} style={{ marginBottom: 24 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <div style={{ width: 10, height: 10, borderRadius: '50%', background: col, flexShrink: 0 }} />
+                        <div style={{ fontSize: 11, fontWeight: 700, color: col, textTransform: 'uppercase', letterSpacing: '0.08em' }}>{cat}</div>
+                      </div>
+                      <div style={{ fontSize: 12, color: '#555', fontFamily: "'DM Mono'" }}>{fmt(catMonthly)}/mo</div>
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                      {catItems.map(sub => <SubCard key={sub.id} sub={sub} customCats={customCats} onEdit={() => setSubModal(sub)} />)}
+                    </div>
+                  </div>
+                )
+              })}
             </div>
           )}
         </div>
       )}
-
       {/* ── BILLS TAB ── */}
       {tab === 'bills' && (
         <div>
@@ -556,21 +632,22 @@ export default function Finance() {
 }
 
 // ── Sub Card ──────────────────────────────────────────────────────────────────
-function SubCard({ sub, onEdit }) {
+function SubCard({ sub, customCats, onEdit }) {
   const monthly = toMonthly(sub.amount, sub.frequency)
   const yearly = toYearly(sub.amount, sub.frequency)
   const isPaused = sub.is_active === false
-  const catColor = CAT_COLORS[sub.category || 'Other'] || '#555'
-  const serviceIcon = getServiceIcon(sub.name) || CAT_ICONS[sub.category || 'Other'] || '📦'
+  const catDef = customCats?.find(c => c.name === (sub.category || 'Other'))
+  const catColor = catDef?.color || CAT_COLORS[sub.category || 'Other'] || '#555'
+  const displayIcon = sub.icon || getServiceIcon(sub.name) || CAT_ICONS[sub.category || 'Other'] || '📦'
+  const isImageIcon = sub.icon && sub.icon.startsWith('data:')
 
   return (
     <div onClick={onEdit} style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '14px 16px', background: '#161618', border: '1px solid #242428', borderRadius: 14, cursor: 'pointer', opacity: isPaused ? 0.5 : 1 }}>
-      {/* Icon */}
-      <div style={{ width: 44, height: 44, borderRadius: 12, background: catColor + '22', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, flexShrink: 0 }}>
-        {serviceIcon}
+      <div style={{ width: 44, height: 44, borderRadius: 12, background: catColor + '22', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, flexShrink: 0, overflow: 'hidden' }}>
+        {isImageIcon
+          ? <img src={displayIcon} alt={sub.name} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 12 }} />
+          : displayIcon}
       </div>
-
-      {/* Info */}
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 3 }}>
           <div style={{ fontSize: 15, fontWeight: 500, color: '#e8e6e1', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{sub.name}</div>
@@ -582,8 +659,6 @@ function SubCard({ sub, onEdit }) {
           {sub.billing_day && <div style={{ fontSize: 11, color: '#444', fontFamily: "'DM Mono'" }}>bills {sub.billing_day}{['st','nd','rd'][sub.billing_day-1]||'th'}</div>}
         </div>
       </div>
-
-      {/* Amount */}
       <div style={{ textAlign: 'right', flexShrink: 0 }}>
         <div style={{ fontSize: 16, fontWeight: 600, color: '#e8e6e1', fontFamily: "'DM Mono'" }}>{fmt(sub.amount)}</div>
         <div style={{ fontSize: 10, color: '#555', fontFamily: "'DM Mono'", marginTop: 2 }}>
