@@ -2,6 +2,7 @@ import React from 'react'
 import { useNavigate } from 'react-router-dom'
 
 const ITEMS = [
+  { label: 'Real Estate', icon: '🏠', desc: 'Seller system & phases', path: '/realestate', color: '#3b82f6' },
   { label: 'Projects', icon: '📋', desc: 'Track active projects', path: '/projects', color: '#d4520f' },
   { label: 'Notes', icon: '📝', desc: 'Quick capture & notes', path: '/notes', color: '#a78bfa' },
   { label: 'Finance', icon: '💰', desc: 'Income, bills, savings', path: '/finance', color: '#10b981' },

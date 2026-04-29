@@ -10,6 +10,7 @@ import Notes from './pages/Notes'
 import Habits from './pages/Habits'
 import More from './pages/More'
 import Finance from './pages/Finance'
+import RealEstate from './pages/RealEstate'
 import Settings from './pages/Settings'
 import Goals from './pages/Goals'
 import Grocery from './pages/Grocery'
@@ -61,6 +62,7 @@ function Shell() {
           <Route path="/projects"    element={<Projects key={refreshKey} onAddTask={openAdd} onEditTask={openEdit} />} />
           <Route path="/notes"       element={<Notes key={refreshKey} />} />
           <Route path="/habits"      element={<Habits key={refreshKey} />} />
+          <Route path="/realestate" element={<RealEstate />} />
           <Route path="/finance"     element={<Finance key={refreshKey} />} />
           <Route path="/goals"       element={<Goals key={refreshKey} />} />
           <Route path="/grocery"     element={<Grocery key={refreshKey} />} />
