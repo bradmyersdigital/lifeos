@@ -14,6 +14,7 @@ import Settings from './pages/Settings'
 import Goals from './pages/Goals'
 import Grocery from './pages/Grocery'
 import FocusTimer from './pages/FocusTimer'
+import Journal from './pages/Journal'
 import TaskModal from './components/TaskModal'
 import EventModal from './components/EventModal'
 
@@ -35,6 +36,7 @@ const DRAWER_ITEMS = [
       { path: '/notes',      label: 'Notes',       icon: '📝', desc: 'Quick capture & notes' },
       { path: '/goals',      label: 'Goals',       icon: '🎯', desc: 'Long-term goals' },
       { path: '/focus',      label: 'Focus Timer', icon: '⏱️', desc: 'Deep work sessions' },
+      { path: '/journal',    label: 'Journal',     icon: '📓', desc: 'Daily entries & reflection' },
     ]
   },
   {
@@ -183,6 +185,7 @@ function Shell() {
           <Route path="/goals"       element={<Goals key={refreshKey} />} />
           <Route path="/grocery"     element={<Grocery key={refreshKey} />} />
           <Route path="/focus"       element={<FocusTimer key={refreshKey} />} />
+          <Route path="/journal"     element={<Journal key={refreshKey} />} />
           <Route path="/settings"    element={<Settings />} />
         </Routes>
       </div>

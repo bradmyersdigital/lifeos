@@ -42,7 +42,7 @@ body { overflow: hidden; }
 
 .page-scroll {
   flex: 1; overflow-y: auto; overflow-x: hidden;
-  padding: 20px 20px calc(var(--nav-height) + var(--safe-bottom) + 20px);
+  padding: 72px 20px calc(var(--nav-height) + var(--safe-bottom) + 20px);
   -webkit-overflow-scrolling: touch;
 }
 
