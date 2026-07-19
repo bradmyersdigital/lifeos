@@ -344,25 +344,33 @@ export default function Home({ onAddTask, onEditTask, onAddEvent }) {
 
   return (
     <div>
-      {/* Header with rotating quote */}
+      {/* Header — logo, date, quote of the day */}
       {(() => {
-        const q = QUOTES[Math.floor(Math.random() * QUOTES.length) % QUOTES.length]
-        // Use a stable index based on the day so it changes daily but not on every render
         const dayIdx = new Date().getDate() % QUOTES.length
         const quote = QUOTES[dayIdx]
         return (
-          <div style={{ marginBottom: 18 }}>
-            <div style={{ fontSize: 13, color: 'var(--text-dim)', marginBottom: 10, fontFamily: "'DM Mono'" }}>{dateStr}</div>
-            <div style={{ background: 'var(--bg-card)', border: '1px solid var(--accent-dim)', borderLeft: '3px solid var(--accent)', borderRadius: 12, padding: '14px 16px' }}>
-              <div style={{ fontSize: 14, color: 'var(--text-secondary)', lineHeight: 1.6, fontStyle: 'italic', marginBottom: 8 }}>"{quote.text}"</div>
-              <div style={{ fontSize: 11, color: 'var(--accent)', fontWeight: 600, fontFamily: "'DM Mono'" }}>— {quote.author}</div>
+          <div style={{ textAlign: 'center', marginBottom: 26 }}>
+            {/* masked so the mark takes the theme's text colour in every palette / mode */}
+            <div aria-label="LifeOS" role="img" style={{
+              width: 54, height: 54, margin: '0 auto 14px',
+              background: 'var(--text-primary)',
+              WebkitMaskImage: 'url(/logo.png)', maskImage: 'url(/logo.png)',
+              WebkitMaskSize: 'contain', maskSize: 'contain',
+              WebkitMaskRepeat: 'no-repeat', maskRepeat: 'no-repeat',
+              WebkitMaskPosition: 'center', maskPosition: 'center',
+              opacity: 0.9,
+            }} />
+            <div style={{ fontSize: 12, color: 'var(--text-dim)', marginBottom: 14, fontFamily: "'DM Mono'", letterSpacing: '0.04em' }}>{dateStr}</div>
+            <div style={{ fontSize: 23, fontWeight: 700, color: 'var(--text-primary)', lineHeight: 1.28, letterSpacing: '-0.4px', maxWidth: 440, margin: '0 auto 10px' }}>
+              {quote.text}
             </div>
+            <div style={{ fontSize: 12, color: 'var(--text-muted)', fontWeight: 500 }}>— {quote.author}</div>
           </div>
         )
       })()}
 
       {/* Add task buttons */}
-      <div className="action-row" style={{ marginBottom: 16 }}>
+      <div className="action-row" style={{ marginBottom: 20, justifyContent: 'center' }}>
         <div className="action-btn btn-task" onClick={() => onAddTask('today')}>
           <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><line x1="7.5" y1="1" x2="7.5" y2="14" stroke="var(--accent-text)" strokeWidth="1.8" strokeLinecap="round"/><line x1="1" y1="7.5" x2="14" y2="7.5" stroke="var(--accent-text)" strokeWidth="1.8" strokeLinecap="round"/></svg>
           Add Task
@@ -396,28 +404,28 @@ export default function Home({ onAddTask, onEditTask, onAddEvent }) {
         </div>
       )}
 
-      {/* Today + Urgent side by side */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 18 }}>
-        <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 14, padding: 14 }}>
+      {/* Today stacked above Urgent — full width so long task names can breathe */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 18 }}>
+        <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 14, padding: 16 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 10 }}>
-            <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.1em', color: 'var(--text-dim)', textTransform: 'uppercase' }}>Today's blocks</div>
+            <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.09em', color: 'var(--text-dim)', textTransform: 'uppercase' }}>Today's blocks</div>
             <div style={{ fontSize: 10, color: 'var(--text-dim)', fontFamily: "'DM Mono'" }}>{todayDone}/{tasks.length}</div>
           </div>
           {todayAllItems.length === 0
-            ? <div style={{ fontSize: 12, color: 'var(--border-hover)', textAlign: 'center', padding: '8px 0' }}>Nothing today</div>
+            ? <div style={{ fontSize: 13, color: 'var(--text-dim)', textAlign: 'center', padding: '14px 0' }}>Nothing today</div>
             : todayAllItems.map(item => item._type === 'event' ? (
-              <div key={item.id} style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 7, cursor: 'pointer' }} onClick={() => navigate('/week')}>
+              <div key={item.id} style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 10, cursor: 'pointer' }} onClick={() => navigate('/week')}>
                 <svg width="11" height="11" viewBox="0 0 12 12" fill="none" style={{ flexShrink: 0 }}><circle cx="6" cy="6" r="5" stroke="var(--event-color)" strokeWidth="1.3"/><polyline points="6,3 6,6 8,7.5" stroke="var(--event-color)" strokeWidth="1.3" strokeLinecap="round"/></svg>
-                <div style={{ fontSize: 12, color: 'var(--event-color)', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.title}</div>
+                <div style={{ fontSize: 14, color: 'var(--event-color)', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.title}</div>
                 <div style={{ fontFamily: "'DM Mono'", fontSize: 10, color: 'var(--success-border)', flexShrink: 0 }}>{item.start_time}</div>
               </div>
             ) : (
-              <div key={item.id} onClick={() => onEditTask(item)} style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 7, cursor: 'pointer' }}>
+              <div key={item.id} onClick={() => onEditTask(item)} style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 10, cursor: 'pointer' }}>
                 <div onClick={e => { e.stopPropagation(); toggleTask(item) }} style={{ width: 16, height: 16, borderRadius: '50%', border: `1.5px solid ${item.completed ? 'var(--accent)' : item._isRolledOver ? 'var(--danger)' : 'var(--border-hover)'}`, background: item.completed ? 'var(--accent)' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                   {item.completed && <svg width="8" height="8" viewBox="0 0 8 8"><polyline points="1,4 3,6 7,2" stroke="white" strokeWidth="1.5" fill="none" strokeLinecap="round"/></svg>}
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 12, color: item.completed ? 'var(--text-dim)' : 'var(--text-secondary)', textDecoration: item.completed ? 'line-through' : 'none', wordBreak: 'break-word', lineHeight: 1.3 }}>{item.name}</div>
+                  <div style={{ fontSize: 14, color: item.completed ? 'var(--text-dim)' : 'var(--text-primary)', textDecoration: item.completed ? 'line-through' : 'none', wordBreak: 'break-word', lineHeight: 1.3 }}>{item.name}</div>
                   {item._isRolledOver && <div style={{ fontSize: 10, color: 'var(--danger)', fontFamily: "'DM Mono'", marginTop: 1 }}>⚠ overdue · was {item._originalDate}</div>}
                 </div>
                 {!item._isRolledOver && item.time_block && <div style={{ fontFamily: "'DM Mono'", fontSize: 10, color: 'var(--text-dim)', flexShrink: 0 }}>{item.time_block}</div>}
@@ -425,15 +433,15 @@ export default function Home({ onAddTask, onEditTask, onAddEvent }) {
             ))
           }
         </div>
-        <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 14, padding: 14 }}>
-          <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.1em', color: 'var(--text-dim)', textTransform: 'uppercase', marginBottom: 10 }}>Urgent / High</div>
+        <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 14, padding: 16 }}>
+          <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.09em', color: 'var(--text-dim)', textTransform: 'uppercase', marginBottom: 10 }}>Urgent / High</div>
           {urgentTasks.length === 0
-            ? <div style={{ fontSize: 12, color: 'var(--border-hover)', textAlign: 'center', padding: '8px 0' }}>All clear 🎉</div>
-            : urgentTasks.slice(0, 4).map(task => {
+            ? <div style={{ fontSize: 13, color: 'var(--text-dim)', textAlign: 'center', padding: '14px 0' }}>All clear 🎉</div>
+            : urgentTasks.slice(0, 6).map(task => {
               const u = URG_STYLE[task.urgency] || URG_STYLE.high
               return (
                 <div key={task.id} onClick={() => onEditTask(task)} style={{ marginBottom: 8, cursor: 'pointer' }}>
-                  <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 3, lineHeight: 1.3 }}>{task.name}</div>
+                  <div style={{ fontSize: 14, color: 'var(--text-primary)', marginBottom: 4, lineHeight: 1.35 }}>{task.name}</div>
                   <span style={{ fontSize: 10, fontWeight: 600, padding: '1px 6px', borderRadius: 5, background: u.bg, color: u.color }}>{task.urgency}</span>
                 </div>
               )

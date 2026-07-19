@@ -31,7 +31,7 @@ function DaySnapshot({ date }) {
   useEffect(() => {
     Promise.all([
       supabase.from('habits').select('*').order('sort_order').order('name'),
-      supabase.from('habit_logs').select('*').eq('log_date', date),
+      supabase.from('habit_logs').select('*').eq('completed_date', date),
       supabase.from('tasks').select('*').eq('start_date', date),
     ]).then(([h, l, t]) => {
       setHabits(h.data || [])
@@ -47,7 +47,7 @@ function DaySnapshot({ date }) {
       await supabase.from('habit_logs').delete().eq('id', existing.id)
       setHabitLogs(prev => prev.filter(l => l.id !== existing.id))
     } else {
-      const { data } = await supabase.from('habit_logs').insert({ habit_id: habitId, log_date: date, completed: true }).select().single()
+      const { data } = await supabase.from('habit_logs').insert({ habit_id: habitId, completed_date: date }).select().single()
       if (data) setHabitLogs(prev => [...prev, data])
     }
   }
