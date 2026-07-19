@@ -45,8 +45,6 @@ const DRAWER_ITEMS = [
       { path: '/grocery',    label: 'Grocery',     icon: '🛒', desc: 'Shopping list' },
     ]
   },
-    ]
-  },
   {
     section: 'Account',
     items: [
