@@ -4,10 +4,10 @@ import { supabase } from '../lib/supabase'
 const SECTORS = ['Business', 'Real Estate', 'Health', 'Personal Growth', 'Hobbies', 'Family']
 const URGENCIES = ['Low', 'Medium', 'High', 'Urgent']
 const URG_STYLES = {
-  Low:    { bg: '#0a1e14', border: '#0f4a2a', color: 'var(--event-color)' },
-  Medium: { bg: '#1e1a00', border: '#4a3d00', color: '#fcd34d' },
-  High:   { bg: '#1e1208', border: '#7a3410', color: 'var(--accent-text)' },
-  Urgent: { bg: '#2a0a0a', border: '#7a1010', color: '#f87171' },
+  Low:    { bg: 'var(--success-dim)', border: 'var(--success-border)', color: 'var(--event-color)' },
+  Medium: { bg: 'var(--warn-dim)', border: 'var(--warn-border)', color: 'var(--warn)' },
+  High:   { bg: 'var(--accent-dim)', border: 'var(--accent-border)', color: 'var(--accent-text)' },
+  Urgent: { bg: 'var(--danger-dim)', border: 'var(--danger-border)', color: 'var(--danger)' },
 }
 
 // Simple time input — iOS shows native wheel picker, no extra AM/PM toggle needed
@@ -42,9 +42,9 @@ function TimeInput({ value, onChange }) {
     <div className="field">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
         <div className="field-label" style={{ margin: 0 }}>Time block</div>
-        <div onClick={() => { setNoTime(!noTime); if (!noTime) onChange('') }} style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: 12, color: noTime ? '#d4520f' : '#555' }}>
-          <div style={{ width: 28, height: 16, borderRadius: 8, background: noTime ? '#1e1208' : '#1e1e24', border: `1px solid ${noTime ? '#7a3410' : '#333'}`, position: 'relative', transition: 'all 0.2s' }}>
-            <div style={{ width: 12, height: 12, borderRadius: '50%', background: noTime ? '#d4520f' : '#555', position: 'absolute', top: 1, left: noTime ? 13 : 1, transition: 'left 0.2s' }} />
+        <div onClick={() => { setNoTime(!noTime); if (!noTime) onChange('') }} style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: 12, color: noTime ? 'var(--accent)' : 'var(--text-dim)' }}>
+          <div style={{ width: 28, height: 16, borderRadius: 8, background: noTime ? 'var(--accent-dim)' : 'var(--border)', border: `1px solid ${noTime ? 'var(--accent-border)' : 'var(--border-hover)'}`, position: 'relative', transition: 'all 0.2s' }}>
+            <div style={{ width: 12, height: 12, borderRadius: '50%', background: noTime ? 'var(--accent)' : 'var(--text-dim)', position: 'absolute', top: 1, left: noTime ? 13 : 1, transition: 'left 0.2s' }} />
           </div>
           No time
         </div>
@@ -57,7 +57,7 @@ function TimeInput({ value, onChange }) {
           style={{ width: '100%' }}
         />
       )}
-      {noTime && <div style={{ textAlign: 'center', fontSize: 12, color: '#444', padding: '6px 0' }}>Will appear after timed items</div>}
+      {noTime && <div style={{ textAlign: 'center', fontSize: 12, color: 'var(--text-dim)', padding: '6px 0' }}>Will appear after timed items</div>}
     </div>
   )
 }
@@ -141,7 +141,7 @@ export default function TaskModal({ mode, onClose, onSaved, task, defaultProject
           <div style={{ display: 'flex', gap: 7 }}>
             {URGENCIES.map(u => {
               const s = URG_STYLES[u]; const active = urgency === u
-              return <div key={u} onClick={() => setUrgency(u)} style={{ flex: 1, padding: '8px 4px', borderRadius: 10, textAlign: 'center', fontSize: 12, fontWeight: 500, cursor: 'pointer', transition: 'all 0.15s', background: active ? s.bg : '#0f0f11', border: `1px solid ${active ? s.border : '#242428'}`, color: active ? s.color : '#555' }}>{u}</div>
+              return <div key={u} onClick={() => setUrgency(u)} style={{ flex: 1, padding: '8px 4px', borderRadius: 10, textAlign: 'center', fontSize: 12, fontWeight: 500, cursor: 'pointer', transition: 'all 0.15s', background: active ? s.bg : 'var(--bg-input)', border: `1px solid ${active ? s.border : 'var(--border)'}`, color: active ? s.color : 'var(--text-dim)' }}>{u}</div>
             })}
           </div>
         </div>
@@ -175,7 +175,7 @@ export default function TaskModal({ mode, onClose, onSaved, task, defaultProject
             <div style={{ display: 'flex', gap: 8 }}>
               <input type="text" placeholder="New project name..." value={newProjectName} onChange={e => setNewProjectName(e.target.value)} style={{ flex: 1 }} />
               <button onClick={createNewProject} style={{ background: 'var(--accent)', border: 'none', borderRadius: 10, padding: '0 14px', color: '#fff', fontSize: 13, fontWeight: 500, cursor: 'pointer', fontFamily: "'DM Sans'" }}>Create</button>
-              <button onClick={() => setShowNewProject(false)} style={{ background: '#161618', border: '1px solid #242428', borderRadius: 10, padding: '0 12px', color: '#888', fontSize: 13, cursor: 'pointer', fontFamily: "'DM Sans'" }}>×</button>
+              <button onClick={() => setShowNewProject(false)} style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 10, padding: '0 12px', color: 'var(--text-muted)', fontSize: 13, cursor: 'pointer', fontFamily: "'DM Sans'" }}>×</button>
             </div>
           ) : (
             <div style={{ display: 'flex', gap: 8 }}>
@@ -183,7 +183,7 @@ export default function TaskModal({ mode, onClose, onSaved, task, defaultProject
                 <option value="">No project linked</option>
                 {projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
               </select>
-              <button onClick={() => setShowNewProject(true)} style={{ background: '#161618', border: '1px solid #2a2a30', borderRadius: 10, padding: '0 12px', color: '#888', fontSize: 12, cursor: 'pointer', fontFamily: "'DM Sans'", whiteSpace: 'nowrap' }}>+ New</button>
+              <button onClick={() => setShowNewProject(true)} style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 10, padding: '0 12px', color: 'var(--text-muted)', fontSize: 12, cursor: 'pointer', fontFamily: "'DM Sans'", whiteSpace: 'nowrap' }}>+ New</button>
             </div>
           )}
         </div>
@@ -208,7 +208,7 @@ export default function TaskModal({ mode, onClose, onSaved, task, defaultProject
 
         <div style={{ display: 'flex', gap: 10, marginTop: 18 }}>
           {isEdit && (
-            <button onClick={handleDelete} disabled={deleting} style={{ flex: 1, padding: 11, borderRadius: 10, background: '#2a0a0a', border: '1px solid #7a1010', color: '#f87171', fontSize: 14, fontWeight: 500, cursor: 'pointer', fontFamily: "'DM Sans'" }}>
+            <button onClick={handleDelete} disabled={deleting} style={{ flex: 1, padding: 11, borderRadius: 10, background: 'var(--danger-dim)', border: '1px solid var(--danger-border)', color: 'var(--danger)', fontSize: 14, fontWeight: 500, cursor: 'pointer', fontFamily: "'DM Sans'" }}>
               {deleting ? '…' : 'Delete'}
             </button>
           )}

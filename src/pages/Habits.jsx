@@ -24,26 +24,26 @@ function HabitStats({ habits, logs, isLogged, getStreak, statsPeriod, setStatsPe
     <div>
       <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
         {[['week','This week'],['month','30 days']].map(([p,label]) => (
-          <div key={p} onClick={() => setStatsPeriod(p)} style={{ padding: '6px 16px', borderRadius: 20, fontSize: 13, fontWeight: 500, cursor: 'pointer', border: '1px solid', background: statsPeriod === p ? 'var(--accent-dim)' : '#161618', borderColor: statsPeriod === p ? 'var(--accent-border)' : '#242428', color: statsPeriod === p ? 'var(--accent)' : '#666' }}>
+          <div key={p} onClick={() => setStatsPeriod(p)} style={{ padding: '6px 16px', borderRadius: 20, fontSize: 13, fontWeight: 500, cursor: 'pointer', border: '1px solid', background: statsPeriod === p ? 'var(--accent-dim)' : 'var(--bg-card)', borderColor: statsPeriod === p ? 'var(--accent-border)' : 'var(--border)', color: statsPeriod === p ? 'var(--accent)' : 'var(--text-muted)' }}>
             {label}
           </div>
         ))}
       </div>
-      {habits.length === 0 && <div style={{ textAlign: 'center', padding: 40, color: '#444', fontSize: 14 }}>No habits yet — add some first</div>}
+      {habits.length === 0 && <div style={{ textAlign: 'center', padding: 40, color: 'var(--text-dim)', fontSize: 14 }}>No habits yet — add some first</div>}
       {habits.map(habit => {
         const scheduledDays = habit.days_of_week?.map(d => parseInt(d)) || [0,1,2,3,4,5,6]
         const scheduledDates = dates.filter(d => { const dow = d.day === 0 ? 6 : d.day - 1; return scheduledDays.includes(dow) })
         const loggedDates = scheduledDates.filter(d => isLogged(habit.id, d.str))
         const pct = scheduledDates.length ? Math.round(loggedDates.length / scheduledDates.length * 100) : 0
         const streak = getStreak(habit.id)
-        const col = pct >= 80 ? '#10b981' : pct >= 50 ? '#f59e0b' : '#f87171'
+        const col = pct >= 80 ? 'var(--success)' : pct >= 50 ? 'var(--warn)' : 'var(--danger)'
         return (
-          <div key={habit.id} style={{ background: '#161618', border: '1px solid #242428', borderRadius: 14, padding: 16, marginBottom: 12 }}>
+          <div key={habit.id} style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 14, padding: 16, marginBottom: 12 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
               <div style={{ fontSize: 22 }}>{habit.icon}</div>
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: 15, fontWeight: 500 }}>{habit.name}</div>
-                <div style={{ fontSize: 11, color: '#555', marginTop: 2 }}>{loggedDates.length}/{scheduledDates.length} days · {streak} day streak</div>
+                <div style={{ fontSize: 11, color: 'var(--text-dim)', marginTop: 2 }}>{loggedDates.length}/{scheduledDates.length} days · {streak} day streak</div>
               </div>
               <div style={{ fontSize: 22, fontWeight: 600, color: col, fontFamily: "'DM Mono'" }}>{pct}%</div>
             </div>
@@ -54,17 +54,17 @@ function HabitStats({ habits, logs, isLogged, getStreak, statsPeriod, setStatsPe
                 const logged = isLogged(habit.id, d.str)
                 return (
                   <div key={d.str} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
-                    <div style={{ width: '100%', height: logged ? 44 : isSched ? 8 : 3, borderRadius: 3, background: logged ? col : isSched ? '#1e1e24' : '#0f0f11', transition: 'height 0.3s' }} />
-                    {days <= 7 && <div style={{ fontSize: 9, color: '#444', fontFamily: "'DM Mono'" }}>{d.label}</div>}
+                    <div style={{ width: '100%', height: logged ? 44 : isSched ? 8 : 3, borderRadius: 3, background: logged ? col : isSched ? 'var(--border)' : 'var(--bg-input)', transition: 'height 0.3s' }} />
+                    {days <= 7 && <div style={{ fontSize: 9, color: 'var(--text-dim)', fontFamily: "'DM Mono'" }}>{d.label}</div>}
                   </div>
                 )
               })}
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <div style={{ flex: 1, height: 5, background: '#1e1e24', borderRadius: 3, overflow: 'hidden' }}>
+              <div style={{ flex: 1, height: 5, background: 'var(--border)', borderRadius: 3, overflow: 'hidden' }}>
                 <div style={{ height: '100%', width: pct + '%', background: col, borderRadius: 3, transition: 'width 0.5s' }} />
               </div>
-              <div style={{ fontFamily: "'DM Mono'", fontSize: 11, color: '#666', minWidth: 32 }}>{loggedDates.length}/{scheduledDates.length}</div>
+              <div style={{ fontFamily: "'DM Mono'", fontSize: 11, color: 'var(--text-muted)', minWidth: 32 }}>{loggedDates.length}/{scheduledDates.length}</div>
             </div>
           </div>
         )
@@ -103,11 +103,11 @@ function RoutineModal({ routine, onClose, onSaved }) {
           <div className="field-label">Icon</div>
           <input type="text" value={icon} onChange={e => setIcon(e.target.value)} style={{ fontSize: 20, textAlign: 'center' }} />
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 10, justifyContent: 'center' }}>
-            {QUICK_ICONS.map(e => <div key={e} onClick={() => setIcon(e)} style={{ width: 38, height: 38, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, background: icon === e ? '#1e1208' : '#161618', border: `1px solid ${icon === e ? '#7a3410' : '#242428'}`, borderRadius: 9, cursor: 'pointer' }}>{e}</div>)}
+            {QUICK_ICONS.map(e => <div key={e} onClick={() => setIcon(e)} style={{ width: 38, height: 38, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, background: icon === e ? 'var(--accent-dim)' : 'var(--bg-card)', border: `1px solid ${icon === e ? 'var(--accent-border)' : 'var(--border)'}`, borderRadius: 9, cursor: 'pointer' }}>{e}</div>)}
           </div>
         </div>
         <div style={{ display: 'flex', gap: 10, marginTop: 18 }}>
-          {isEdit && <button onClick={async () => { await supabase.from('routines').delete().eq('id', routine.id); onSaved(); onClose() }} style={{ flex:1,padding:11,borderRadius:10,background:'#2a0a0a',border:'1px solid #7a1010',color:'#f87171',fontSize:14,fontWeight:500,cursor:'pointer',fontFamily:"'DM Sans'" }}>Delete</button>}
+          {isEdit && <button onClick={async () => { await supabase.from('routines').delete().eq('id', routine.id); onSaved(); onClose() }} style={{ flex:1,padding:11,borderRadius:10,background:'var(--danger-dim)',border:'1px solid var(--danger-border)',color:'var(--danger)',fontSize:14,fontWeight:500,cursor:'pointer',fontFamily:"'DM Sans'" }}>Delete</button>}
           <button className="btn-ghost" style={{ flex: 1 }} onClick={onClose}>Cancel</button>
           <button className="btn-primary" style={{ flex: 2 }} onClick={handleSave} disabled={saving}>{saving ? 'Saving…' : isEdit ? 'Save' : 'Add'}</button>
         </div>
@@ -146,22 +146,22 @@ function HabitModal({ habit, onClose, onSaved }) {
           <div className="field-label">Which days?</div>
           <div style={{ display: 'flex', gap: 7 }}>
             {DAY_LABELS.map((label, i) => (
-              <div key={i} onClick={() => toggleDay(i)} style={{ flex: 1, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 10, fontSize: 12, fontWeight: 600, cursor: 'pointer', background: days.includes(i) ? '#1e1208' : '#0f0f11', border: `1px solid ${days.includes(i) ? '#7a3410' : '#242428'}`, color: days.includes(i) ? '#d4520f' : '#444' }}>
+              <div key={i} onClick={() => toggleDay(i)} style={{ flex: 1, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 10, fontSize: 12, fontWeight: 600, cursor: 'pointer', background: days.includes(i) ? 'var(--accent-dim)' : 'var(--bg-input)', border: `1px solid ${days.includes(i) ? 'var(--accent-border)' : 'var(--border)'}`, color: days.includes(i) ? 'var(--accent)' : 'var(--text-dim)' }}>
                 {label}
               </div>
             ))}
           </div>
-          <div style={{ fontSize: 11, color: '#555', marginTop: 6 }}>{days.length === 7 ? 'Every day' : days.length === 0 ? 'No days selected' : days.sort((a,b)=>a-b).map(d => DAY_NAMES[d]).join(', ')}</div>
+          <div style={{ fontSize: 11, color: 'var(--text-dim)', marginTop: 6 }}>{days.length === 7 ? 'Every day' : days.length === 0 ? 'No days selected' : days.sort((a,b)=>a-b).map(d => DAY_NAMES[d]).join(', ')}</div>
         </div>
         <div className="field">
           <div className="field-label">Icon</div>
           <input type="text" value={icon} onChange={e => setIcon(e.target.value)} style={{ fontSize: 20, textAlign: 'center' }} />
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 10, justifyContent: 'center' }}>
-            {QUICK_ICONS.map(e => <div key={e} onClick={() => setIcon(e)} style={{ width: 40, height: 40, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, background: icon === e ? '#1e1208' : '#161618', border: `1px solid ${icon === e ? '#7a3410' : '#242428'}`, borderRadius: 10, cursor: 'pointer' }}>{e}</div>)}
+            {QUICK_ICONS.map(e => <div key={e} onClick={() => setIcon(e)} style={{ width: 40, height: 40, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, background: icon === e ? 'var(--accent-dim)' : 'var(--bg-card)', border: `1px solid ${icon === e ? 'var(--accent-border)' : 'var(--border)'}`, borderRadius: 10, cursor: 'pointer' }}>{e}</div>)}
           </div>
         </div>
         <div style={{ display: 'flex', gap: 10, marginTop: 18 }}>
-          {isEdit && <button onClick={async () => { if(window.confirm(`Delete "${habit.name}"?`)) { await supabase.from('habits').delete().eq('id', habit.id); onSaved(); onClose() } }} style={{ flex:1,padding:11,borderRadius:10,background:'#2a0a0a',border:'1px solid #7a1010',color:'#f87171',fontSize:14,fontWeight:500,cursor:'pointer',fontFamily:"'DM Sans'" }}>Delete</button>}
+          {isEdit && <button onClick={async () => { if(window.confirm(`Delete "${habit.name}"?`)) { await supabase.from('habits').delete().eq('id', habit.id); onSaved(); onClose() } }} style={{ flex:1,padding:11,borderRadius:10,background:'var(--danger-dim)',border:'1px solid var(--danger-border)',color:'var(--danger)',fontSize:14,fontWeight:500,cursor:'pointer',fontFamily:"'DM Sans'" }}>Delete</button>}
           <button className="btn-ghost" style={{ flex: 1 }} onClick={onClose}>Cancel</button>
           <button className="btn-primary" style={{ flex: 2 }} onClick={handleSave} disabled={saving}>{saving ? 'Saving…' : isEdit ? 'Save changes' : 'Add habit'}</button>
         </div>
@@ -299,26 +299,26 @@ export default function Habits() {
     return (
       <div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
-          <div onClick={() => setHabitDetail(null)} style={{ width: 34, height: 34, borderRadius: 10, background: '#161618', border: '1px solid #242428', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: 18, color: '#888' }}>‹</div>
+          <div onClick={() => setHabitDetail(null)} style={{ width: 34, height: 34, borderRadius: 10, background: 'var(--bg-card)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: 18, color: 'var(--text-muted)' }}>‹</div>
           <div style={{ fontSize: 28 }}>{habit.icon}</div>
           <div style={{ flex: 1 }}>
             <div style={{ fontSize: 20, fontWeight: 500 }}>{habit.name}</div>
-            <div style={{ fontSize: 12, color: '#555', marginTop: 1 }}>{scheduledDays.length === 7 ? 'Every day' : scheduledDays.sort((a,b)=>a-b).map(d=>DAY_NAMES[d]).join(', ')}</div>
+            <div style={{ fontSize: 12, color: 'var(--text-dim)', marginTop: 1 }}>{scheduledDays.length === 7 ? 'Every day' : scheduledDays.sort((a,b)=>a-b).map(d=>DAY_NAMES[d]).join(', ')}</div>
           </div>
-          <div onClick={() => setHabitModal(habit)} style={{ width: 34, height: 34, borderRadius: 10, background: '#161618', border: '1px solid #242428', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
-            <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M9 1.5L11 3.5L4.5 10H2.5V8L9 1.5Z" stroke="#888" strokeWidth="1.3" fill="none" strokeLinecap="round" strokeLinejoin="round"/></svg>
+          <div onClick={() => setHabitModal(habit)} style={{ width: 34, height: 34, borderRadius: 10, background: 'var(--bg-card)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+            <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M9 1.5L11 3.5L4.5 10H2.5V8L9 1.5Z" stroke="var(--text-muted)" strokeWidth="1.3" fill="none" strokeLinecap="round" strokeLinejoin="round"/></svg>
           </div>
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 8, marginBottom: 20 }}>
-          {[['Streak', streak + ' days', '#d4520f'],['Last 30d', totalLogged + ' days', '#10b981'],['Schedule', scheduledDays.length + '/7', '#a78bfa']].map(([l,v,col])=>(
-            <div key={l} style={{ background: '#161618', border: '1px solid #242428', borderRadius: 12, padding: 12 }}>
-              <div style={{ fontSize: 11, color: '#555', marginBottom: 3 }}>{l}</div>
+          {[['Streak', streak + ' days', 'var(--accent)'],['Last 30d', totalLogged + ' days', 'var(--success)'],['Schedule', scheduledDays.length + '/7', 'var(--purple)']].map(([l,v,col])=>(
+            <div key={l} style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 12, padding: 12 }}>
+              <div style={{ fontSize: 11, color: 'var(--text-dim)', marginBottom: 3 }}>{l}</div>
               <div style={{ fontSize: 16, fontWeight: 500, color: col }}>{v}</div>
             </div>
           ))}
         </div>
         <div className="section-label">History — tap any day to toggle</div>
-        <div style={{ fontSize: 12, color: '#444', marginBottom: 12 }}>Green = logged · dot = not scheduled · empty = missed</div>
+        <div style={{ fontSize: 12, color: 'var(--text-dim)', marginBottom: 12 }}>Green = logged · dot = not scheduled · empty = missed</div>
         {(() => {
           const weeks = []; let week = []
           last30.forEach((day, i) => {
@@ -333,12 +333,12 @@ export default function Habits() {
                   const scheduled = scheduledDays.includes(day.dowIdx)
                   return (
                     <div key={day.dateStr} onClick={() => scheduled && toggleLog(habit.id, day.dateStr)} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, cursor: scheduled ? 'pointer' : 'default' }}>
-                      <div style={{ width: '100%', aspectRatio: '1', borderRadius: 10, background: logged ? '#10b981' : scheduled ? '#1e1e24' : '#0f0f11', border: `1px solid ${day.isToday ? '#d4520f' : logged ? '#10b981' : '#2a2a30'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 36 }}>
+                      <div style={{ width: '100%', aspectRatio: '1', borderRadius: 10, background: logged ? 'var(--success)' : scheduled ? 'var(--border)' : 'var(--bg-input)', border: `1px solid ${day.isToday ? 'var(--accent)' : logged ? 'var(--success)' : 'var(--border)'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 36 }}>
                         {logged && <svg width="14" height="14" viewBox="0 0 14 14"><polyline points="2,7 5.5,10.5 12,3.5" stroke="white" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round"/></svg>}
-                        {!scheduled && <div style={{ width: 4, height: 4, borderRadius: '50%', background: '#333' }} />}
+                        {!scheduled && <div style={{ width: 4, height: 4, borderRadius: '50%', background: 'var(--border-hover)' }} />}
                       </div>
-                      <div style={{ fontSize: 10, color: day.isToday ? '#d4520f' : '#444', fontFamily: "'DM Mono'" }}>{day.day}</div>
-                      <div style={{ fontSize: 9, color: '#333', fontFamily: "'DM Mono'" }}>{day.label}</div>
+                      <div style={{ fontSize: 10, color: day.isToday ? 'var(--accent)' : 'var(--text-dim)', fontFamily: "'DM Mono'" }}>{day.day}</div>
+                      <div style={{ fontSize: 9, color: 'var(--border-hover)', fontFamily: "'DM Mono'" }}>{day.label}</div>
                     </div>
                   )
                 })}
@@ -363,9 +363,9 @@ export default function Habits() {
       </div>
 
       {/* View tabs — full width row */}
-      <div style={{ display: 'flex', background: '#161618', border: '1px solid #242428', borderRadius: 12, overflow: 'hidden', marginBottom: 16 }}>
+      <div style={{ display: 'flex', background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 12, overflow: 'hidden', marginBottom: 16 }}>
         {[['today','Today'],['calendar','Calendar'],['routines','Routines'],['stats','Stats']].map(([v,label]) => (
-          <div key={v} onClick={() => setView(v)} style={{ flex: 1, textAlign: 'center', padding: '10px 4px', fontSize: 13, fontWeight: 500, cursor: 'pointer', background: view === v ? 'var(--accent-dim)' : 'transparent', color: view === v ? 'var(--accent)' : '#666', transition: 'all 0.15s' }}>
+          <div key={v} onClick={() => setView(v)} style={{ flex: 1, textAlign: 'center', padding: '10px 4px', fontSize: 13, fontWeight: 500, cursor: 'pointer', background: view === v ? 'var(--accent-dim)' : 'transparent', color: view === v ? 'var(--accent)' : 'var(--text-muted)', transition: 'all 0.15s' }}>
             {label}
           </div>
         ))}
@@ -374,14 +374,14 @@ export default function Habits() {
       {/* Stat chips — always visible below header */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 8, marginBottom: 16 }}>
         {[
-          ['Today', `${doneToday}/${scheduledHabitsToday.length}`, '#e8e6e1', 'completed'],
+          ['Today', `${doneToday}/${scheduledHabitsToday.length}`, 'var(--text-primary)', 'completed'],
           ['Best streak', Math.max(0,...habits.map(h=>getStreak(h.id))), 'var(--accent)', 'days'],
-          ['Total', habits.length, '#a78bfa', 'habits'],
+          ['Total', habits.length, 'var(--purple)', 'habits'],
         ].map(([label,val,color,sub]) => (
-          <div key={label} style={{ background: '#161618', border: '1px solid #242428', borderRadius: 11, padding: 12 }}>
-            <div style={{ fontSize: 11, color: '#555', marginBottom: 3 }}>{label}</div>
+          <div key={label} style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 11, padding: 12 }}>
+            <div style={{ fontSize: 11, color: 'var(--text-dim)', marginBottom: 3 }}>{label}</div>
             <div style={{ fontSize: 18, fontWeight: 500, color }}>{val}</div>
-            <div style={{ fontSize: 11, color: '#444', marginTop: 2, fontFamily: "'DM Mono'" }}>{sub}</div>
+            <div style={{ fontSize: 11, color: 'var(--text-dim)', marginTop: 2, fontFamily: "'DM Mono'" }}>{sub}</div>
           </div>
         ))}
       </div>
@@ -389,7 +389,7 @@ export default function Habits() {
       {/* TODAY VIEW */}
       {view === 'today' && (
         <div>
-          <div style={{ fontSize: 12, color: '#444', marginBottom: 12 }}>Hold icon to reorder · tap name to view history</div>
+          <div style={{ fontSize: 12, color: 'var(--text-dim)', marginBottom: 12 }}>Hold icon to reorder · tap name to view history</div>
           {habits.map((habit, idx) => {
             const isScheduledToday = habitScheduledToday(habit, todayIdx)
             const done = isLogged(habit.id, todayStr)
@@ -399,21 +399,21 @@ export default function Habits() {
             const scheduledThisWeek = DAY_LABELS.filter((_,i) => scheduledDays.includes(i)).length
             const pct = scheduledThisWeek > 0 ? Math.round((weekDone/scheduledThisWeek)*100) : 0
             return (
-              <div key={habit.id} style={{ background: '#161618', border: `1px solid ${done ? '#1a3a1a' : isScheduledToday ? '#242428' : '#1e1e24'}`, borderRadius: 14, padding: 16, marginBottom: 10, opacity: !isScheduledToday ? 0.6 : 1 }}>
+              <div key={habit.id} style={{ background: 'var(--bg-card)', border: `1px solid ${done ? 'var(--success-border)' : isScheduledToday ? 'var(--border)' : 'var(--border)'}`, borderRadius: 14, padding: 16, marginBottom: 10, opacity: !isScheduledToday ? 0.6 : 1 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
                   <div
                     draggable onDragStart={() => handleDragStart(idx)} onDragEnter={() => handleDragEnter(idx)} onDragEnd={handleDragEnd} onDragOver={e => e.preventDefault()}
                     onTouchStart={e => handleTouchStart(e, idx)} onTouchMove={handleTouchMove} onTouchEnd={handleTouchEnd}
                     onClick={() => setHabitModal(habit)}
-                    style={{ width: 40, height: 40, borderRadius: 11, background: '#1e1e22', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, flexShrink: 0, cursor: 'grab', userSelect: 'none', WebkitUserSelect: 'none', touchAction: 'none' }}
+                    style={{ width: 40, height: 40, borderRadius: 11, background: 'var(--bg-card)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, flexShrink: 0, cursor: 'grab', userSelect: 'none', WebkitUserSelect: 'none', touchAction: 'none' }}
                   >{habit.icon}</div>
                   <div style={{ flex: 1 }}>
                     <div onClick={() => setHabitDetail(habit)} style={{ fontSize: 15, fontWeight: 500, cursor: 'pointer' }}>{habit.name}</div>
-                    <div style={{ fontSize: 11, color: '#555', marginTop: 2 }}>{scheduledDays.length === 7 ? 'Every day' : scheduledDays.sort((a,b)=>a-b).map(d=>DAY_LABELS[d]).join(' ')}{!isScheduledToday && <span style={{ color: '#444', marginLeft: 6 }}>· not today</span>}</div>
+                    <div style={{ fontSize: 11, color: 'var(--text-dim)', marginTop: 2 }}>{scheduledDays.length === 7 ? 'Every day' : scheduledDays.sort((a,b)=>a-b).map(d=>DAY_LABELS[d]).join(' ')}{!isScheduledToday && <span style={{ color: 'var(--text-dim)', marginLeft: 6 }}>· not today</span>}</div>
                   </div>
                   {streak > 0 && <div className="streak-badge" style={{ display: 'flex', alignItems: 'center', gap: 5, borderRadius: 10, padding: '5px 10px', flexShrink: 0 }}><span style={{ fontFamily: "'DM Mono'", fontSize: 14, fontWeight: 500, color: 'var(--accent)' }}>{streak}</span><span style={{ fontSize: 11, color: 'var(--accent-border)' }}>streak</span></div>}
                   {isScheduledToday && (
-                    <div onClick={() => toggleLog(habit.id, todayStr)} style={{ width: 32, height: 32, borderRadius: '50%', border: `2px solid ${done ? '#16a34a' : '#333'}`, background: done ? '#16a34a' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0, transition: 'all 0.2s' }}>
+                    <div onClick={() => toggleLog(habit.id, todayStr)} style={{ width: 32, height: 32, borderRadius: '50%', border: `2px solid ${done ? 'var(--success)' : 'var(--border-hover)'}`, background: done ? 'var(--success)' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0, transition: 'all 0.2s' }}>
                       <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><polyline points="1.5,6 4.5,9 10.5,3" stroke="white" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round"/></svg>
                     </div>
                   )}
@@ -427,23 +427,23 @@ export default function Habits() {
                     const isSched = scheduledDays.includes(i)
                     return (
                       <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
-                        <div onClick={() => isSched && (isPast || isToday) && toggleLog(habit.id, date)} style={{ width: 28, height: 28, borderRadius: '50%', background: dayDone ? (isToday ? '#d4520f' : '#16a34a') : isPast ? '#1a1a1a' : '#1e1e24', border: `1px solid ${!isSched ? '#1a1a1a' : isToday && !dayDone ? '#d4520f' : dayDone ? 'transparent' : '#2a2a30'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: isSched && (isPast || isToday) ? 'pointer' : 'default' }}>
+                        <div onClick={() => isSched && (isPast || isToday) && toggleLog(habit.id, date)} style={{ width: 28, height: 28, borderRadius: '50%', background: dayDone ? (isToday ? 'var(--accent)' : 'var(--success)') : isPast ? 'var(--bg-card)' : 'var(--border)', border: `1px solid ${!isSched ? 'var(--bg-card)' : isToday && !dayDone ? 'var(--accent)' : dayDone ? 'transparent' : 'var(--border)'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: isSched && (isPast || isToday) ? 'pointer' : 'default' }}>
                           {isSched && dayDone && <svg width="9" height="9" viewBox="0 0 9 9"><polyline points="1,4.5 3.5,7 8,2" stroke="white" strokeWidth="1.5" fill="none" strokeLinecap="round"/></svg>}
-                          {!isSched && <div style={{ width: 4, height: 4, borderRadius: '50%', background: '#2a2a2a' }} />}
+                          {!isSched && <div style={{ width: 4, height: 4, borderRadius: '50%', background: 'var(--bg-card2)' }} />}
                         </div>
-                        <div style={{ fontSize: 10, color: isToday ? '#d4520f' : '#444', fontFamily: "'DM Mono'" }}>{label}</div>
+                        <div style={{ fontSize: 10, color: isToday ? 'var(--accent)' : 'var(--text-dim)', fontFamily: "'DM Mono'" }}>{label}</div>
                       </div>
                     )
                   })}
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   <div className="prog-bar" style={{ flex: 1 }}><div className="prog-fill" style={{ width: pct + '%' }} /></div>
-                  <div style={{ fontFamily: "'DM Mono'", fontSize: 11, color: '#555', minWidth: 40, textAlign: 'right' }}>{weekDone}/{scheduledThisWeek}</div>
+                  <div style={{ fontFamily: "'DM Mono'", fontSize: 11, color: 'var(--text-dim)', minWidth: 40, textAlign: 'right' }}>{weekDone}/{scheduledThisWeek}</div>
                 </div>
               </div>
             )
           })}
-          {habits.length === 0 && <div style={{ textAlign: 'center', padding: '40px', color: '#444', fontSize: 14 }}>No habits yet — tap + Add to create one</div>}
+          {habits.length === 0 && <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-dim)', fontSize: 14 }}>No habits yet — tap + Add to create one</div>}
         </div>
       )}
 
@@ -451,16 +451,16 @@ export default function Habits() {
       {view === 'calendar' && (
         <div>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-            <div onClick={() => setCalMonth(o=>o-1)} style={{ width: 36, height: 36, borderRadius: 10, background: '#161618', border: '1px solid #242428', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: 18, color: '#888' }}>‹</div>
+            <div onClick={() => setCalMonth(o=>o-1)} style={{ width: 36, height: 36, borderRadius: 10, background: 'var(--bg-card)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: 18, color: 'var(--text-muted)' }}>‹</div>
             <div style={{ fontSize: 15, fontWeight: 500 }}>{MONTH_NAMES[monthMonth]} {monthYear}</div>
-            <div onClick={() => setCalMonth(o=>o+1)} style={{ width: 36, height: 36, borderRadius: 10, background: '#161618', border: '1px solid #242428', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: 18, color: '#888' }}>›</div>
+            <div onClick={() => setCalMonth(o=>o+1)} style={{ width: 36, height: 36, borderRadius: 10, background: 'var(--bg-card)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: 18, color: 'var(--text-muted)' }}>›</div>
           </div>
           <div style={{ display: 'flex', gap: 6, marginBottom: 14, overflowX: 'auto', paddingBottom: 4 }}>
-            <div onClick={() => setSelectedHabit(null)} style={{ padding: '5px 12px', borderRadius: 20, fontSize: 12, fontWeight: 500, cursor: 'pointer', border: '1px solid', whiteSpace: 'nowrap', background: !selectedHabit ? '#1e1208' : '#161618', borderColor: !selectedHabit ? '#7a3410' : '#242428', color: !selectedHabit ? '#d4520f' : '#666' }}>All</div>
-            {habits.map(h => <div key={h.id} onClick={() => setSelectedHabit(h.id === selectedHabit ? null : h.id)} style={{ padding: '5px 12px', borderRadius: 20, fontSize: 12, fontWeight: 500, cursor: 'pointer', border: '1px solid', whiteSpace: 'nowrap', background: selectedHabit === h.id ? '#1e1208' : '#161618', borderColor: selectedHabit === h.id ? '#7a3410' : '#242428', color: selectedHabit === h.id ? '#d4520f' : '#666' }}>{h.icon} {h.name}</div>)}
+            <div onClick={() => setSelectedHabit(null)} style={{ padding: '5px 12px', borderRadius: 20, fontSize: 12, fontWeight: 500, cursor: 'pointer', border: '1px solid', whiteSpace: 'nowrap', background: !selectedHabit ? 'var(--accent-dim)' : 'var(--bg-card)', borderColor: !selectedHabit ? 'var(--accent-border)' : 'var(--border)', color: !selectedHabit ? 'var(--accent)' : 'var(--text-muted)' }}>All</div>
+            {habits.map(h => <div key={h.id} onClick={() => setSelectedHabit(h.id === selectedHabit ? null : h.id)} style={{ padding: '5px 12px', borderRadius: 20, fontSize: 12, fontWeight: 500, cursor: 'pointer', border: '1px solid', whiteSpace: 'nowrap', background: selectedHabit === h.id ? 'var(--accent-dim)' : 'var(--bg-card)', borderColor: selectedHabit === h.id ? 'var(--accent-border)' : 'var(--border)', color: selectedHabit === h.id ? 'var(--accent)' : 'var(--text-muted)' }}>{h.icon} {h.name}</div>)}
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', gap: 2, marginBottom: 4 }}>
-            {DAY_LABELS.map((d,i) => <div key={i} style={{ textAlign: 'center', fontSize: 11, fontWeight: 600, color: '#444', padding: '4px 0' }}>{d}</div>)}
+            {DAY_LABELS.map((d,i) => <div key={i} style={{ textAlign: 'center', fontSize: 11, fontWeight: 600, color: 'var(--text-dim)', padding: '4px 0' }}>{d}</div>)}
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', gap: 3 }}>
             {calCells.map((day, idx) => {
@@ -474,12 +474,12 @@ export default function Habits() {
               const total = scheduledHere.length
               const allDone = total > 0 && doneCount === total, someDone = doneCount > 0 && doneCount < total
               return (
-                <div key={idx} style={{ background: isToday ? '#1e1208' : '#161618', border: `1px solid ${isToday ? '#7a3410' : '#1e1e24'}`, borderRadius: 10, padding: '6px 4px', minHeight: 52, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                  <div style={{ fontSize: 13, fontWeight: 500, color: isToday ? '#e8823a' : isFuture ? '#333' : '#888', marginBottom: 4 }}>{day}</div>
+                <div key={idx} style={{ background: isToday ? 'var(--accent-dim)' : 'var(--bg-card)', border: `1px solid ${isToday ? 'var(--accent-border)' : 'var(--border)'}`, borderRadius: 10, padding: '6px 4px', minHeight: 52, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                  <div style={{ fontSize: 13, fontWeight: 500, color: isToday ? 'var(--accent)' : isFuture ? 'var(--border-hover)' : 'var(--text-muted)', marginBottom: 4 }}>{day}</div>
                   {!isFuture && total > 0 && (
-                    <div style={{ width: 24, height: 24, borderRadius: '50%', background: allDone ? '#16a34a' : someDone ? '#f59e0b' : '#1e1e24', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <div style={{ width: 24, height: 24, borderRadius: '50%', background: allDone ? 'var(--success)' : someDone ? 'var(--warn)' : 'var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                       {allDone ? <svg width="10" height="10" viewBox="0 0 10 10"><polyline points="1.5,5 4,7.5 8.5,2.5" stroke="white" strokeWidth="1.8" fill="none" strokeLinecap="round"/></svg>
-                        : <div style={{ fontSize: 9, color: someDone ? '#fff' : '#444', fontWeight: 600 }}>{doneCount}</div>}
+                        : <div style={{ fontSize: 9, color: someDone ? '#fff' : 'var(--text-dim)', fontWeight: 600 }}>{doneCount}</div>}
                     </div>
                   )}
                 </div>
@@ -487,8 +487,8 @@ export default function Habits() {
             })}
           </div>
           <div style={{ marginTop: 16, display: 'flex', gap: 16, justifyContent: 'center' }}>
-            {[['#16a34a','All done'],['#f59e0b','Partial'],['#1e1e24','None']].map(([col,l]) => (
-              <div key={l} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: '#555' }}><div style={{ width: 12, height: 12, borderRadius: '50%', background: col }} />{l}</div>
+            {[['var(--success)','All done'],['var(--warn)','Partial'],['var(--border)','None']].map(([col,l]) => (
+              <div key={l} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: 'var(--text-dim)' }}><div style={{ width: 12, height: 12, borderRadius: '50%', background: col }} />{l}</div>
             ))}
           </div>
         </div>
@@ -497,14 +497,14 @@ export default function Habits() {
       {/* ROUTINES VIEW */}
       {view === 'routines' && (
         <div>
-          <div style={{ fontSize: 12, color: '#444', marginBottom: 16 }}>Daily routines organized by time of day</div>
+          <div style={{ fontSize: 12, color: 'var(--text-dim)', marginBottom: 16 }}>Daily routines organized by time of day</div>
           <div style={{ marginBottom: 14 }}>
             <div onClick={() => setRoutineModal('new')} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '12px 16px', background: 'var(--accent-dim)', border: '1px solid var(--accent-border)', borderRadius: 12, cursor: 'pointer', color: 'var(--accent-text)', fontSize: 13, fontWeight: 500 }}>
               <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><line x1="7" y1="1" x2="7" y2="13" stroke="var(--accent-text)" strokeWidth="1.8" strokeLinecap="round"/><line x1="1" y1="7" x2="13" y2="7" stroke="var(--accent-text)" strokeWidth="1.8" strokeLinecap="round"/></svg>
               Add routine item
             </div>
           </div>
-          {[{label:'Morning',color:'#f59e0b',icon:'🌅',range:[0,12]},{label:'Afternoon',color:'#10b981',icon:'☀️',range:[12,17]},{label:'Evening',color:'#a78bfa',icon:'🌆',range:[17,21]},{label:'Night',color:'#3b82f6',icon:'🌙',range:[21,24]}].map(period => {
+          {[{label:'Morning',color:'var(--warn)',icon:'🌅',range:[0,12]},{label:'Afternoon',color:'var(--success)',icon:'☀️',range:[12,17]},{label:'Evening',color:'var(--purple)',icon:'🌆',range:[17,21]},{label:'Night',color:'var(--blue)',icon:'🌙',range:[21,24]}].map(period => {
             const items = routines.filter(r => { if (!r.time) return false; const hr = parseInt(r.time.split(':')[0]); return hr >= period.range[0] && hr < period.range[1] })
             return (
               <div key={period.label} style={{ marginBottom: 20 }}>
@@ -513,14 +513,14 @@ export default function Habits() {
                   <div style={{ fontSize: 13, fontWeight: 600, color: period.color, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{period.label}</div>
                 </div>
                 {items.length === 0
-                  ? <div style={{ padding: '10px 14px', fontSize: 13, color: '#2a2a2a', border: '1px dashed #1e1e24', borderRadius: 10, textAlign: 'center' }}>Nothing yet</div>
+                  ? <div style={{ padding: '10px 14px', fontSize: 13, color: 'var(--bg-card2)', border: '1px dashed var(--border)', borderRadius: 10, textAlign: 'center' }}>Nothing yet</div>
                   : items.map(item => (
-                    <div key={item.id} onClick={() => setRoutineModal(item)} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', background: '#161618', border: '1px solid #1e1e24', borderRadius: 12, marginBottom: 6, cursor: 'pointer' }}>
+                    <div key={item.id} onClick={() => setRoutineModal(item)} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 12, marginBottom: 6, cursor: 'pointer' }}>
                       <div style={{ fontFamily: "'DM Mono'", fontSize: 12, color: period.color, minWidth: 55, flexShrink: 0 }}>{fmtTime(item.time)}</div>
-                      <div style={{ width: 1, height: 28, background: '#2a2a30', flexShrink: 0 }} />
+                      <div style={{ width: 1, height: 28, background: 'var(--border)', flexShrink: 0 }} />
                       <div style={{ flex: 1 }}>
-                        <div style={{ fontSize: 14, color: '#d4d2cc', fontWeight: 500 }}>{item.icon && item.icon + ' '}{item.name}</div>
-                        {item.duration && <div style={{ fontSize: 11, color: '#555', marginTop: 2, fontFamily: "'DM Mono'" }}>{item.duration} min</div>}
+                        <div style={{ fontSize: 14, color: 'var(--text-secondary)', fontWeight: 500 }}>{item.icon && item.icon + ' '}{item.name}</div>
+                        {item.duration && <div style={{ fontSize: 11, color: 'var(--text-dim)', marginTop: 2, fontFamily: "'DM Mono'" }}>{item.duration} min</div>}
                       </div>
                     </div>
                   ))

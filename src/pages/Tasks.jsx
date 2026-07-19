@@ -2,10 +2,10 @@ import React, { useState, useEffect, useRef } from 'react'
 import { supabase } from '../lib/supabase'
 
 const URG_STYLE = {
-  urgent: { bg: '#2a0a0a', color: '#f87171' },
-  high:   { bg: '#1e1208', color: 'var(--accent-text)' },
-  medium: { bg: '#1e1a00', color: '#fcd34d' },
-  low:    { bg: '#0a1e14', color: 'var(--event-color)' },
+  urgent: { bg: 'var(--danger-dim)', color: 'var(--danger)' },
+  high:   { bg: 'var(--accent-dim)', color: 'var(--accent-text)' },
+  medium: { bg: 'var(--warn-dim)', color: 'var(--warn)' },
+  low:    { bg: 'var(--success-dim)', color: 'var(--event-color)' },
 }
 
 export default function Tasks({ onAddTask, onEditTask }) {
@@ -74,7 +74,7 @@ export default function Tasks({ onAddTask, onEditTask }) {
     key: s.name.toLowerCase(),
     label: s.name,
     icon: s.icon,
-    color: s.color || '#d4520f',
+    color: s.color || 'var(--accent)',
     tasks: filtered.filter(t => t.sector === s.name),
   }))
 
@@ -82,15 +82,15 @@ export default function Tasks({ onAddTask, onEditTask }) {
     const urg = URG_STYLE[task.urgency] || URG_STYLE.medium
     const isOverdue = task.start_date < today && !task.completed
     return (
-      <div onClick={() => onEditTask(task)} style={{ display: 'flex', alignItems: 'center', gap: 11, padding: '11px 14px', background: '#161618', border: '1px solid #242428', borderRadius: 12, marginBottom: 6, opacity: task.completed ? 0.38 : 1, cursor: 'pointer' }}>
+      <div onClick={() => onEditTask(task)} style={{ display: 'flex', alignItems: 'center', gap: 11, padding: '11px 14px', background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 12, marginBottom: 6, opacity: task.completed ? 0.38 : 1, cursor: 'pointer' }}>
         <div className={`check-circle${task.completed ? ' checked' : ''}`} onClick={e => { e.stopPropagation(); toggleTask(task) }}>
           {task.completed && <svg width="10" height="10" viewBox="0 0 10 10"><polyline points="1.5,5 4,7.5 8.5,2.5" stroke="white" strokeWidth="1.8" fill="none" strokeLinecap="round"/></svg>}
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 14, color: '#d4d2cc' }}>{task.name}</div>
+          <div style={{ fontSize: 14, color: 'var(--text-secondary)' }}>{task.name}</div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 3, flexWrap: 'wrap' }}>
-            {task.time_block && <span style={{ fontFamily: "'DM Mono'", fontSize: 11, color: '#555' }}>{task.time_block}</span>}
-            {task.start_date && <span style={{ fontFamily: "'DM Mono'", fontSize: 11, color: isOverdue ? '#f87171' : '#555' }}>{isOverdue ? `${task.start_date} ⚠` : task.start_date}</span>}
+            {task.time_block && <span style={{ fontFamily: "'DM Mono'", fontSize: 11, color: 'var(--text-dim)' }}>{task.time_block}</span>}
+            {task.start_date && <span style={{ fontFamily: "'DM Mono'", fontSize: 11, color: isOverdue ? 'var(--danger)' : 'var(--text-dim)' }}>{isOverdue ? `${task.start_date} ⚠` : task.start_date}</span>}
             <span style={{ fontSize: 10, fontWeight: 600, padding: '2px 7px', borderRadius: 6, background: urg.bg, color: urg.color }}>{task.urgency}</span>
             {task.projects && <span style={{ fontSize: 11, color: 'var(--accent)' }}>{task.projects.name} →</span>}
           </div>
@@ -103,9 +103,9 @@ export default function Tasks({ onAddTask, onEditTask }) {
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
         <div style={{ fontSize: 20, fontWeight: 500 }}>All tasks</div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#161618', border: '1px solid #242428', borderRadius: 10, padding: '7px 11px' }}>
-          <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><circle cx="5.5" cy="5.5" r="4" stroke="#555" strokeWidth="1.4"/><line x1="8.5" y1="8.5" x2="12" y2="12" stroke="#555" strokeWidth="1.4" strokeLinecap="round"/></svg>
-          <input style={{ background: 'none', border: 'none', outline: 'none', fontSize: 13, color: '#e8e6e1', fontFamily: "'DM Sans'", width: 110 }} placeholder="Search..." value={search} onChange={e => setSearch(e.target.value)} />
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 10, padding: '7px 11px' }}>
+          <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><circle cx="5.5" cy="5.5" r="4" stroke="var(--text-dim)" strokeWidth="1.4"/><line x1="8.5" y1="8.5" x2="12" y2="12" stroke="var(--text-dim)" strokeWidth="1.4" strokeLinecap="round"/></svg>
+          <input style={{ background: 'none', border: 'none', outline: 'none', fontSize: 13, color: 'var(--text-primary)', fontFamily: "'DM Sans'", width: 110 }} placeholder="Search..." value={search} onChange={e => setSearch(e.target.value)} />
         </div>
       </div>
 
@@ -119,16 +119,16 @@ export default function Tasks({ onAddTask, onEditTask }) {
 
       <div style={{ display: 'flex', gap: 6, marginBottom: 16, flexWrap: 'wrap' }}>
         {['all','today','upcoming','overdue','done'].map(f => (
-          <div key={f} onClick={() => setFilter(f)} style={{ padding: '5px 13px', borderRadius: 20, fontSize: 12, fontWeight: 500, cursor: 'pointer', border: '1px solid', transition: 'all 0.15s', background: filter === f ? '#1e1208' : '#161618', borderColor: filter === f ? '#7a3410' : '#242428', color: filter === f ? '#d4520f' : '#666' }}>
+          <div key={f} onClick={() => setFilter(f)} style={{ padding: '5px 13px', borderRadius: 20, fontSize: 12, fontWeight: 500, cursor: 'pointer', border: '1px solid', transition: 'all 0.15s', background: filter === f ? 'var(--accent-dim)' : 'var(--bg-card)', borderColor: filter === f ? 'var(--accent-border)' : 'var(--border)', color: filter === f ? 'var(--accent)' : 'var(--text-muted)' }}>
             {f.charAt(0).toUpperCase() + f.slice(1)}
           </div>
         ))}
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 8, marginBottom: 20 }}>
-        {[['Total', counts.total, '#e8e6e1'],['Today', counts.today, '#e8e6e1'],['Overdue', counts.overdue, '#f87171'],['Done', counts.done, '#6ee7b7']].map(([label, val, color]) => (
-          <div key={label} style={{ background: '#161618', border: '1px solid #242428', borderRadius: 11, padding: 12 }}>
-            <div style={{ fontSize: 11, color: '#555', marginBottom: 3 }}>{label}</div>
+        {[['Total', counts.total, 'var(--text-primary)'],['Today', counts.today, 'var(--text-primary)'],['Overdue', counts.overdue, 'var(--danger)'],['Done', counts.done, 'var(--success)']].map(([label, val, color]) => (
+          <div key={label} style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 11, padding: 12 }}>
+            <div style={{ fontSize: 11, color: 'var(--text-dim)', marginBottom: 3 }}>{label}</div>
             <div style={{ fontSize: 20, fontWeight: 500, color }}>{val}</div>
           </div>
         ))}
@@ -148,13 +148,13 @@ export default function Tasks({ onAddTask, onEditTask }) {
               onClick={() => toggleCollapse(key)}
             >
               <div style={{ fontSize: 16 }}>{icon}</div>
-              <div style={{ fontSize: 13, fontWeight: 500, color: '#aaa', flex: 1 }}>{label}</div>
-              <div style={{ fontFamily: "'DM Mono'", fontSize: 11, color: '#555' }}>{st.length} tasks</div>
-              <div style={{ color: '#444', fontSize: 13, transform: collapsed[key] ? 'rotate(-90deg)' : 'none', transition: 'transform 0.2s' }}>›</div>
+              <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)', flex: 1 }}>{label}</div>
+              <div style={{ fontFamily: "'DM Mono'", fontSize: 11, color: 'var(--text-dim)' }}>{st.length} tasks</div>
+              <div style={{ color: 'var(--text-dim)', fontSize: 13, transform: collapsed[key] ? 'rotate(-90deg)' : 'none', transition: 'transform 0.2s' }}>›</div>
             </div>
             {!collapsed[key] && (
               st.length === 0
-                ? <div style={{ padding: 14, textAlign: 'center', fontSize: 13, color: '#3a3a3a', border: '1px dashed #242428', borderRadius: 12 }}>No tasks — add one above</div>
+                ? <div style={{ padding: 14, textAlign: 'center', fontSize: 13, color: 'var(--border-hover)', border: '1px dashed var(--border)', borderRadius: 12 }}>No tasks — add one above</div>
                 : st.map(task => <TaskRow key={task.id} task={task} />)
             )}
           </div>
@@ -166,9 +166,9 @@ export default function Tasks({ onAddTask, onEditTask }) {
         <div style={{ marginBottom: 20 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8, cursor: 'pointer' }} onClick={() => toggleCollapse('__unassigned')}>
             <div style={{ fontSize: 16 }}>📌</div>
-            <div style={{ fontSize: 13, fontWeight: 500, color: '#666', flex: 1 }}>Unassigned</div>
-            <div style={{ fontFamily: "'DM Mono'", fontSize: 11, color: '#555' }}>{unassigned.length} tasks</div>
-            <div style={{ color: '#444', fontSize: 13, transform: collapsed['__unassigned'] ? 'rotate(-90deg)' : 'none', transition: 'transform 0.2s' }}>›</div>
+            <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-muted)', flex: 1 }}>Unassigned</div>
+            <div style={{ fontFamily: "'DM Mono'", fontSize: 11, color: 'var(--text-dim)' }}>{unassigned.length} tasks</div>
+            <div style={{ color: 'var(--text-dim)', fontSize: 13, transform: collapsed['__unassigned'] ? 'rotate(-90deg)' : 'none', transition: 'transform 0.2s' }}>›</div>
           </div>
           {!collapsed['__unassigned'] && unassigned.map(task => <TaskRow key={task.id} task={task} />)}
         </div>

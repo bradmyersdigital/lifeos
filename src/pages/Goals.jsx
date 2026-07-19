@@ -14,10 +14,10 @@ const TIMEFRAMES = [
 ]
 const SECTIONS = ['Current Focus', 'Near Term', 'Long Term', 'Vision']
 const SECTION_STYLES = {
-  'Current Focus': { borderColor: 'var(--accent-border)', bg: '#1e1208', labelColor: '#d4520f' },
-  'Near Term':     { borderColor: '#1a3a5c', bg: '#0c1a2e', labelColor: '#3b82f6' },
-  'Long Term':     { borderColor: '#1a3a2a', bg: '#0a1e14', labelColor: '#10b981' },
-  'Vision':        { borderColor: '#2a1a5c', bg: '#16112e', labelColor: '#a78bfa' },
+  'Current Focus': { borderColor: 'var(--accent-border)', bg: 'var(--accent-dim)', labelColor: 'var(--accent)' },
+  'Near Term':     { borderColor: 'var(--blue-border)', bg: 'var(--blue-dim)', labelColor: 'var(--blue)' },
+  'Long Term':     { borderColor: 'var(--success-dim)', bg: 'var(--success-dim)', labelColor: 'var(--success)' },
+  'Vision':        { borderColor: 'var(--purple-border)', bg: 'var(--purple-dim)', labelColor: 'var(--purple)' },
 }
 
 function GoalModal({ tf, goal, linkedTasks, onClose, onSaved }) {
@@ -48,7 +48,7 @@ function GoalModal({ tf, goal, linkedTasks, onClose, onSaved }) {
         <div className="field"><div className="field-label">Goal</div><input type="text" placeholder={`What's your ${tf.label.toLowerCase()} goal?`} value={title} onChange={e => setTitle(e.target.value)} /></div>
         <div className="field"><div className="field-label">Details & notes</div><textarea placeholder="Any context, milestones, or details..." value={details} onChange={e => setDetails(e.target.value)} style={{ height: 100 }} /></div>
         <div style={{ display: 'flex', gap: 10, marginTop: 18 }}>
-          {isEdit && <button onClick={handleDelete} style={{ flex: 1, padding: 11, borderRadius: 10, background: '#2a0a0a', border: '1px solid #7a1010', color: '#f87171', fontSize: 14, fontWeight: 500, cursor: 'pointer', fontFamily: "'DM Sans'" }}>Delete</button>}
+          {isEdit && <button onClick={handleDelete} style={{ flex: 1, padding: 11, borderRadius: 10, background: 'var(--danger-dim)', border: '1px solid var(--danger-border)', color: 'var(--danger)', fontSize: 14, fontWeight: 500, cursor: 'pointer', fontFamily: "'DM Sans'" }}>Delete</button>}
           <button className="btn-ghost" style={{ flex: 1 }} onClick={onClose}>Cancel</button>
           <button className="btn-primary" style={{ flex: 2 }} onClick={handleSave} disabled={saving || !title.trim()}>{saving ? 'Saving…' : 'Save goal'}</button>
         </div>
@@ -89,59 +89,59 @@ function GoalDetail({ tf, goal, onBack, onSaved }) {
   return (
     <div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
-        <div onClick={onBack} style={{ width: 34, height: 34, borderRadius: 10, background: '#161618', border: '1px solid #242428', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: 18, color: '#888' }}>‹</div>
+        <div onClick={onBack} style={{ width: 34, height: 34, borderRadius: 10, background: 'var(--bg-card)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: 18, color: 'var(--text-muted)' }}>‹</div>
         <div style={{ flex: 1 }}>
           <div style={{ fontSize: 11, fontWeight: 600, color: styles.labelColor, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 3 }}>{tf.label}</div>
           <div style={{ fontSize: 18, fontWeight: 500 }}>{goal.goal_text}</div>
         </div>
-        <div onClick={() => setEditing(true)} style={{ width: 34, height: 34, borderRadius: 10, background: '#161618', border: '1px solid #242428', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
-          <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M9 1.5L11 3.5L4.5 10H2.5V8L9 1.5Z" stroke="#888" strokeWidth="1.3" fill="none" strokeLinecap="round" strokeLinejoin="round"/></svg>
+        <div onClick={() => setEditing(true)} style={{ width: 34, height: 34, borderRadius: 10, background: 'var(--bg-card)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+          <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M9 1.5L11 3.5L4.5 10H2.5V8L9 1.5Z" stroke="var(--text-muted)" strokeWidth="1.3" fill="none" strokeLinecap="round" strokeLinejoin="round"/></svg>
         </div>
       </div>
 
       {goal.details && (
-        <div style={{ background: '#161618', border: '1px solid #242428', borderRadius: 12, padding: 14, marginBottom: 18, fontSize: 14, color: '#888', lineHeight: 1.6 }}>{goal.details}</div>
+        <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 12, padding: 14, marginBottom: 18, fontSize: 14, color: 'var(--text-muted)', lineHeight: 1.6 }}>{goal.details}</div>
       )}
 
-      <div style={{ background: '#161618', border: `1px solid ${styles.borderColor}`, borderRadius: 12, padding: 14, marginBottom: 18 }}>
+      <div style={{ background: 'var(--bg-card)', border: `1px solid ${styles.borderColor}`, borderRadius: 12, padding: 14, marginBottom: 18 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-          <div style={{ fontSize: 12, color: '#555' }}>Progress</div>
+          <div style={{ fontSize: 12, color: 'var(--text-dim)' }}>Progress</div>
           <div style={{ fontFamily: "'DM Mono'", fontSize: 18, fontWeight: 500, color: styles.labelColor }}>{pct}%</div>
         </div>
         <div className="prog-bar"><div className="prog-fill" style={{ width: pct+'%', background: styles.labelColor }} /></div>
-        <div style={{ fontSize: 11, color: '#555', marginTop: 6, fontFamily: "'DM Mono'" }}>{done} of {tasks.length} tasks done</div>
+        <div style={{ fontSize: 11, color: 'var(--text-dim)', marginTop: 6, fontFamily: "'DM Mono'" }}>{done} of {tasks.length} tasks done</div>
       </div>
 
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
         <div className="section-label" style={{ margin: 0 }}>Linked tasks</div>
         <div style={{ display: 'flex', gap: 8 }}>
           <div onClick={() => setAddTaskModal(true)} style={{ fontSize: 12, color: 'var(--accent-text)', cursor: 'pointer', padding: '4px 10px', background: 'var(--accent-dim)', border: '1px solid var(--accent-border)', borderRadius: 8 }}>+ Create task</div>
-          <div onClick={() => setLinkingTask(!linkingTask)} style={{ fontSize: 12, color: '#555', cursor: 'pointer', padding: '4px 10px', background: '#161618', border: '1px solid #242428', borderRadius: 8 }}>Link existing</div>
+          <div onClick={() => setLinkingTask(!linkingTask)} style={{ fontSize: 12, color: 'var(--text-dim)', cursor: 'pointer', padding: '4px 10px', background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 8 }}>Link existing</div>
         </div>
       </div>
 
       {linkingTask && allTasks.length > 0 && (
-        <div style={{ background: '#0f0f11', border: '1px solid #1e1e24', borderRadius: 12, padding: 12, marginBottom: 14 }}>
-          <div style={{ fontSize: 12, color: '#555', marginBottom: 8 }}>Select a task to link:</div>
+        <div style={{ background: 'var(--bg-input)', border: '1px solid var(--border)', borderRadius: 12, padding: 12, marginBottom: 14 }}>
+          <div style={{ fontSize: 12, color: 'var(--text-dim)', marginBottom: 8 }}>Select a task to link:</div>
           {allTasks.map(t => (
-            <div key={t.id} onClick={() => linkTask(t.id)} style={{ padding: '8px 10px', borderRadius: 9, cursor: 'pointer', fontSize: 13, color: '#c0bdb7', marginBottom: 4, background: '#161618', border: '1px solid #1e1e24' }}>
-              {t.name} {t.start_date && <span style={{ fontSize: 11, color: '#555' }}>· {t.start_date}</span>}
+            <div key={t.id} onClick={() => linkTask(t.id)} style={{ padding: '8px 10px', borderRadius: 9, cursor: 'pointer', fontSize: 13, color: 'var(--text-secondary)', marginBottom: 4, background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
+              {t.name} {t.start_date && <span style={{ fontSize: 11, color: 'var(--text-dim)' }}>· {t.start_date}</span>}
             </div>
           ))}
         </div>
       )}
 
       {tasks.length === 0 && !linkingTask && (
-        <div style={{ textAlign: 'center', padding: '16px', color: '#444', fontSize: 13, border: '1px dashed #242428', borderRadius: 12, marginBottom: 14 }}>No tasks linked yet</div>
+        <div style={{ textAlign: 'center', padding: '16px', color: 'var(--text-dim)', fontSize: 13, border: '1px dashed var(--border)', borderRadius: 12, marginBottom: 14 }}>No tasks linked yet</div>
       )}
 
       {tasks.map(task => (
-        <div key={task.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '11px 14px', background: '#161618', border: '1px solid #242428', borderRadius: 12, marginBottom: 6, opacity: task.completed ? 0.4 : 1 }}>
+        <div key={task.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '11px 14px', background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 12, marginBottom: 6, opacity: task.completed ? 0.4 : 1 }}>
           <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 14, color: task.completed ? '#555' : '#d4d2cc', textDecoration: task.completed ? 'line-through' : 'none' }}>{task.name}</div>
-            {task.start_date && <div style={{ fontSize: 11, color: '#555', fontFamily: "'DM Mono'", marginTop: 2 }}>{task.start_date}</div>}
+            <div style={{ fontSize: 14, color: task.completed ? 'var(--text-dim)' : 'var(--text-secondary)', textDecoration: task.completed ? 'line-through' : 'none' }}>{task.name}</div>
+            {task.start_date && <div style={{ fontSize: 11, color: 'var(--text-dim)', fontFamily: "'DM Mono'", marginTop: 2 }}>{task.start_date}</div>}
           </div>
-          <div onClick={() => unlinkTask(task.id)} style={{ fontSize: 11, color: '#555', cursor: 'pointer', padding: '3px 8px', background: '#1e1e24', borderRadius: 6 }}>unlink</div>
+          <div onClick={() => unlinkTask(task.id)} style={{ fontSize: 11, color: 'var(--text-dim)', cursor: 'pointer', padding: '3px 8px', background: 'var(--border)', borderRadius: 6 }}>unlink</div>
         </div>
       ))}
 
@@ -182,7 +182,7 @@ export default function Goals() {
     <div>
       <div style={{ marginBottom: 24 }}>
         <div style={{ fontSize: 20, fontWeight: 500 }}>Goals</div>
-        <div style={{ fontSize: 13, color: '#555', marginTop: 3 }}>Your long-term direction</div>
+        <div style={{ fontSize: 13, color: 'var(--text-dim)', marginTop: 3 }}>Your long-term direction</div>
       </div>
 
       {SECTIONS.map(section => {
@@ -195,22 +195,22 @@ export default function Goals() {
               const tfGoals = getGoalsForTf(tf.key)
               return (
                 <div key={tf.key} style={{ marginBottom: 12 }}>
-                  <div style={{ fontSize: 11, color: '#555', fontWeight: 600, marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{tf.label}</div>
+                  <div style={{ fontSize: 11, color: 'var(--text-dim)', fontWeight: 600, marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{tf.label}</div>
                   {tfGoals.map(goal => {
                     const taskCount = 0 // simplified - could fetch
                     return (
                       <div key={goal.id} onClick={() => setSelected({ tf, goal })} style={{ background: styles.bg, border: `1px solid ${styles.borderColor}`, borderRadius: 12, padding: tf.prominent ? 18 : 14, marginBottom: 8, cursor: 'pointer', transition: 'all 0.15s' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                          <div style={{ fontSize: tf.prominent ? 15 : 14, color: '#e8e6e1', fontWeight: tf.prominent ? 500 : 400, flex: 1, lineHeight: 1.4 }}>{goal.goal_text}</div>
-                          <div style={{ fontSize: 18, color: '#555', marginLeft: 8 }}>›</div>
+                          <div style={{ fontSize: tf.prominent ? 15 : 14, color: 'var(--text-primary)', fontWeight: tf.prominent ? 500 : 400, flex: 1, lineHeight: 1.4 }}>{goal.goal_text}</div>
+                          <div style={{ fontSize: 18, color: 'var(--text-dim)', marginLeft: 8 }}>›</div>
                         </div>
-                        {goal.details && <div style={{ fontSize: 12, color: '#555', marginTop: 6, lineHeight: 1.4 }}>{goal.details.substring(0, 80)}{goal.details.length > 80 ? '…' : ''}</div>}
-                        {goal.updated_at && <div style={{ fontSize: 11, color: '#444', marginTop: 8, fontFamily: "'DM Mono'" }}>Updated {new Date(goal.updated_at).toLocaleDateString()}</div>}
+                        {goal.details && <div style={{ fontSize: 12, color: 'var(--text-dim)', marginTop: 6, lineHeight: 1.4 }}>{goal.details.substring(0, 80)}{goal.details.length > 80 ? '…' : ''}</div>}
+                        {goal.updated_at && <div style={{ fontSize: 11, color: 'var(--text-dim)', marginTop: 8, fontFamily: "'DM Mono'" }}>Updated {new Date(goal.updated_at).toLocaleDateString()}</div>}
                       </div>
                     )
                   })}
-                  <div onClick={() => setAddModal(tf)} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 14px', background: '#161618', border: '1px dashed #2a2a30', borderRadius: 12, cursor: 'pointer', fontSize: 13, color: '#444' }}>
-                    <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><line x1="6.5" y1="1" x2="6.5" y2="12" stroke="#444" strokeWidth="1.6" strokeLinecap="round"/><line x1="1" y1="6.5" x2="12" y2="6.5" stroke="#444" strokeWidth="1.6" strokeLinecap="round"/></svg>
+                  <div onClick={() => setAddModal(tf)} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 14px', background: 'var(--bg-card)', border: '1px dashed var(--border)', borderRadius: 12, cursor: 'pointer', fontSize: 13, color: 'var(--text-dim)' }}>
+                    <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><line x1="6.5" y1="1" x2="6.5" y2="12" stroke="var(--text-dim)" strokeWidth="1.6" strokeLinecap="round"/><line x1="1" y1="6.5" x2="12" y2="6.5" stroke="var(--text-dim)" strokeWidth="1.6" strokeLinecap="round"/></svg>
                     Add {tf.label.toLowerCase()} goal
                   </div>
                 </div>

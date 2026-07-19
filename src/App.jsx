@@ -77,20 +77,20 @@ function Drawer({ open, onClose, navigate, location }) {
   return (
     <>
       {/* Backdrop */}
-      <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)', zIndex: 200, backdropFilter: 'blur(2px)', WebkitBackdropFilter: 'blur(2px)' }} />
+      <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'var(--overlay)', zIndex: 200, backdropFilter: 'blur(2px)', WebkitBackdropFilter: 'blur(2px)' }} />
 
       {/* Drawer panel */}
       <div ref={drawerRef} onTouchStart={onTouchStart} onTouchEnd={onTouchEnd} className="drawer-panel"
-        style={{ position: 'fixed', top: 0, left: 0, bottom: 0, width: 280, background: 'var(--bg)', borderRight: '1px solid #1e1e24', zIndex: 201, display: 'flex', flexDirection: 'column', overflowY: 'auto', WebkitOverflowScrolling: 'touch' }}>
+        style={{ position: 'fixed', top: 0, left: 0, bottom: 0, width: 280, background: 'var(--bg)', borderRight: '1px solid var(--border)', zIndex: 201, display: 'flex', flexDirection: 'column', overflowY: 'auto', WebkitOverflowScrolling: 'touch' }}>
 
         {/* Drawer header */}
-        <div style={{ padding: '56px 20px 20px', borderBottom: '1px solid #1a1a20' }}>
+        <div style={{ padding: '56px 20px 20px', borderBottom: '1px solid var(--border)' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div>
               <div style={{ fontSize: 20, fontWeight: 600, color: 'var(--text-primary)', letterSpacing: '-0.3px' }}>LifeOS</div>
               <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>Your personal operating system</div>
             </div>
-            <div onClick={onClose} style={{ width: 32, height: 32, borderRadius: 10, background: 'var(--bg-card)', border: '1px solid #242428', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'var(--text-muted)', fontSize: 16 }}>✕</div>
+            <div onClick={onClose} style={{ width: 32, height: 32, borderRadius: 10, background: 'var(--bg-card)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'var(--text-muted)', fontSize: 16 }}>✕</div>
           </div>
         </div>
 
@@ -106,7 +106,7 @@ function Drawer({ open, onClose, navigate, location }) {
                     style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '11px 20px', cursor: 'pointer', background: isActive ? 'var(--accent-dim)' : 'transparent', borderRight: isActive ? '3px solid var(--accent)' : '3px solid transparent', transition: 'background 0.1s' }}>
                     <div style={{ width: 36, height: 36, borderRadius: 10, background: isActive ? 'var(--accent-dim)' : 'var(--bg-card)', border: `1px solid ${isActive ? 'var(--accent-border)' : 'var(--border)'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, flexShrink: 0 }}>{icon}</div>
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: 14, fontWeight: 500, color: isActive ? 'var(--accent)' : '#d4d2cc' }}>{label}</div>
+                      <div style={{ fontSize: 14, fontWeight: 500, color: isActive ? 'var(--accent)' : 'var(--text-secondary)' }}>{label}</div>
                       <div style={{ fontSize: 11, color: 'var(--text-dim)', marginTop: 1 }}>{desc}</div>
                     </div>
                     {isActive && <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--accent)', flexShrink: 0 }} />}
@@ -118,7 +118,7 @@ function Drawer({ open, onClose, navigate, location }) {
         </div>
 
         {/* Bottom branding */}
-        <div style={{ padding: '16px 20px 32px', borderTop: '1px solid #1a1a20' }}>
+        <div style={{ padding: '16px 20px 32px', borderTop: '1px solid var(--border)' }}>
           <div style={{ fontSize: 11, color: 'var(--text-dim)' }}>Beyond Horizons · Brad Myers</div>
         </div>
       </div>
@@ -144,8 +144,6 @@ function Shell() {
 
   // Sync body class with theme mode for CSS overrides
   useEffect(() => {
-    document.body.classList.toggle('light-mode', mode === 'light')
-    document.body.classList.toggle('dark-mode', mode === 'dark')
   }, [mode])
 
   const openAdd = (mode, ctx = {}) => setTaskModal({ mode, task: null, ...ctx })
@@ -161,7 +159,7 @@ function Shell() {
     <div className="app-shell">
       {/* Hamburger button — always visible top-left */}
       <div onClick={() => setDrawerOpen(true)} className="hamburger-btn"
-        style={{ position: 'fixed', top: 'calc(env(safe-area-inset-top, 44px) + 10px)', left: 16, zIndex: 100, width: 40, height: 40, borderRadius: 14, background: 'rgba(22,22,20,0.82)', border: '1px solid var(--border)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 5, cursor: 'pointer', boxShadow: '0 4px 16px rgba(0,0,0,0.25)' }}>
+        style={{ position: 'fixed', top: 'calc(env(safe-area-inset-top, 44px) + 10px)', left: 16, zIndex: 100, width: 40, height: 40, borderRadius: 14, background: 'var(--nav-bg)', border: '1px solid var(--border)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 5, cursor: 'pointer', boxShadow: 'var(--shadow-float)' }}>
         <div style={{ width: 15, height: 1.5, background: 'var(--text-muted)', borderRadius: 2 }} />
         <div style={{ width: 15, height: 1.5, background: 'var(--text-muted)', borderRadius: 2 }} />
         <div style={{ width: 10, height: 1.5, background: 'var(--text-muted)', borderRadius: 2 }} />
@@ -210,22 +208,22 @@ export default function App() {
 }
 
 function HomeIcon({ active }) {
-  const c = active ? 'var(--accent)' : '#666'
+  const c = active ? 'var(--accent)' : 'var(--text-muted)'
   return <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><rect x="2" y="2" width="7" height="7" rx="2" fill={c}/><rect x="11" y="2" width="7" height="7" rx="2" fill={c} opacity="0.5"/><rect x="2" y="11" width="7" height="7" rx="2" fill={c} opacity="0.5"/><rect x="11" y="11" width="7" height="7" rx="2" fill={c} opacity="0.5"/></svg>
 }
 function WeekIcon({ active }) {
-  const c = active ? 'var(--accent)' : '#666'
+  const c = active ? 'var(--accent)' : 'var(--text-muted)'
   return <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><rect x="2" y="4" width="16" height="13" rx="2" stroke={c} strokeWidth="1.5"/><line x1="2" y1="8" x2="18" y2="8" stroke={c} strokeWidth="1.5"/><line x1="7" y1="2" x2="7" y2="6" stroke={c} strokeWidth="1.5" strokeLinecap="round"/><line x1="13" y1="2" x2="13" y2="6" stroke={c} strokeWidth="1.5" strokeLinecap="round"/></svg>
 }
 function TasksIcon({ active }) {
-  const c = active ? 'var(--accent)' : '#666'
+  const c = active ? 'var(--accent)' : 'var(--text-muted)'
   return <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><circle cx="5" cy="6" r="1.5" fill={c}/><line x1="8" y1="6" x2="18" y2="6" stroke={c} strokeWidth="1.5" strokeLinecap="round"/><circle cx="5" cy="10" r="1.5" fill={c} opacity="0.6"/><line x1="8" y1="10" x2="15" y2="10" stroke={c} strokeWidth="1.5" strokeLinecap="round" opacity="0.6"/><circle cx="5" cy="14" r="1.5" fill={c} opacity="0.4"/><line x1="8" y1="14" x2="13" y2="14" stroke={c} strokeWidth="1.5" strokeLinecap="round" opacity="0.4"/></svg>
 }
 function SectorsIcon({ active }) {
-  const c = active ? 'var(--accent)' : '#666'
+  const c = active ? 'var(--accent)' : 'var(--text-muted)'
   return <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><rect x="2" y="2" width="7" height="7" rx="2" stroke={c} strokeWidth="1.5"/><rect x="11" y="2" width="7" height="7" rx="2" stroke={c} strokeWidth="1.5" opacity="0.7"/><rect x="2" y="11" width="7" height="7" rx="2" stroke={c} strokeWidth="1.5" opacity="0.7"/><rect x="11" y="11" width="7" height="7" rx="2" stroke={c} strokeWidth="1.5" opacity="0.4"/></svg>
 }
 function HabitsIcon({ active }) {
-  const c = active ? 'var(--accent)' : '#666'
+  const c = active ? 'var(--accent)' : 'var(--text-muted)'
   return <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="7.5" stroke={c} strokeWidth="1.5"/><polyline points="7,10 9,12 13,8" stroke={c} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
 }

@@ -134,9 +134,9 @@ export default function Week({ onAddTask, onEditTask }) {
               : `${MONTH_NAMES[monthMonth]} ${monthYear}`}
           </div>
         </div>
-        <div style={{ display: 'flex', background: 'var(--bg-card)', border: '1px solid #242428', borderRadius: 10, overflow: 'hidden' }}>
+        <div style={{ display: 'flex', background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 10, overflow: 'hidden' }}>
           {['week','month'].map(v => (
-            <div key={v} onClick={() => setView(v)} style={{ padding: '7px 14px', fontSize: 12, fontWeight: 500, cursor: 'pointer', background: view === v ? 'var(--accent-dim)' : 'transparent', color: view === v ? 'var(--accent)' : '#666' }}>
+            <div key={v} onClick={() => setView(v)} style={{ padding: '7px 14px', fontSize: 12, fontWeight: 500, cursor: 'pointer', background: view === v ? 'var(--accent-dim)' : 'transparent', color: view === v ? 'var(--accent)' : 'var(--text-muted)' }}>
               {v.charAt(0).toUpperCase() + v.slice(1)}
             </div>
           ))}
@@ -157,15 +157,15 @@ export default function Week({ onAddTask, onEditTask }) {
 
       {/* Week nav */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-        <div onClick={() => view==='week' ? setWeekOffset(o=>o-1) : setMonthOffset(o=>o-1)} style={{ width: 32, height: 32, borderRadius: 8, background: 'var(--bg-card)', border: '1px solid #242428', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'var(--text-muted)', fontSize: 16 }}>‹</div>
-        <div onClick={() => { setWeekOffset(0); setMonthOffset(0) }} style={{ flex: 1, textAlign: 'center', fontSize: 12, fontWeight: 500, color: (view==='week'?weekOffset:monthOffset)===0 ? '#444' : 'var(--accent)', cursor: 'pointer', padding: '6px 0', background: 'var(--bg-card)', border: '1px solid #242428', borderRadius: 20 }}>Current</div>
-        <div onClick={() => view==='week' ? setWeekOffset(o=>o+1) : setMonthOffset(o=>o+1)} style={{ width: 32, height: 32, borderRadius: 8, background: 'var(--bg-card)', border: '1px solid #242428', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'var(--text-muted)', fontSize: 16 }}>›</div>
+        <div onClick={() => view==='week' ? setWeekOffset(o=>o-1) : setMonthOffset(o=>o-1)} style={{ width: 32, height: 32, borderRadius: 8, background: 'var(--bg-card)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'var(--text-muted)', fontSize: 16 }}>‹</div>
+        <div onClick={() => { setWeekOffset(0); setMonthOffset(0) }} style={{ flex: 1, textAlign: 'center', fontSize: 12, fontWeight: 500, color: (view==='week'?weekOffset:monthOffset)===0 ? 'var(--text-dim)' : 'var(--accent)', cursor: 'pointer', padding: '6px 0', background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 20 }}>Current</div>
+        <div onClick={() => view==='week' ? setWeekOffset(o=>o+1) : setMonthOffset(o=>o+1)} style={{ width: 32, height: 32, borderRadius: 8, background: 'var(--bg-card)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'var(--text-muted)', fontSize: 16 }}>›</div>
       </div>
 
       {/* Sector filters */}
       <div style={{ display: 'flex', gap: 6, overflowX: 'auto', paddingBottom: 4, marginBottom: 10, WebkitOverflowScrolling: 'touch' }}>
         {filters.map(s => (
-          <div key={s} onClick={() => setActiveFilter(s)} style={{ padding: '5px 12px', borderRadius: 20, fontSize: 12, fontWeight: 500, cursor: 'pointer', border: '1px solid', whiteSpace: 'nowrap', background: activeFilter === s ? 'var(--accent-dim)' : 'var(--bg-card)', borderColor: activeFilter === s ? 'var(--accent-border)' : 'var(--border)', color: activeFilter === s ? 'var(--accent)' : '#666' }}>
+          <div key={s} onClick={() => setActiveFilter(s)} style={{ padding: '5px 12px', borderRadius: 20, fontSize: 12, fontWeight: 500, cursor: 'pointer', border: '1px solid', whiteSpace: 'nowrap', background: activeFilter === s ? 'var(--accent-dim)' : 'var(--bg-card)', borderColor: activeFilter === s ? 'var(--accent-border)' : 'var(--border)', color: activeFilter === s ? 'var(--accent)' : 'var(--text-muted)' }}>
             {s}
           </div>
         ))}
@@ -173,7 +173,7 @@ export default function Week({ onAddTask, onEditTask }) {
 
       {/* Routines toggle */}
       <div style={{ marginBottom: 12 }}>
-        <div onClick={() => setShowRoutines(!showRoutines)} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '5px 12px', borderRadius: 20, fontSize: 12, fontWeight: 500, cursor: 'pointer', border: '1px solid', background: showRoutines ? 'var(--accent-dim)' : 'var(--bg-card)', borderColor: showRoutines ? 'var(--accent-border)' : 'var(--border)', color: showRoutines ? 'var(--accent)' : '#666' }}>
+        <div onClick={() => setShowRoutines(!showRoutines)} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '5px 12px', borderRadius: 20, fontSize: 12, fontWeight: 500, cursor: 'pointer', border: '1px solid', background: showRoutines ? 'var(--accent-dim)' : 'var(--bg-card)', borderColor: showRoutines ? 'var(--accent-border)' : 'var(--border)', color: showRoutines ? 'var(--accent)' : 'var(--text-muted)' }}>
           🕐 {showRoutines ? 'Hide routines' : 'Show routines'}
         </div>
       </div>
@@ -196,15 +196,15 @@ export default function Week({ onAddTask, onEditTask }) {
               <div key={date} ref={isToday ? todayRef : null} style={{ marginBottom: 16 }}>
                 {/* Day header */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
-                  <div style={{ width: 36, height: 36, borderRadius: '50%', background: isToday ? 'var(--accent)' : 'transparent', border: isToday ? 'none' : `1px solid ${isPast ? 'var(--border)' : 'var(--border)'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 500, color: isToday ? '#fff' : isPast ? '#444' : '#888', flexShrink: 0 }}>{d.getDate()}</div>
-                  <div style={{ fontSize: 13, fontWeight: 500, color: isToday ? 'var(--accent)' : isPast ? '#444' : '#888' }}>{DAY_NAMES[i]}</div>
+                  <div style={{ width: 36, height: 36, borderRadius: '50%', background: isToday ? 'var(--accent)' : 'transparent', border: isToday ? 'none' : `1px solid ${isPast ? 'var(--border)' : 'var(--border)'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 500, color: isToday ? '#fff' : isPast ? 'var(--text-dim)' : 'var(--text-muted)', flexShrink: 0 }}>{d.getDate()}</div>
+                  <div style={{ fontSize: 13, fontWeight: 500, color: isToday ? 'var(--accent)' : isPast ? 'var(--text-dim)' : 'var(--text-muted)' }}>{DAY_NAMES[i]}</div>
                   <div style={{ flex: 1 }} />
                   <div style={{ fontSize: 11, color: 'var(--text-dim)' }}>{items.length > 0 ? `${items.length} item${items.length>1?'s':''}` : ''}</div>
                   <div onClick={() => openDaySheet(date)} style={{ fontSize: 18, color: 'var(--text-dim)', cursor: 'pointer', paddingLeft: 8 }}>+</div>
                 </div>
 
                 {items.length === 0
-                  ? <div onClick={() => openDaySheet(date)} style={{ padding: '10px 14px', fontSize: 13, color: '#2a2a2a', border: '1px dashed #1e1e24', borderRadius: 10, textAlign: 'center', cursor: 'pointer' }}>Tap to add</div>
+                  ? <div onClick={() => openDaySheet(date)} style={{ padding: '10px 14px', fontSize: 13, color: 'var(--bg-card2)', border: '1px dashed var(--border)', borderRadius: 10, textAlign: 'center', cursor: 'pointer' }}>Tap to add</div>
                   : <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                       {items.map(item => {
                         if (item._type === 'event') return (
@@ -220,9 +220,9 @@ export default function Week({ onAddTask, onEditTask }) {
                           </div>
                         )
                         if (item._type === 'routine') return (
-                          <div key={item.id + '-r'} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 14px', background: 'var(--bg-card)', border: '1px dashed #2a1a5c', borderRadius: 12, opacity: 0.75 }}>
-                            <div style={{ fontFamily: "'DM Mono'", fontSize: 11, color: '#a78bfa', minWidth: 55, flexShrink: 0 }}>{fmtTime(item.time)}</div>
-                            <div style={{ width: 1, height: 20, background: '#2a1a5c', flexShrink: 0 }} />
+                          <div key={item.id + '-r'} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 14px', background: 'var(--bg-card)', border: '1px dashed var(--purple-border)', borderRadius: 12, opacity: 0.75 }}>
+                            <div style={{ fontFamily: "'DM Mono'", fontSize: 11, color: 'var(--purple)', minWidth: 55, flexShrink: 0 }}>{fmtTime(item.time)}</div>
+                            <div style={{ width: 1, height: 20, background: 'var(--purple-border)', flexShrink: 0 }} />
                             <div style={{ fontSize: 13, color: 'var(--text-muted)', flex: 1 }}>{item.icon && item.icon + ' '}{item.name}</div>
                             {item.duration && <div style={{ fontSize: 11, color: 'var(--text-dim)', fontFamily: "'DM Mono'" }}>{item.duration}m</div>}
                           </div>
@@ -230,15 +230,15 @@ export default function Week({ onAddTask, onEditTask }) {
                         // Task
                         const isOverdue = item.start_date < todayStr && !item.completed
                         return (
-                          <div key={item.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', background: 'var(--bg-card)', border: `1px solid ${isOverdue ? '#3a1010' : 'var(--border)'}`, borderRadius: 12, opacity: item.completed ? 0.5 : 1 }}>
-                            <div onClick={e => { e.stopPropagation(); toggleTask(item) }} style={{ width: 20, height: 20, borderRadius: '50%', border: `1.5px solid ${item.completed ? 'var(--accent)' : '#333'}`, background: item.completed ? 'var(--accent)' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, cursor: 'pointer' }}>
+                          <div key={item.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', background: 'var(--bg-card)', border: `1px solid ${isOverdue ? 'var(--danger-dim)' : 'var(--border)'}`, borderRadius: 12, opacity: item.completed ? 0.5 : 1 }}>
+                            <div onClick={e => { e.stopPropagation(); toggleTask(item) }} style={{ width: 20, height: 20, borderRadius: '50%', border: `1.5px solid ${item.completed ? 'var(--accent)' : 'var(--border-hover)'}`, background: item.completed ? 'var(--accent)' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, cursor: 'pointer' }}>
                               {item.completed && <svg width="9" height="9" viewBox="0 0 9 9"><polyline points="1,4.5 3.5,7 8,2" stroke="white" strokeWidth="1.5" fill="none" strokeLinecap="round"/></svg>}
                             </div>
                             <div onClick={() => onEditTask(item)} style={{ flex: 1, minWidth: 0, cursor: 'pointer' }}>
-                              <div style={{ fontSize: 14, color: item.completed ? '#555' : '#d4d2cc', textDecoration: item.completed ? 'line-through' : 'none', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.name}</div>
+                              <div style={{ fontSize: 14, color: item.completed ? 'var(--text-dim)' : 'var(--text-secondary)', textDecoration: item.completed ? 'line-through' : 'none', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.name}</div>
                               <div style={{ display: 'flex', gap: 8, marginTop: 2, flexWrap: 'wrap' }}>
                                 {item.projects && <div style={{ fontSize: 11, color: 'var(--accent)' }}>{item.projects.name} →</div>}
-                                {isOverdue && <div style={{ fontSize: 11, color: '#f87171', fontFamily: "'DM Mono'" }}>⚠ overdue · {item.start_date}</div>}
+                                {isOverdue && <div style={{ fontSize: 11, color: 'var(--danger)', fontFamily: "'DM Mono'" }}>⚠ overdue · {item.start_date}</div>}
                               </div>
                             </div>
                             {item.time_block && <div style={{ fontFamily: "'DM Mono'", fontSize: 11, color: 'var(--text-muted)', flexShrink: 0 }}>{fmtTime(item.time_block)}</div>}
@@ -253,21 +253,21 @@ export default function Week({ onAddTask, onEditTask }) {
 
           {/* ── OVERDUE SECTION ── */}
           {overdueTasks.length > 0 && (
-            <div style={{ marginTop: 8, marginBottom: 16, paddingTop: 16, borderTop: '1px solid #1e1e24' }}>
+            <div style={{ marginTop: 8, marginBottom: 16, paddingTop: 16, borderTop: '1px solid var(--border)' }}>
               <div onClick={() => setShowOverdue(o => !o)} style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: showOverdue ? 12 : 0, cursor: 'pointer' }}>
                 <div style={{ fontSize: 16 }}>⚠️</div>
-                <div style={{ fontSize: 15, fontWeight: 500, color: '#f87171' }}>Overdue</div>
+                <div style={{ fontSize: 15, fontWeight: 500, color: 'var(--danger)' }}>Overdue</div>
                 <div style={{ fontSize: 12, color: 'var(--text-muted)', flex: 1 }}>{overdueTasks.length} task{overdueTasks.length > 1 ? 's' : ''}</div>
                 <div style={{ fontSize: 18, color: 'var(--text-muted)', transform: showOverdue ? 'rotate(90deg)' : 'none', transition: 'transform 0.2s' }}>›</div>
               </div>
               {showOverdue && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                   {overdueTasks.map(task => (
-                    <div key={task.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', background: '#1a0a0a', border: '1px solid #3a1010', borderRadius: 12 }}>
-                      <div onClick={() => toggleTask(task)} style={{ width: 20, height: 20, borderRadius: '50%', border: '1.5px solid #f87171', background: 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, cursor: 'pointer' }} />
+                    <div key={task.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', background: 'var(--danger-dim)', border: '1px solid var(--danger-dim)', borderRadius: 12 }}>
+                      <div onClick={() => toggleTask(task)} style={{ width: 20, height: 20, borderRadius: '50%', border: '1.5px solid var(--danger)', background: 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, cursor: 'pointer' }} />
                       <div onClick={() => onEditTask(task)} style={{ flex: 1, minWidth: 0, cursor: 'pointer' }}>
                         <div style={{ fontSize: 14, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{task.name}</div>
-                        <div style={{ fontSize: 11, color: '#f87171', fontFamily: "'DM Mono'", marginTop: 2 }}>Was due {task.start_date}</div>
+                        <div style={{ fontSize: 11, color: 'var(--danger)', fontFamily: "'DM Mono'", marginTop: 2 }}>Was due {task.start_date}</div>
                       </div>
                       {task.time_block && <div style={{ fontFamily: "'DM Mono'", fontSize: 11, color: 'var(--text-muted)', flexShrink: 0 }}>{fmtTime(task.time_block)}</div>}
                     </div>
@@ -278,15 +278,15 @@ export default function Week({ onAddTask, onEditTask }) {
           )}
 
           {/* Month stats */}
-          <div style={{ marginTop: 20, paddingTop: 20, borderTop: '1px solid #1e1e24' }}>
+          <div style={{ marginTop: 20, paddingTop: 20, borderTop: '1px solid var(--border)' }}>
             <div className="section-label">This month</div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 8 }}>
-              {[['Tasks', tasks.filter(t=>t.start_date>=toStr(new Date(today.getFullYear(),today.getMonth(),1))&&t.start_date<=toStr(new Date(today.getFullYear(),today.getMonth()+1,0))).length, '#e8e6e1'],
+              {[['Tasks', tasks.filter(t=>t.start_date>=toStr(new Date(today.getFullYear(),today.getMonth(),1))&&t.start_date<=toStr(new Date(today.getFullYear(),today.getMonth()+1,0))).length, 'var(--text-primary)'],
                 ['Events', events.filter(e=>e.start_date>=toStr(new Date(today.getFullYear(),today.getMonth(),1))&&e.start_date<=toStr(new Date(today.getFullYear(),today.getMonth()+1,0))).length, 'var(--event-color)'],
-                ['Done', tasks.filter(t=>t.completed).length, '#10b981'],
+                ['Done', tasks.filter(t=>t.completed).length, 'var(--success)'],
                 ['Left', tasks.filter(t=>!t.completed).length, 'var(--accent)']
               ].map(([label,val,color]) => (
-                <div key={label} style={{ background: 'var(--bg-card)', border: '1px solid #242428', borderRadius: 12, padding: 12 }}>
+                <div key={label} style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 12, padding: 12 }}>
                   <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 3 }}>{label}</div>
                   <div style={{ fontSize: 20, fontWeight: 500, color }}>{val}</div>
                 </div>
@@ -300,7 +300,7 @@ export default function Week({ onAddTask, onEditTask }) {
       {view === 'month' && (
         <div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', gap: 2, marginBottom: 4 }}>
-            {['M','T','W','T','F','S','S'].map((d,i) => <div key={i} style={{ textAlign:'center',fontSize:11,fontWeight:600,color:'#444',padding:'4px 0' }}>{d}</div>)}
+            {['M','T','W','T','F','S','S'].map((d,i) => <div key={i} style={{ textAlign:'center',fontSize:11,fontWeight:600,color:'var(--text-dim)',padding:'4px 0' }}>{d}</div>)}
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', gap: 3 }}>
             {calCells.map((day, idx) => {
@@ -312,7 +312,7 @@ export default function Week({ onAddTask, onEditTask }) {
               const de = eventsForDay(dateStr)
               return (
                 <div key={idx} onClick={() => openDaySheet(dateStr)} style={{ background: isToday ? 'var(--accent-dim)' : 'var(--bg-card)', border: `1px solid ${isToday ? 'var(--accent-border)' : 'var(--border)'}`, borderRadius: 8, padding: '5px 3px', height: 54, overflow: 'hidden', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                  <div style={{ fontSize: 11, fontWeight: isToday?600:400, color: isToday ? 'var(--accent-text)' : isPast ? '#444' : '#888', marginBottom: 4 }}>{day}</div>
+                  <div style={{ fontSize: 11, fontWeight: isToday?600:400, color: isToday ? 'var(--accent-text)' : isPast ? 'var(--text-dim)' : 'var(--text-muted)', marginBottom: 4 }}>{day}</div>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 2, justifyContent: 'center' }}>
                     {de.slice(0,3).map((ev,ti) => <div key={'e'+ti} style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--event-color)' }} />)}
                     {dt.slice(0,4).map((t,ti) => <div key={'t'+ti} style={{ width: 6, height: 6, borderRadius: '50%', background: SECTOR_COLORS[t.sector?.toLowerCase()] || 'var(--accent)' }} />)}
@@ -322,12 +322,12 @@ export default function Week({ onAddTask, onEditTask }) {
               )
             })}
           </div>
-          <div style={{ marginTop: 20, paddingTop: 16, borderTop: '1px solid #1e1e24' }}>
+          <div style={{ marginTop: 20, paddingTop: 16, borderTop: '1px solid var(--border)' }}>
             <div className="section-label">This month</div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 8 }}>
-              {[['Tasks', tasks.length,'#e8e6e1'],['Events', events.length,'var(--event-color)'],['Done', tasks.filter(t=>t.completed).length,'#10b981'],['Left', tasks.filter(t=>!t.completed).length,'var(--accent)']].map(([l,v,c]) => (
-                <div key={l} style={{ background:'var(--bg-card)',border:'1px solid #242428',borderRadius:12,padding:12 }}>
-                  <div style={{ fontSize:11,color:'#555',marginBottom:3 }}>{l}</div>
+              {[['Tasks', tasks.length,'var(--text-primary)'],['Events', events.length,'var(--event-color)'],['Done', tasks.filter(t=>t.completed).length,'var(--success)'],['Left', tasks.filter(t=>!t.completed).length,'var(--accent)']].map(([l,v,c]) => (
+                <div key={l} style={{ background:'var(--bg-card)',border:'1px solid var(--border)',borderRadius:12,padding:12 }}>
+                  <div style={{ fontSize:11,color:'var(--text-dim)',marginBottom:3 }}>{l}</div>
                   <div style={{ fontSize:20,fontWeight:500,color:c }}>{v}</div>
                 </div>
               ))}
@@ -364,13 +364,13 @@ export default function Week({ onAddTask, onEditTask }) {
               </div>
             ))}
             {daySheet.tasks.map(task => (
-              <div key={task.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '11px 14px', background: 'var(--bg-card)', border: '1px solid #242428', borderRadius: 12, marginBottom: 6, cursor: 'pointer' }} onClick={() => { setDaySheet(null); onEditTask(task) }}>
+              <div key={task.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '11px 14px', background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 12, marginBottom: 6, cursor: 'pointer' }} onClick={() => { setDaySheet(null); onEditTask(task) }}>
                 <div onClick={e => { e.stopPropagation(); toggleTask(task).then(() => setDaySheet(ds => ({ ...ds, tasks: ds.tasks.map(t => t.id === task.id ? { ...t, completed: !t.completed } : t) }))) }}
-                  style={{ width: 20, height: 20, borderRadius: '50%', border: `1.5px solid ${task.completed ? 'var(--accent)' : '#333'}`, background: task.completed ? 'var(--accent)' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, cursor: 'pointer' }}>
+                  style={{ width: 20, height: 20, borderRadius: '50%', border: `1.5px solid ${task.completed ? 'var(--accent)' : 'var(--border-hover)'}`, background: task.completed ? 'var(--accent)' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, cursor: 'pointer' }}>
                   {task.completed && <svg width="9" height="9" viewBox="0 0 9 9"><polyline points="1,4.5 3.5,7 8,2" stroke="white" strokeWidth="1.5" fill="none" strokeLinecap="round"/></svg>}
                 </div>
                 <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 14, color: task.completed ? '#555' : '#d4d2cc', textDecoration: task.completed ? 'line-through' : 'none' }}>{task.name}</div>
+                  <div style={{ fontSize: 14, color: task.completed ? 'var(--text-dim)' : 'var(--text-secondary)', textDecoration: task.completed ? 'line-through' : 'none' }}>{task.name}</div>
                   {task.time_block && <div style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: "'DM Mono'", marginTop: 2 }}>{fmtTime(task.time_block)}</div>}
                 </div>
               </div>

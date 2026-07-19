@@ -60,7 +60,7 @@ function DaySnapshot({ date }) {
       {/* Stats */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: 8, marginBottom: habits.length > 0 ? 16 : 0 }}>
         <div style={{ background: 'var(--bg)', borderRadius: 10, padding: '10px 12px', textAlign: 'center' }}>
-          <div style={{ fontSize: 20, fontWeight: 700, color: habitLogs.length > 0 ? '#10b981' : 'var(--text-dim)' }}>{habitLogs.length}<span style={{ fontSize: 12, color: 'var(--text-dim)', fontWeight: 400 }}>/{habits.length}</span></div>
+          <div style={{ fontSize: 20, fontWeight: 700, color: habitLogs.length > 0 ? 'var(--success)' : 'var(--text-dim)' }}>{habitLogs.length}<span style={{ fontSize: 12, color: 'var(--text-dim)', fontWeight: 400 }}>/{habits.length}</span></div>
           <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 2 }}>Habits done</div>
         </div>
         <div style={{ background: 'var(--bg)', borderRadius: 10, padding: '10px 12px', textAlign: 'center' }}>
@@ -77,7 +77,7 @@ function DaySnapshot({ date }) {
             const done = habitLogs.some(l => l.habit_id === habit.id)
             return (
               <div key={habit.id} onClick={() => toggleHabit(habit.id)} style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8, cursor: 'pointer' }}>
-                <div style={{ width: 20, height: 20, borderRadius: 6, border: `1.5px solid ${done ? '#10b981' : 'var(--border)'}`, background: done ? '#10b981' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, transition: 'all 0.15s' }}>
+                <div style={{ width: 20, height: 20, borderRadius: 6, border: `1.5px solid ${done ? 'var(--success)' : 'var(--border)'}`, background: done ? 'var(--success)' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, transition: 'all 0.15s' }}>
                   {done && <svg width="10" height="8" viewBox="0 0 10 8" fill="none"><polyline points="1,4 3.5,6.5 9,1" stroke="white" strokeWidth="1.6" strokeLinecap="round"/></svg>}
                 </div>
                 <div style={{ fontSize: 13, color: done ? 'var(--text-muted)' : 'var(--text-primary)', textDecoration: done ? 'line-through' : 'none' }}>
@@ -95,7 +95,7 @@ function DaySnapshot({ date }) {
           <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>Still open</div>
           {incompleteTasks.map(task => (
             <div key={task.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '7px 10px', background: 'var(--bg)', borderRadius: 8, marginBottom: 5 }}>
-              <div style={{ width: 5, height: 5, borderRadius: '50%', background: '#f87171', flexShrink: 0 }} />
+              <div style={{ width: 5, height: 5, borderRadius: '50%', background: 'var(--danger)', flexShrink: 0 }} />
               <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{task.name}</div>
             </div>
           ))}
@@ -283,7 +283,7 @@ export default function Journal() {
 
       {/* Stats */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 8, marginBottom: 18 }}>
-        {[['Total', entries.length, 'var(--text-primary)'],['This month', entries.filter(e => e.date.startsWith(new Date().toISOString().slice(0,7))).length,'var(--accent)'],['Streak', streak, '#f59e0b']].map(([l,v,col]) => (
+        {[['Total', entries.length, 'var(--text-primary)'],['This month', entries.filter(e => e.date.startsWith(new Date().toISOString().slice(0,7))).length,'var(--accent)'],['Streak', streak, 'var(--warn)']].map(([l,v,col]) => (
           <div key={l} style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 12, padding: 12 }}>
             <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 3 }}>{l}</div>
             <div style={{ fontSize: 20, fontWeight: 600, color: col }}>{v}</div>

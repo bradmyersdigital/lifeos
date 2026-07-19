@@ -7,10 +7,10 @@ const SECTOR_COLORS = {
   'personal growth': '#f59e0b', family: '#ec4899', hobbies: '#a78bfa',
 }
 const URG_STYLE = {
-  urgent: { bg: '#2a0a0a', color: '#f87171' },
-  high:   { bg: '#1e1208', color: 'var(--accent-text)' },
-  medium: { bg: '#1e1a00', color: '#fcd34d' },
-  low:    { bg: '#0a1e14', color: 'var(--event-color)' },
+  urgent: { bg: 'var(--danger-dim)', color: 'var(--danger)' },
+  high:   { bg: 'var(--accent-dim)', color: 'var(--accent-text)' },
+  medium: { bg: 'var(--warn-dim)', color: 'var(--warn)' },
+  low:    { bg: 'var(--success-dim)', color: 'var(--event-color)' },
 }
 const DAY_NAMES = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun']
 const EMOJI_PICKS = ['💼','🏠','🏃','📚','🎨','❤️','💰','🌱','⚡','🎯','🔥','✨','🎵','🏋️','🧠','💡','🌍','🚀','📝','🎮','🏆','🛠️','📊','🎭','🧘','🍎','☀️','🌙','💎','🦁']
@@ -20,7 +20,7 @@ function SectorModal({ sector, onClose, onSaved }) {
   const isEdit = !!sector
   const [name, setName] = useState(sector?.name || '')
   const [icon, setIcon] = useState(sector?.icon || '📁')
-  const [color, setColor] = useState(sector?.color || '#d4520f')
+  const [color, setColor] = useState(sector?.color || 'var(--accent)')
   const [saving, setSaving] = useState(false)
   const [deleting, setDeleting] = useState(false)
 
@@ -67,7 +67,7 @@ function SectorModal({ sector, onClose, onSaved }) {
           <input type="text" value={icon} onChange={e => setIcon(e.target.value)} style={{ fontSize: 22, textAlign: 'center' }} />
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7, marginTop: 10, justifyContent: 'center' }}>
             {EMOJI_PICKS.map(e => (
-              <div key={e} onClick={() => setIcon(e)} style={{ width: 40, height: 40, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, background: icon === e ? '#1e1208' : '#161618', border: `1px solid ${icon === e ? '#7a3410' : '#242428'}`, borderRadius: 10, cursor: 'pointer' }}>
+              <div key={e} onClick={() => setIcon(e)} style={{ width: 40, height: 40, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, background: icon === e ? 'var(--accent-dim)' : 'var(--bg-card)', border: `1px solid ${icon === e ? 'var(--accent-border)' : 'var(--border)'}`, borderRadius: 10, cursor: 'pointer' }}>
                 {e}
               </div>
             ))}
@@ -85,7 +85,7 @@ function SectorModal({ sector, onClose, onSaved }) {
 
         <div style={{ display: 'flex', gap: 10, marginTop: 18 }}>
           {isEdit && (
-            <button onClick={handleDelete} disabled={deleting} style={{ flex: 1, padding: 11, borderRadius: 10, background: '#2a0a0a', border: '1px solid #7a1010', color: '#f87171', fontSize: 14, fontWeight: 500, cursor: 'pointer', fontFamily: "'DM Sans'" }}>
+            <button onClick={handleDelete} disabled={deleting} style={{ flex: 1, padding: 11, borderRadius: 10, background: 'var(--danger-dim)', border: '1px solid var(--danger-border)', color: 'var(--danger)', fontSize: 14, fontWeight: 500, cursor: 'pointer', fontFamily: "'DM Sans'" }}>
               {deleting ? 'Deleting…' : 'Delete'}
             </button>
           )}
@@ -141,7 +141,7 @@ function UpcomingSubsSection({ onNavigate }) {
     <div style={{ marginBottom: 18 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
         <div className="section-label" style={{ margin: 0 }}>Upcoming subscriptions</div>
-        <div onClick={() => onNavigate('/finance')} style={{ fontSize: 12, color: '#555', cursor: 'pointer' }}>See all →</div>
+        <div onClick={() => onNavigate('/finance')} style={{ fontSize: 12, color: 'var(--text-dim)', cursor: 'pointer' }}>See all →</div>
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
         {subs.map(sub => {
@@ -149,28 +149,28 @@ function UpcomingSubsSection({ onNavigate }) {
           const icon = sub.icon?.startsWith('data:') ? null : getSubIcon(sub)
           const isUrgent = daysUntil <= 2
           return (
-            <div key={sub.id} onClick={() => onNavigate('/finance')} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', background: '#161618', border: `1px solid ${isUrgent ? '#3a1010' : '#242428'}`, borderRadius: 13, cursor: 'pointer' }}>
-              <div style={{ width: 40, height: 40, borderRadius: 11, background: '#1e1e24', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, flexShrink: 0, overflow: 'hidden' }}>
+            <div key={sub.id} onClick={() => onNavigate('/finance')} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', background: 'var(--bg-card)', border: `1px solid ${isUrgent ? 'var(--danger-dim)' : 'var(--border)'}`, borderRadius: 13, cursor: 'pointer' }}>
+              <div style={{ width: 40, height: 40, borderRadius: 11, background: 'var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, flexShrink: 0, overflow: 'hidden' }}>
                 {sub.icon?.startsWith('data:')
                   ? <img src={sub.icon} alt={sub.name} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 11 }} />
                   : icon}
               </div>
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 14, fontWeight: 500, color: '#e8e6e1', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{sub.name}</div>
-                <div style={{ fontSize: 11, color: isUrgent ? '#f87171' : '#555', fontFamily: "'DM Mono'", marginTop: 2 }}>
+                <div style={{ fontSize: 14, fontWeight: 500, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{sub.name}</div>
+                <div style={{ fontSize: 11, color: isUrgent ? 'var(--danger)' : 'var(--text-dim)', fontFamily: "'DM Mono'", marginTop: 2 }}>
                   {daysUntil === 0 ? '🔴 Due today' : daysUntil === 1 ? '🟡 Tomorrow' : `In ${daysUntil} days · ${sub.billing_day}${['st','nd','rd'][sub.billing_day-1]||'th'}`}
                 </div>
               </div>
               <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                <div style={{ fontSize: 15, fontWeight: 600, color: '#e8e6e1', fontFamily: "'DM Mono'" }}>${parseFloat(sub.amount).toFixed(2)}</div>
-                <div style={{ fontSize: 10, color: '#555', marginTop: 2 }}>{sub.frequency}</div>
+                <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-primary)', fontFamily: "'DM Mono'" }}>${parseFloat(sub.amount).toFixed(2)}</div>
+                <div style={{ fontSize: 10, color: 'var(--text-dim)', marginTop: 2 }}>{sub.frequency}</div>
               </div>
             </div>
           )
         })}
-        <div style={{ padding: '8px 14px', background: '#0f0f11', border: '1px solid #242428', borderRadius: 10, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div style={{ fontSize: 12, color: '#555' }}>Total due this week</div>
-          <div style={{ fontSize: 14, fontWeight: 600, color: '#f87171', fontFamily: "'DM Mono'" }}>${totalDue.toFixed(2)}</div>
+        <div style={{ padding: '8px 14px', background: 'var(--bg-input)', border: '1px solid var(--border)', borderRadius: 10, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div style={{ fontSize: 12, color: 'var(--text-dim)' }}>Total due this week</div>
+          <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--danger)', fontFamily: "'DM Mono'" }}>${totalDue.toFixed(2)}</div>
         </div>
       </div>
     </div>
@@ -352,9 +352,9 @@ export default function Home({ onAddTask, onEditTask, onAddEvent }) {
         const quote = QUOTES[dayIdx]
         return (
           <div style={{ marginBottom: 18 }}>
-            <div style={{ fontSize: 13, color: '#555', marginBottom: 10, fontFamily: "'DM Mono'" }}>{dateStr}</div>
-            <div style={{ background: '#161618', border: '1px solid #1e1208', borderLeft: '3px solid #d4520f', borderRadius: 12, padding: '14px 16px' }}>
-              <div style={{ fontSize: 14, color: '#d4d2cc', lineHeight: 1.6, fontStyle: 'italic', marginBottom: 8 }}>"{quote.text}"</div>
+            <div style={{ fontSize: 13, color: 'var(--text-dim)', marginBottom: 10, fontFamily: "'DM Mono'" }}>{dateStr}</div>
+            <div style={{ background: 'var(--bg-card)', border: '1px solid var(--accent-dim)', borderLeft: '3px solid var(--accent)', borderRadius: 12, padding: '14px 16px' }}>
+              <div style={{ fontSize: 14, color: 'var(--text-secondary)', lineHeight: 1.6, fontStyle: 'italic', marginBottom: 8 }}>"{quote.text}"</div>
               <div style={{ fontSize: 11, color: 'var(--accent)', fontWeight: 600, fontFamily: "'DM Mono'" }}>— {quote.author}</div>
             </div>
           </div>
@@ -376,64 +376,64 @@ export default function Home({ onAddTask, onEditTask, onAddEvent }) {
       {/* Stat chips */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 8, marginBottom: 18 }}>
         {[
-          { label: 'Due today', val: tasks.length + todayEvents.length, color: '#f87171' },
-          { label: 'Urgent', val: urgentTasks.length, color: '#f59e0b' },
-          { label: 'This week', val: weekTasks.length, color: '#a78bfa' },
+          { label: 'Due today', val: tasks.length + todayEvents.length, color: 'var(--danger)' },
+          { label: 'Urgent', val: urgentTasks.length, color: 'var(--warn)' },
+          { label: 'This week', val: weekTasks.length, color: 'var(--purple)' },
           { label: 'Projects', val: projects.length, color: 'var(--event-color)' },
         ].map(({ label, val, color }) => (
-          <div key={label} style={{ background: '#161618', border: '1px solid #242428', borderRadius: 12, padding: '10px 8px' }}>
+          <div key={label} style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 12, padding: '10px 8px' }}>
             <div style={{ fontSize: 22, fontWeight: 500, color }}>{val}</div>
-            <div style={{ fontSize: 10, color: '#555', marginTop: 2 }}>{label}</div>
+            <div style={{ fontSize: 10, color: 'var(--text-dim)', marginTop: 2 }}>{label}</div>
           </div>
         ))}
       </div>
 
       {/* Rollover */}
       {rolledOver > 0 && (
-        <div style={{ background: '#1a1200', border: '1px solid #5a3a00', borderRadius: 10, padding: '8px 14px', marginBottom: 14, display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: '#f59e0b' }}>
-          <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#f59e0b', flexShrink: 0 }} />
+        <div style={{ background: 'var(--warn-dim)', border: '1px solid var(--warn-border)', borderRadius: 10, padding: '8px 14px', marginBottom: 14, display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: 'var(--warn)' }}>
+          <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--warn)', flexShrink: 0 }} />
           {rolledOver} task{rolledOver > 1 ? 's' : ''} rolled over from yesterday
         </div>
       )}
 
       {/* Today + Urgent side by side */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 18 }}>
-        <div style={{ background: '#161618', border: '1px solid #242428', borderRadius: 14, padding: 14 }}>
+        <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 14, padding: 14 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 10 }}>
-            <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.1em', color: '#555', textTransform: 'uppercase' }}>Today's blocks</div>
-            <div style={{ fontSize: 10, color: '#444', fontFamily: "'DM Mono'" }}>{todayDone}/{tasks.length}</div>
+            <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.1em', color: 'var(--text-dim)', textTransform: 'uppercase' }}>Today's blocks</div>
+            <div style={{ fontSize: 10, color: 'var(--text-dim)', fontFamily: "'DM Mono'" }}>{todayDone}/{tasks.length}</div>
           </div>
           {todayAllItems.length === 0
-            ? <div style={{ fontSize: 12, color: '#333', textAlign: 'center', padding: '8px 0' }}>Nothing today</div>
+            ? <div style={{ fontSize: 12, color: 'var(--border-hover)', textAlign: 'center', padding: '8px 0' }}>Nothing today</div>
             : todayAllItems.map(item => item._type === 'event' ? (
               <div key={item.id} style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 7, cursor: 'pointer' }} onClick={() => navigate('/week')}>
                 <svg width="11" height="11" viewBox="0 0 12 12" fill="none" style={{ flexShrink: 0 }}><circle cx="6" cy="6" r="5" stroke="var(--event-color)" strokeWidth="1.3"/><polyline points="6,3 6,6 8,7.5" stroke="var(--event-color)" strokeWidth="1.3" strokeLinecap="round"/></svg>
                 <div style={{ fontSize: 12, color: 'var(--event-color)', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.title}</div>
-                <div style={{ fontFamily: "'DM Mono'", fontSize: 10, color: '#1a4a2a', flexShrink: 0 }}>{item.start_time}</div>
+                <div style={{ fontFamily: "'DM Mono'", fontSize: 10, color: 'var(--success-border)', flexShrink: 0 }}>{item.start_time}</div>
               </div>
             ) : (
               <div key={item.id} onClick={() => onEditTask(item)} style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 7, cursor: 'pointer' }}>
-                <div onClick={e => { e.stopPropagation(); toggleTask(item) }} style={{ width: 16, height: 16, borderRadius: '50%', border: `1.5px solid ${item.completed ? '#d4520f' : item._isRolledOver ? '#f87171' : '#333'}`, background: item.completed ? '#d4520f' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <div onClick={e => { e.stopPropagation(); toggleTask(item) }} style={{ width: 16, height: 16, borderRadius: '50%', border: `1.5px solid ${item.completed ? 'var(--accent)' : item._isRolledOver ? 'var(--danger)' : 'var(--border-hover)'}`, background: item.completed ? 'var(--accent)' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                   {item.completed && <svg width="8" height="8" viewBox="0 0 8 8"><polyline points="1,4 3,6 7,2" stroke="white" strokeWidth="1.5" fill="none" strokeLinecap="round"/></svg>}
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 12, color: item.completed ? '#444' : '#d4d2cc', textDecoration: item.completed ? 'line-through' : 'none', wordBreak: 'break-word', lineHeight: 1.3 }}>{item.name}</div>
-                  {item._isRolledOver && <div style={{ fontSize: 10, color: '#f87171', fontFamily: "'DM Mono'", marginTop: 1 }}>⚠ overdue · was {item._originalDate}</div>}
+                  <div style={{ fontSize: 12, color: item.completed ? 'var(--text-dim)' : 'var(--text-secondary)', textDecoration: item.completed ? 'line-through' : 'none', wordBreak: 'break-word', lineHeight: 1.3 }}>{item.name}</div>
+                  {item._isRolledOver && <div style={{ fontSize: 10, color: 'var(--danger)', fontFamily: "'DM Mono'", marginTop: 1 }}>⚠ overdue · was {item._originalDate}</div>}
                 </div>
-                {!item._isRolledOver && item.time_block && <div style={{ fontFamily: "'DM Mono'", fontSize: 10, color: '#555', flexShrink: 0 }}>{item.time_block}</div>}
+                {!item._isRolledOver && item.time_block && <div style={{ fontFamily: "'DM Mono'", fontSize: 10, color: 'var(--text-dim)', flexShrink: 0 }}>{item.time_block}</div>}
               </div>
             ))
           }
         </div>
-        <div style={{ background: '#161618', border: '1px solid #242428', borderRadius: 14, padding: 14 }}>
-          <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.1em', color: '#555', textTransform: 'uppercase', marginBottom: 10 }}>Urgent / High</div>
+        <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 14, padding: 14 }}>
+          <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.1em', color: 'var(--text-dim)', textTransform: 'uppercase', marginBottom: 10 }}>Urgent / High</div>
           {urgentTasks.length === 0
-            ? <div style={{ fontSize: 12, color: '#333', textAlign: 'center', padding: '8px 0' }}>All clear 🎉</div>
+            ? <div style={{ fontSize: 12, color: 'var(--border-hover)', textAlign: 'center', padding: '8px 0' }}>All clear 🎉</div>
             : urgentTasks.slice(0, 4).map(task => {
               const u = URG_STYLE[task.urgency] || URG_STYLE.high
               return (
                 <div key={task.id} onClick={() => onEditTask(task)} style={{ marginBottom: 8, cursor: 'pointer' }}>
-                  <div style={{ fontSize: 12, color: '#d4d2cc', marginBottom: 3, lineHeight: 1.3 }}>{task.name}</div>
+                  <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 3, lineHeight: 1.3 }}>{task.name}</div>
                   <span style={{ fontSize: 10, fontWeight: 600, padding: '1px 6px', borderRadius: 5, background: u.bg, color: u.color }}>{task.urgency}</span>
                 </div>
               )
@@ -447,9 +447,9 @@ export default function Home({ onAddTask, onEditTask, onAddEvent }) {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
           <div className="section-label" style={{ margin: 0 }}>Week at a glance</div>
           <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-            <div onClick={() => setWeekGlanceOffset(o => o-1)} style={{ width: 28, height: 28, borderRadius: 8, background: '#161618', border: '1px solid #242428', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: 14, color: '#888' }}>‹</div>
+            <div onClick={() => setWeekGlanceOffset(o => o-1)} style={{ width: 28, height: 28, borderRadius: 8, background: 'var(--bg-card)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: 14, color: 'var(--text-muted)' }}>‹</div>
             {weekGlanceOffset !== 0 && <div onClick={() => setWeekGlanceOffset(0)} style={{ fontSize: 11, color: 'var(--accent)', cursor: 'pointer' }}>Today</div>}
-            <div onClick={() => setWeekGlanceOffset(o => o+1)} style={{ width: 28, height: 28, borderRadius: 8, background: '#161618', border: '1px solid #242428', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: 14, color: '#888' }}>›</div>
+            <div onClick={() => setWeekGlanceOffset(o => o+1)} style={{ width: 28, height: 28, borderRadius: 8, background: 'var(--bg-card)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: 14, color: 'var(--text-muted)' }}>›</div>
           </div>
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', gap: 5, position: 'relative' }} onTouchStart={e => { window._wsx = e.touches[0].clientX }} onTouchEnd={e => { if(window._wsx===undefined) return; const dx=e.changedTouches[0].clientX-window._wsx; if(Math.abs(dx)>40) setWeekGlanceOffset(o=>o+(dx<0?1:-1)); window._wsx=undefined }}>
@@ -469,15 +469,15 @@ export default function Home({ onAddTask, onEditTask, onAddEvent }) {
             const dayTasks = weekTasks.filter(t => t.start_date === date)
             const d = new Date(date + 'T00:00:00')
             return (
-              <div key={date} onClick={() => navigate('/week')} style={{ background: isToday ? '#1e1208' : '#161618', border: `1px solid ${isToday ? '#7a3410' : '#242428'}`, borderRadius: 10, padding: '8px 4px', textAlign: 'center', cursor: 'pointer' }}>
-                <div style={{ fontSize: 9, color: isToday ? '#d4520f' : '#555', fontWeight: 600, textTransform: 'uppercase', marginBottom: 3 }}>{DAY_NAMES[i]}</div>
-                <div style={{ fontSize: 15, fontWeight: 500, color: isToday ? '#e8823a' : '#888', marginBottom: 4 }}>{d.getDate()}</div>
+              <div key={date} onClick={() => navigate('/week')} style={{ background: isToday ? 'var(--accent-dim)' : 'var(--bg-card)', border: `1px solid ${isToday ? 'var(--accent-border)' : 'var(--border)'}`, borderRadius: 10, padding: '8px 4px', textAlign: 'center', cursor: 'pointer' }}>
+                <div style={{ fontSize: 9, color: isToday ? 'var(--accent)' : 'var(--text-dim)', fontWeight: 600, textTransform: 'uppercase', marginBottom: 3 }}>{DAY_NAMES[i]}</div>
+                <div style={{ fontSize: 15, fontWeight: 500, color: isToday ? 'var(--accent)' : 'var(--text-muted)', marginBottom: 4 }}>{d.getDate()}</div>
                 {dayTasks.slice(0, 2).map((t, ti) => (
-                  <div key={ti} style={{ fontSize: 9, background: '#1e1e24', color: '#555', borderRadius: 4, padding: '1px 3px', marginBottom: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  <div key={ti} style={{ fontSize: 9, background: 'var(--border)', color: 'var(--text-dim)', borderRadius: 4, padding: '1px 3px', marginBottom: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {t.name.length > 7 ? t.name.substring(0, 7) + '…' : t.name}
                   </div>
                 ))}
-                {dayTasks.length === 0 && <div style={{ fontSize: 10, color: '#2a2a2a' }}>—</div>}
+                {dayTasks.length === 0 && <div style={{ fontSize: 10, color: 'var(--bg-card2)' }}>—</div>}
               </div>
             )
           })}
@@ -496,13 +496,13 @@ export default function Home({ onAddTask, onEditTask, onAddEvent }) {
               return (
                 <div key={ev.id} onClick={() => navigate('/week')} className="event-card" style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '11px 14px', borderRadius: 12, cursor: 'pointer'  }}>
                   <div style={{ textAlign: 'center', flexShrink: 0 }}>
-                    <div style={{ fontSize: 10, fontWeight: 600, color: isToday ? '#d4520f' : '#1a4a2a', textTransform: 'uppercase' }}>{isToday ? 'Today' : dayName}</div>
-                    <div style={{ fontSize: 18, fontWeight: 500, color: isToday ? '#e8823a' : '#6ee7b7' }}>{evDate.getDate()}</div>
+                    <div style={{ fontSize: 10, fontWeight: 600, color: isToday ? 'var(--accent)' : 'var(--success-border)', textTransform: 'uppercase' }}>{isToday ? 'Today' : dayName}</div>
+                    <div style={{ fontSize: 18, fontWeight: 500, color: isToday ? 'var(--accent)' : 'var(--success)' }}>{evDate.getDate()}</div>
                   </div>
-                  <div style={{ width: 1, height: 32, background: '#1a4a2a', flexShrink: 0 }} />
+                  <div style={{ width: 1, height: 32, background: 'var(--success-border)', flexShrink: 0 }} />
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontSize: 14, fontWeight: 500, color: 'var(--event-color)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{ev.title}</div>
-                    <div style={{ fontSize: 11, color: '#1a4a2a', marginTop: 2, fontFamily: "'DM Mono'" }}>{ev.start_time} → {ev.end_time}{ev.location ? ` · 📍 ${ev.location}` : ''}</div>
+                    <div style={{ fontSize: 11, color: 'var(--success-border)', marginTop: 2, fontFamily: "'DM Mono'" }}>{ev.start_time} → {ev.end_time}{ev.location ? ` · 📍 ${ev.location}` : ''}</div>
                   </div>
                 </div>
               )
@@ -515,7 +515,7 @@ export default function Home({ onAddTask, onEditTask, onAddEvent }) {
       <div style={{ marginBottom: 18 }}>
         <div className="section-label">Active projects</div>
         {projects.length === 0 ? (
-          <div style={{ padding: 14, textAlign: 'center', fontSize: 13, color: '#333', border: '1px dashed #242428', borderRadius: 12 }}>
+          <div style={{ padding: 14, textAlign: 'center', fontSize: 13, color: 'var(--border-hover)', border: '1px dashed var(--border)', borderRadius: 12 }}>
             No active projects — add one in Projects
           </div>
         ) : (
@@ -523,19 +523,19 @@ export default function Home({ onAddTask, onEditTask, onAddEvent }) {
             <div style={{ display: 'grid', gridTemplateRows: 'repeat(2, auto)', gridAutoFlow: 'column', gridAutoColumns: 'calc(50vw - 20px)', gap: 8 }}>
               {[...projects].sort((a,b) => getProjectPct(b) - getProjectPct(a)).map(p => {
                 const pct = getProjectPct(p)
-                const color = SECTOR_COLORS[p.sector?.toLowerCase()] || '#d4520f'
+                const color = SECTOR_COLORS[p.sector?.toLowerCase()] || 'var(--accent)'
                 const tasksLeft = (p.tasks || []).filter(t => !t.completed).length
                 const isOverdue = p.due_date && p.due_date < todayStr
                 return (
-                  <div key={p.id} onClick={() => navigate('/projects')} style={{ background: '#161618', border: '1px solid #242428', borderRadius: 12, padding: 12, cursor: 'pointer' }}>
-                    <div style={{ fontSize: 13, fontWeight: 500, color: '#e8e6e1', marginBottom: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.name}</div>
-                    <div style={{ fontSize: 11, color: '#555', marginBottom: 8 }}>{p.sector}</div>
-                    <div style={{ height: 4, background: '#1e1e24', borderRadius: 2, overflow: 'hidden', marginBottom: 6 }}>
+                  <div key={p.id} onClick={() => navigate('/projects')} style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 12, padding: 12, cursor: 'pointer' }}>
+                    <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-primary)', marginBottom: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.name}</div>
+                    <div style={{ fontSize: 11, color: 'var(--text-dim)', marginBottom: 8 }}>{p.sector}</div>
+                    <div style={{ height: 4, background: 'var(--border)', borderRadius: 2, overflow: 'hidden', marginBottom: 6 }}>
                       <div style={{ height: '100%', width: pct + '%', background: color, borderRadius: 2 }} />
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                      <div style={{ fontSize: 10, color: '#555', fontFamily: "'DM Mono'" }}>{pct}% · {tasksLeft} left</div>
-                      {p.due_date && <div style={{ fontSize: 10, fontFamily: "'DM Mono'", color: isOverdue ? '#f87171' : '#444' }}>Due {p.due_date}</div>}
+                      <div style={{ fontSize: 10, color: 'var(--text-dim)', fontFamily: "'DM Mono'" }}>{pct}% · {tasksLeft} left</div>
+                      {p.due_date && <div style={{ fontSize: 10, fontFamily: "'DM Mono'", color: isOverdue ? 'var(--danger)' : 'var(--text-dim)' }}>Due {p.due_date}</div>}
                     </div>
                   </div>
                 )
@@ -549,16 +549,16 @@ export default function Home({ onAddTask, onEditTask, onAddEvent }) {
       <div style={{ marginBottom: 18 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
           <div className="section-label" style={{ margin: 0 }}>Habits</div>
-          <div style={{ fontSize: 11, color: '#555', fontFamily: "'DM Mono'" }}>{doneHabitsToday}/{habits.length} today</div>
+          <div style={{ fontSize: 11, color: 'var(--text-dim)', fontFamily: "'DM Mono'" }}>{doneHabitsToday}/{habits.length} today</div>
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: 8 }}>
           {habits.slice(0, 4).map(h => {
             const done = habitLogs.some(l => l.habit_id === h.id && l.completed_date === todayStr)
             return (
-              <div key={h.id} onClick={() => toggleHabit(h)} style={{ background: '#161618', border: `1px solid ${done ? '#1a3a2a' : '#242428'}`, borderRadius: 12, padding: 12, display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', transition: 'border-color 0.15s' }}>
-                <div style={{ width: 30, height: 30, background: done ? '#0a2a1a' : '#1e1e22', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14 }}>{h.icon}</div>
-                <span style={{ fontSize: 13, color: done ? '#6ee7b7' : '#c0bdb7', flex: 1 }}>{h.name}</span>
-                <div style={{ width: 22, height: 22, borderRadius: '50%', background: done ? '#16a34a' : 'transparent', border: `1.5px solid ${done ? '#16a34a' : '#333'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, transition: 'all 0.2s' }}>
+              <div key={h.id} onClick={() => toggleHabit(h)} style={{ background: 'var(--bg-card)', border: `1px solid ${done ? 'var(--success-dim)' : 'var(--border)'}`, borderRadius: 12, padding: 12, display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', transition: 'border-color 0.15s' }}>
+                <div style={{ width: 30, height: 30, background: done ? 'var(--success-dim)' : 'var(--bg-card)', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14 }}>{h.icon}</div>
+                <span style={{ fontSize: 13, color: done ? 'var(--success)' : 'var(--text-secondary)', flex: 1 }}>{h.name}</span>
+                <div style={{ width: 22, height: 22, borderRadius: '50%', background: done ? 'var(--success)' : 'transparent', border: `1.5px solid ${done ? 'var(--success)' : 'var(--border-hover)'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, transition: 'all 0.2s' }}>
                   {done && <svg width="10" height="10" viewBox="0 0 10 10"><polyline points="1.5,5 4,7.5 8.5,2.5" stroke="white" strokeWidth="1.8" fill="none" strokeLinecap="round"/></svg>}
                 </div>
               </div>
@@ -574,19 +574,19 @@ export default function Home({ onAddTask, onEditTask, onAddEvent }) {
       <div style={{ marginBottom: 8 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
           <div className="section-label" style={{ margin: 0 }}>Sectors</div>
-          <div onClick={() => navigate('/sectors')} style={{ fontSize: 12, color: '#555', cursor: 'pointer' }}>Manage →</div>
+          <div onClick={() => navigate('/sectors')} style={{ fontSize: 12, color: 'var(--text-dim)', cursor: 'pointer' }}>Manage →</div>
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 8 }}>
           {sectors.map(s => (
-            <div key={s.id} onClick={() => navigate('/sectors')} style={{ background: '#161618', border: '1px solid #242428', borderRadius: 14, padding: '14px 8px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, cursor: 'pointer', transition: 'border-color 0.15s' }}>
+            <div key={s.id} onClick={() => navigate('/sectors')} style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 14, padding: '14px 8px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, cursor: 'pointer', transition: 'border-color 0.15s' }}>
               <div style={{ fontSize: 30 }}>{s.icon}</div>
-              <div style={{ fontSize: 11, color: '#888', fontWeight: 500, textAlign: 'center' }}>{s.name}</div>
+              <div style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 500, textAlign: 'center' }}>{s.name}</div>
             </div>
           ))}
           {sectors.length === 0 && ['Business','Real Estate','Health','Personal Growth','Hobbies','Family'].map(n => (
-            <div key={n} onClick={() => navigate('/sectors')} style={{ background: '#161618', border: '1px solid #242428', borderRadius: 14, padding: '14px 8px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
+            <div key={n} onClick={() => navigate('/sectors')} style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 14, padding: '14px 8px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
               <div style={{ fontSize: 28 }}>📁</div>
-              <div style={{ fontSize: 11, color: '#888', fontWeight: 500, textAlign: 'center' }}>{n}</div>
+              <div style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 500, textAlign: 'center' }}>{n}</div>
             </div>
           ))}
         </div>
