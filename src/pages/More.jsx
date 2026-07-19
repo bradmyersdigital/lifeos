@@ -2,7 +2,6 @@ import React from 'react'
 import { useNavigate } from 'react-router-dom'
 
 const ITEMS = [
-  { label: 'Real Estate', icon: '🏠', desc: 'Seller system & phases', path: '/realestate', color: '#3b82f6' },
   { label: 'Projects', icon: '📋', desc: 'Track active projects', path: '/projects', color: '#d4520f' },
   { label: 'Notes', icon: '📝', desc: 'Quick capture & notes', path: '/notes', color: '#a78bfa' },
   { label: 'Finance', icon: '💰', desc: 'Income, bills, savings', path: '/finance', color: '#10b981' },
@@ -20,13 +19,13 @@ export default function More() {
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
         {ITEMS.map(item => (
           <div key={item.label} onClick={() => navigate(item.path)}
-            style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '14px 16px', background: '#161618', border: '1px solid #242428', borderRadius: 14, cursor: 'pointer' }}>
+            style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '14px 16px', background: 'var(--bg-card)', border: '1px solid #242428', borderRadius: 14, cursor: 'pointer' }}>
             <div style={{ width: 42, height: 42, borderRadius: 12, background: item.color + '22', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, flexShrink: 0 }}>{item.icon}</div>
             <div style={{ flex: 1 }}>
               <div style={{ fontSize: 15, fontWeight: 500 }}>{item.label}</div>
-              <div style={{ fontSize: 12, color: '#555', marginTop: 2 }}>{item.desc}</div>
+              <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>{item.desc}</div>
             </div>
-            <div style={{ fontSize: 18, color: '#333' }}>›</div>
+            <div style={{ fontSize: 18, color: 'var(--text-dim)' }}>›</div>
           </div>
         ))}
       </div>

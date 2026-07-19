@@ -9,7 +9,6 @@ import Projects from './pages/Projects'
 import Notes from './pages/Notes'
 import Habits from './pages/Habits'
 import Finance from './pages/Finance'
-import RealEstate from './pages/RealEstate'
 import Settings from './pages/Settings'
 import Goals from './pages/Goals'
 import Grocery from './pages/Grocery'
@@ -46,10 +45,6 @@ const DRAWER_ITEMS = [
       { path: '/grocery',    label: 'Grocery',     icon: '🛒', desc: 'Shopping list' },
     ]
   },
-  {
-    section: 'Business',
-    items: [
-      { path: '/realestate', label: 'Real Estate', icon: '🏠', desc: 'Beyond Horizons' },
     ]
   },
   {
@@ -88,16 +83,16 @@ function Drawer({ open, onClose, navigate, location }) {
 
       {/* Drawer panel */}
       <div ref={drawerRef} onTouchStart={onTouchStart} onTouchEnd={onTouchEnd} className="drawer-panel"
-        style={{ position: 'fixed', top: 0, left: 0, bottom: 0, width: 280, background: '#0f0f11', borderRight: '1px solid #1e1e24', zIndex: 201, display: 'flex', flexDirection: 'column', overflowY: 'auto', WebkitOverflowScrolling: 'touch' }}>
+        style={{ position: 'fixed', top: 0, left: 0, bottom: 0, width: 280, background: 'var(--bg)', borderRight: '1px solid #1e1e24', zIndex: 201, display: 'flex', flexDirection: 'column', overflowY: 'auto', WebkitOverflowScrolling: 'touch' }}>
 
         {/* Drawer header */}
         <div style={{ padding: '56px 20px 20px', borderBottom: '1px solid #1a1a20' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div>
-              <div style={{ fontSize: 20, fontWeight: 600, color: '#e8e6e1', letterSpacing: '-0.3px' }}>LifeOS</div>
-              <div style={{ fontSize: 12, color: '#555', marginTop: 2 }}>Your personal operating system</div>
+              <div style={{ fontSize: 20, fontWeight: 600, color: 'var(--text-primary)', letterSpacing: '-0.3px' }}>LifeOS</div>
+              <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>Your personal operating system</div>
             </div>
-            <div onClick={onClose} style={{ width: 32, height: 32, borderRadius: 10, background: '#161618', border: '1px solid #242428', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#555', fontSize: 16 }}>✕</div>
+            <div onClick={onClose} style={{ width: 32, height: 32, borderRadius: 10, background: 'var(--bg-card)', border: '1px solid #242428', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'var(--text-muted)', fontSize: 16 }}>✕</div>
           </div>
         </div>
 
@@ -105,16 +100,16 @@ function Drawer({ open, onClose, navigate, location }) {
         <div style={{ flex: 1, padding: '12px 0' }}>
           {DRAWER_ITEMS.map(({ section, items }) => (
             <div key={section} style={{ marginBottom: 8 }}>
-              <div style={{ fontSize: 10, fontWeight: 700, color: '#333', textTransform: 'uppercase', letterSpacing: '0.1em', padding: '8px 20px 6px' }}>{section}</div>
+              <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.1em', padding: '8px 20px 6px' }}>{section}</div>
               {items.map(({ path, label, icon, desc }) => {
                 const isActive = location.pathname === path
                 return (
                   <div key={path} onClick={() => go(path)}
                     style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '11px 20px', cursor: 'pointer', background: isActive ? 'var(--accent-dim)' : 'transparent', borderRight: isActive ? '3px solid var(--accent)' : '3px solid transparent', transition: 'background 0.1s' }}>
-                    <div style={{ width: 36, height: 36, borderRadius: 10, background: isActive ? 'var(--accent-dim)' : '#161618', border: `1px solid ${isActive ? 'var(--accent-border)' : '#242428'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, flexShrink: 0 }}>{icon}</div>
+                    <div style={{ width: 36, height: 36, borderRadius: 10, background: isActive ? 'var(--accent-dim)' : 'var(--bg-card)', border: `1px solid ${isActive ? 'var(--accent-border)' : 'var(--border)'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, flexShrink: 0 }}>{icon}</div>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ fontSize: 14, fontWeight: 500, color: isActive ? 'var(--accent)' : '#d4d2cc' }}>{label}</div>
-                      <div style={{ fontSize: 11, color: '#444', marginTop: 1 }}>{desc}</div>
+                      <div style={{ fontSize: 11, color: 'var(--text-dim)', marginTop: 1 }}>{desc}</div>
                     </div>
                     {isActive && <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--accent)', flexShrink: 0 }} />}
                   </div>
@@ -126,7 +121,7 @@ function Drawer({ open, onClose, navigate, location }) {
 
         {/* Bottom branding */}
         <div style={{ padding: '16px 20px 32px', borderTop: '1px solid #1a1a20' }}>
-          <div style={{ fontSize: 11, color: '#333' }}>Beyond Horizons · Brad Myers</div>
+          <div style={{ fontSize: 11, color: 'var(--text-dim)' }}>Beyond Horizons · Brad Myers</div>
         </div>
       </div>
     </>
@@ -187,7 +182,7 @@ function Shell() {
           <Route path="/projects"    element={<Projects key={refreshKey} onAddTask={openAdd} onEditTask={openEdit} />} />
           <Route path="/notes"       element={<Notes key={refreshKey} />} />
           <Route path="/habits"      element={<Habits key={refreshKey} />} />
-          <Route path="/realestate"  element={<RealEstate />} />
+} />
           <Route path="/finance"     element={<Finance key={refreshKey} />} />
           <Route path="/goals"       element={<Goals key={refreshKey} />} />
           <Route path="/grocery"     element={<Grocery key={refreshKey} />} />

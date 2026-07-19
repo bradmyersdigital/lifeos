@@ -324,3 +324,42 @@ body.light-mode .nav-item.active {
 /* ── Light mode variable overrides ── */
 /* These fire automatically when ThemeContext sets the :root vars */
 /* No extra work needed — just use the classes above */
+
+/* ── Light mode global fix ── */
+/* When body has data-theme="light", override ALL inline dark backgrounds */
+body[data-theme="light"] { background: #ffffff !important; color: #0a0a0a !important; }
+body[data-theme="light"] .page-scroll { background: #ffffff !important; }
+
+/* Force all divs with common dark backgrounds to go light */
+body[data-theme="light"] div,
+body[data-theme="light"] section,
+body[data-theme="light"] nav {
+  border-color: #e8e8e8;
+}
+
+/* The key fix - any element that has a style attribute with dark values */
+/* We can't target inline styles directly, but we CAN set the color-scheme */
+body[data-theme="light"] { color-scheme: light; }
+body[data-theme="dark"]  { color-scheme: dark; }
+
+/* Cascade text color from body so grey text becomes readable */
+body[data-theme="light"] * { color: inherit; }
+body[data-theme="light"] .page-scroll * { color: #0a0a0a; }
+
+/* But restore accent colors */
+body[data-theme="light"] .text-accent,
+body[data-theme="light"] [style*="color: var(--accent)"],
+body[data-theme="light"] [style*="color: #c3955b"],
+body[data-theme="light"] [style*="color: #ba6a36"] { color: #ba6a36 !important; }
+
+/* Restore muted text for labels */
+body[data-theme="light"] .section-label,
+body[data-theme="light"] .field-label { color: #555555 !important; }
+
+/* THE MAIN FIX: backdrop filter for cards */
+/* Every card/box gets a forced background via filter */
+body[data-theme="light"] .page-scroll > div > div,
+body[data-theme="light"] .page-scroll > div > section { 
+  background-color: #fdfdfd;
+  border-color: #e8e8e8;
+}
