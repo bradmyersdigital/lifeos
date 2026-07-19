@@ -283,3 +283,44 @@ body.light-mode .bottom-nav {
 body.light-mode .nav-item.active {
   background: #f5ede4 !important;
 }
+
+/* ── Theme utility classes — use these instead of inline bg/text/border ── */
+
+/* Backgrounds */
+.bg-page    { background: var(--bg) !important; }
+.bg-card    { background: var(--bg-card) !important; }
+.bg-card2   { background: var(--bg-card2) !important; }
+.bg-input   { background: var(--bg-input) !important; }
+.bg-accent  { background: var(--accent-dim) !important; }
+
+/* Text */
+.text-primary   { color: var(--text-primary) !important; }
+.text-secondary { color: var(--text-secondary) !important; }
+.text-muted     { color: var(--text-muted) !important; }
+.text-dim       { color: var(--text-dim) !important; }
+.text-accent    { color: var(--accent) !important; }
+
+/* Borders */
+.border-default { border: 1px solid var(--border) !important; }
+.border-accent  { border: 1px solid var(--accent-border) !important; }
+
+/* Cards — the main one every box should use */
+.theme-card {
+  background: var(--bg-card) !important;
+  border: 1px solid var(--border) !important;
+  color: var(--text-primary) !important;
+}
+.theme-card2 {
+  background: var(--bg-card2) !important;
+  border: 1px solid var(--border) !important;
+  color: var(--text-primary) !important;
+}
+.theme-input {
+  background: var(--bg-input) !important;
+  border: 1px solid var(--border) !important;
+  color: var(--text-primary) !important;
+}
+
+/* ── Light mode variable overrides ── */
+/* These fire automatically when ThemeContext sets the :root vars */
+/* No extra work needed — just use the classes above */

@@ -44,107 +44,18 @@ const LIGHT = {
   champagne:     '#c3955b',
 }
 
-// Dark hex values used throughout components
-const DARK_BG_VALUES = [
-  '#161618','#161614','#0f0f11','#0d0d0f','#1a1a18','#1a1a1e',
-  '#1c1c19','#222220','#1e1e24','#242428','#1e160a','#0a0a0c',
-  '#111113','#131311','#1e1e20',
-]
-const DARK_BORDER_VALUES = [
-  '#242428','#1e1e24','#2a2820','#333330','#3a3a44','#2a2a28',
-  '#1e1e22','#2a2a30','#333','#2a2a2e',
-]
-const DARK_TEXT_LIGHT = ['#e8e6e1','#d4d2cc','#c0bdb7','#f5f3ee','#e8e0d8']
-const DARK_TEXT_MUTED = ['#888','#666','#555','#444','#888780','#666663','#555552','#666260','#444240']
-
 const ThemeContext = createContext({ theme: DARK, mode: 'dark', toggleMode: () => {}, setMode: () => {} })
 export function useTheme() { return useContext(ThemeContext) }
 export { DARK, LIGHT }
 
-// Active MutationObserver reference
-let observer = null
-
-function patchElement(el, t) {
-  if (!el || !el.style) return
-  const s = el.style
-
-  // Background
-  const bg = s.background || s.backgroundColor || ''
-  const bgLower = bg.toLowerCase().replace(/\s/g,'')
-  for (const v of DARK_BG_VALUES) {
-    if (bgLower.includes(v.replace('#','').toLowerCase())) {
-      // Decide card vs page bg
-      const isPageBg = (v === '#0d0d0f' || v === '#0f0f11')
-      s.background = isPageBg ? t.bg : t.bgCard
-      s.backgroundColor = isPageBg ? t.bg : t.bgCard
-      break
-    }
-  }
-
-  // Border color
-  const border = s.border || s.borderColor || ''
-  const borderLower = border.toLowerCase().replace(/\s/g,'')
-  for (const v of DARK_BORDER_VALUES) {
-    if (borderLower.includes(v.replace('#','').toLowerCase())) {
-      if (s.border) s.border = s.border.replace(/(#[0-9a-fA-F]{3,6})/g, (match) => {
-        return DARK_BORDER_VALUES.some(dv => dv.toLowerCase() === match.toLowerCase()) ? t.border : match
-      })
-      s.borderColor = t.border
-      break
-    }
-  }
-
-  // Text color
-  const color = s.color || ''
-  const colorLower = color.toLowerCase().replace(/\s/g,'')
-  for (const v of DARK_TEXT_LIGHT) {
-    if (colorLower === v.toLowerCase()) { s.color = t.textPrimary; break }
-  }
-  for (const v of DARK_TEXT_MUTED) {
-    if (colorLower === v.toLowerCase()) { s.color = t.textMuted; break }
-  }
-}
-
-function patchAllElements(t) {
-  if (t.mode !== 'light') return
-  const all = document.querySelectorAll('*')
-  all.forEach(el => patchElement(el, t))
-}
-
-function startObserver(t) {
-  if (observer) { observer.disconnect(); observer = null }
-  if (t.mode !== 'light') return
-
-  observer = new MutationObserver((mutations) => {
-    mutations.forEach(m => {
-      if (m.type === 'childList') {
-        m.addedNodes.forEach(node => {
-          if (node.nodeType === 1) {
-            patchElement(node, t)
-            node.querySelectorAll && node.querySelectorAll('*').forEach(el => patchElement(el, t))
-          }
-        })
-      }
-      if (m.type === 'attributes' && m.attributeName === 'style') {
-        patchElement(m.target, t)
-      }
-    })
-  })
-
-  observer.observe(document.body, {
-    childList: true,
-    subtree: true,
-    attributes: true,
-    attributeFilter: ['style'],
-  })
-}
-
 function injectTheme(t) {
-  window.__LIFEOS_THEME__ = t
-
-  // CSS variables + class-based overrides
+  // 1. Set CSS variables on :root
   let el = document.getElementById('lifeos-theme')
   if (!el) { el = document.createElement('style'); el.id = 'lifeos-theme'; document.head.appendChild(el) }
+
+  // 2. For light mode, we override the hardcoded dark values that inline styles set
+  // We use :root variable overrides + targeted overrides for components
+  const isLight = t.mode === 'light'
 
   el.textContent = `
     :root {
@@ -166,55 +77,170 @@ function injectTheme(t) {
       --event-border: ${t.eventBorder};
       --amber: ${t.amber};
       --champagne: ${t.champagne};
+      --nav-height: 64px;
     }
-    html, body, #root { background: ${t.bg} !important; color: ${t.textPrimary} !important; }
+
+    html, body, #root {
+      background: ${t.bg} !important;
+      color: ${t.textPrimary} !important;
+    }
+
+    /* Nav */
     .bottom-nav {
-      background: ${t.mode === 'dark' ? 'rgba(22,22,20,0.85)' : 'rgba(255,255,255,0.92)'} !important;
+      background: ${isLight ? 'rgba(255,255,255,0.92)' : 'rgba(22,22,20,0.85)'} !important;
       border-color: ${t.border} !important;
     }
     .nav-item.active { background: ${t.accentDim} !important; }
     .nav-item span { color: ${t.textMuted} !important; }
     .nav-item.active span { color: ${t.accent} !important; }
+
+    /* Modals */
     .modal-sheet { background: ${t.bgCard} !important; border-color: ${t.border} !important; }
-    .modal-overlay { background: rgba(0,0,0,${t.mode === 'dark' ? '0.75' : '0.35'}) !important; }
+    .modal-overlay { background: rgba(0,0,0,${isLight ? '0.35' : '0.75'}) !important; }
+    .modal-handle { background: ${t.border} !important; }
+
+    /* Buttons */
     .btn-primary { background: ${t.accent} !important; color: #fff !important; }
     .btn-ghost { background: ${t.bgCard} !important; border-color: ${t.border} !important; color: ${t.textMuted} !important; }
     .btn-task { background: ${t.accentDim} !important; border: 1px solid ${t.accentBorder} !important; color: ${t.accentText} !important; }
     .btn-task svg line, .btn-task svg path { stroke: ${t.accentText} !important; }
     .btn-event { background: ${t.eventDim} !important; border: 1px solid ${t.eventBorder} !important; color: ${t.event} !important; }
+    .action-btn { color: ${t.accentText} !important; }
+
+    /* Events */
     .event-card { background: ${t.eventDim} !important; border-color: ${t.eventBorder} !important; }
     .event-text { color: ${t.event} !important; }
+
+    /* Pills */
     .pill-active { background: ${t.accentDim} !important; border-color: ${t.accentBorder} !important; color: ${t.accent} !important; }
     .tab-active { background: ${t.accentDim} !important; color: ${t.accent} !important; }
     .streak-badge { background: ${t.accentDim} !important; border-color: ${t.accentBorder} !important; }
     .prog-fill { background: ${t.accent} !important; }
+
+    /* Labels */
     .section-label { color: ${t.textMuted} !important; }
     .field-label { color: ${t.textMuted} !important; }
-    .action-btn { color: ${t.accentText} !important; }
+
+    /* Inputs */
     input, select, textarea {
       background: ${t.bgInput} !important;
       color: ${t.textPrimary} !important;
       border-color: ${t.border} !important;
     }
+
+    /* Hamburger + Drawer */
     .hamburger-btn {
-      background: ${t.mode === 'dark' ? 'rgba(22,22,20,0.85)' : 'rgba(255,255,255,0.92)'} !important;
+      background: ${isLight ? 'rgba(255,255,255,0.92)' : 'rgba(22,22,20,0.85)'} !important;
       border-color: ${t.border} !important;
     }
     .drawer-panel { background: ${t.bgCard} !important; border-color: ${t.border} !important; }
+
+    /* Page */
     .page-scroll { background: ${t.bg} !important; }
+
+    /* Theme utility classes — use className instead of inline styles */
+    .bg-page   { background: ${t.bg} !important; }
+    .bg-card   { background: ${t.bgCard} !important; }
+    .bg-card2  { background: ${t.bgCard2} !important; }
+    .bg-input  { background: ${t.bgInput} !important; }
+    .bg-accent { background: ${t.accentDim} !important; }
+    .text-primary   { color: ${t.textPrimary} !important; }
+    .text-secondary { color: ${t.textSecondary} !important; }
+    .text-muted     { color: ${t.textMuted} !important; }
+    .text-dim       { color: ${t.textDim} !important; }
+    .text-accent    { color: ${t.accent} !important; }
+    .border-theme   { border-color: ${t.border} !important; }
+    .theme-card  { background: ${t.bgCard} !important; border: 1px solid ${t.border} !important; color: ${t.textPrimary} !important; }
+    .theme-card2 { background: ${t.bgCard2} !important; border: 1px solid ${t.border} !important; color: ${t.textPrimary} !important; }
+    .theme-input { background: ${t.bgInput} !important; border: 1px solid ${t.border} !important; color: ${t.textPrimary} !important; }
+
+    ${isLight ? `
+    /* ── LIGHT MODE: force ALL inline dark backgrounds to white/off-white ── */
+    /* This targets every combination React might render as an inline style */
+
+    /* The trick: we intercept via a high-specificity universal rule on the page */
+    .page-scroll > * { color: ${t.textPrimary}; }
+
+    /* Force every child div of page-scroll that has inline bg to be card color */
+    /* We do this by making the page background white and card slightly off-white */
+    /* so even "black" boxes become visible as the page bg */
+    .page-scroll { color: ${t.textPrimary} !important; }
+
+    /* Target by cascading: any div inside page content gets overridden */
+    #root div:not([class*="modal"]):not([class*="drawer"]):not([class*="bottom-nav"]):not([class*="hamburger"]) {
+      border-color: ${t.border};
+    }
+    ` : ''}
   `
 
-  // Body classes
-  document.body.classList.toggle('light-mode', t.mode === 'light')
-  document.body.classList.toggle('dark-mode', t.mode === 'dark')
+  // Set body bg directly for iOS overscroll
   document.body.style.background = t.bg
   document.documentElement.style.background = t.bg
+  document.body.style.color = t.textPrimary
 
-  // Patch existing elements + start observer for new ones
-  setTimeout(() => {
-    patchAllElements(t)
-    startObserver(t)
-  }, 50)
+  // For light mode: directly walk the DOM and patch inline styles
+  // This runs once on switch and handles all currently rendered elements
+  if (isLight) {
+    requestAnimationFrame(() => {
+      const DARK_BGS = {
+        '#161614': t.bgCard, '#161618': t.bgCard,
+        '#0d0d0f': t.bg, '#0f0f11': t.bg,
+        '#1c1c19': t.bgCard2, '#1a1a18': t.bgCard,
+        '#1a1a1e': t.bgCard, '#222220': t.bgCard2,
+        '#1e1e24': t.bgCard2, '#1e160a': t.accentDim,
+        'rgb(22, 22, 20)': t.bgCard, 'rgb(13, 13, 15)': t.bg,
+        'rgb(15, 15, 17)': t.bg, 'rgb(28, 28, 25)': t.bgCard2,
+      }
+      const DARK_TEXTS = {
+        '#e8e6e1': t.textPrimary, '#d4d2cc': t.textPrimary,
+        '#c0bdb7': t.textSecondary, '#f5f3ee': t.textPrimary,
+        'rgb(232, 230, 225)': t.textPrimary,
+        'rgb(192, 189, 183)': t.textSecondary,
+      }
+      const MUTED_TEXTS = {
+        '#666260': t.textMuted, '#444240': t.textDim,
+        'rgb(102, 98, 96)': t.textMuted, 'rgb(68, 66, 64)': t.textDim,
+      }
+      const DARK_BORDERS = [
+        '#2a2820','#242428','#1e1e24','#333330',
+        'rgb(42, 40, 32)','rgb(36, 36, 40)','rgb(30, 30, 36)',
+      ]
+
+      document.querySelectorAll('*').forEach(el => {
+        const s = el.style
+        if (!s) return
+
+        // Background
+        const bg = s.background || s.backgroundColor
+        if (bg) {
+          const bgKey = Object.keys(DARK_BGS).find(k => bg.toLowerCase().includes(k.toLowerCase()))
+          if (bgKey) {
+            s.setProperty('background', DARK_BGS[bgKey], 'important')
+            s.setProperty('background-color', DARK_BGS[bgKey], 'important')
+          }
+        }
+
+        // Text color
+        const col = s.color
+        if (col) {
+          const colKey = Object.keys(DARK_TEXTS).find(k => col.toLowerCase().includes(k.toLowerCase()))
+          if (colKey) { s.setProperty('color', DARK_TEXTS[colKey], 'important'); return }
+          const mutedKey = Object.keys(MUTED_TEXTS).find(k => col.toLowerCase().includes(k.toLowerCase()))
+          if (mutedKey) s.setProperty('color', MUTED_TEXTS[mutedKey], 'important')
+        }
+
+        // Border
+        const border = s.border || s.borderColor || s.borderTopColor || s.borderBottomColor
+        if (border) {
+          const hasDark = DARK_BORDERS.some(b => border.toLowerCase().includes(b.toLowerCase()))
+          if (hasDark) {
+            if (s.border) s.border = s.border.replace(/#[0-9a-fA-F]{3,6}/g, t.border)
+            if (s.borderColor) s.setProperty('border-color', t.border, 'important')
+          }
+        }
+      })
+    })
+  }
 }
 
 export function ThemeProvider({ children }) {
@@ -225,9 +251,13 @@ export function ThemeProvider({ children }) {
 
   const theme = mode === 'dark' ? DARK : LIGHT
 
+  useEffect(() => { injectTheme(theme) }, [mode])
+
+  // Re-patch on any render when in light mode
   useEffect(() => {
-    injectTheme(theme)
-    return () => { if (observer) { observer.disconnect(); observer = null } }
+    if (mode !== 'light') return
+    const id = setInterval(() => injectTheme(LIGHT), 300)
+    return () => clearInterval(id)
   }, [mode])
 
   const setMode = (m) => {
