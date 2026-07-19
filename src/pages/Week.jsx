@@ -4,6 +4,7 @@ import { fmtTime, eventOccursOn, fmtDate } from '../utils'
 import EventModal from '../components/EventModal'
 
 const DAY_NAMES = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun']
+const MONTH_WINDOW = [-2,-1,0,1,2,3,4,5,6]
 const MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December']
 function toStr(d) { return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}` }
 const SECTOR_COLORS = { business:'#d4520f','real estate':'#10b981',health:'#10b981','personal growth':'#a78bfa',hobbies:'#f59e0b',family:'#f43f5e' }
@@ -23,6 +24,8 @@ export default function Week({ onAddTask, onEditTask }) {
   const [events, setEvents] = useState([])
   const [sectors, setSectors] = useState([])
   const [view, setView] = useState('week')
+  const [dayOffset, setDayOffset] = useState(0)
+  const currentMonthRef = useRef(null)
   const [weekOffset, setWeekOffset] = useState(0)
   const [monthOffset, setMonthOffset] = useState(0)
   const [activeFilter, setActiveFilter] = useState('All')
@@ -30,7 +33,6 @@ export default function Week({ onAddTask, onEditTask }) {
   const [eventModal, setEventModal] = useState(null)
   const [daySheet, setDaySheet] = useState(null)
   const touchStartX = useRef(null)
-  const todayRef = useRef(null)
 
   const today = new Date()
   const todayStr = toStr(today)
@@ -44,18 +46,15 @@ export default function Week({ onAddTask, onEditTask }) {
     return toStr(d)
   })
 
+  // land on the anchor month whenever month view opens or is paged
   useEffect(() => {
-    if (view === 'week' && weekOffset === 0 && todayRef.current) {
-      setTimeout(() => {
-        todayRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' })
-      }, 100)
-    }
-  }, [view, weekOffset])
+    if (view !== 'month' || !currentMonthRef.current) return
+    const t = setTimeout(() => currentMonthRef.current?.scrollIntoView({ block: 'start' }), 60)
+    return () => clearTimeout(t)
+  }, [view, monthOffset])
 
   useEffect(() => {
-    // Fetch wide range to cover recurring events
-    const from = weekDates[0]
-    const far = new Date(today); far.setFullYear(far.getFullYear() - 1)
+    // no date filter — the month view scrolls across a wide window
     supabase.from('tasks').select('*, projects(name)').then(({ data }) => setTasks(data || []))
     supabase.from('events').select('*').then(({ data }) => setEvents(data || []))
     supabase.from('sectors').select('*').then(({ data }) => setSectors(data || []))
@@ -93,14 +92,14 @@ export default function Week({ onAddTask, onEditTask }) {
     .filter(t => activeFilter === 'All' || t.sector === activeFilter)
     .sort((a,b) => a.start_date > b.start_date ? 1 : -1)
 
+  // Day view
+  const dayDate = (() => { const d = new Date(today); d.setDate(d.getDate() + dayOffset); return toStr(d) })()
+
   const filters = ['All', ...sectors.map(s => s.name)]
 
   // Month view
   const monthDate = new Date(today.getFullYear(), today.getMonth() + monthOffset, 1)
   const monthYear = monthDate.getFullYear(), monthMonth = monthDate.getMonth()
-  const daysInMonth = new Date(monthYear, monthMonth + 1, 0).getDate()
-  const firstDow = (new Date(monthYear, monthMonth, 1).getDay() + 6) % 7
-  const calCells = [...Array(firstDow).fill(null), ...Array.from({length: daysInMonth}, (_, i) => i + 1)]
 
   const openDaySheet = (date) => {
     setDaySheet({ date, tasks: tasksForDay(date), events: eventsForDay(date) })
@@ -123,10 +122,10 @@ export default function Week({ onAddTask, onEditTask }) {
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14 }}>
         <div>
-          <div style={{ fontSize: 22, fontWeight: 500 }}>{view === 'week' ? 'Week' : 'Month'}</div>
+          <div style={{ fontSize: 22, fontWeight: 500 }}>{view === 'day' ? 'Day' : view === 'week' ? 'Week' : 'Month'}</div>
         </div>
         <div style={{ display: 'flex', background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 10, overflow: 'hidden' }}>
-          {['week','month'].map(v => (
+          {['day','week','month'].map(v => (
             <div key={v} onClick={() => setView(v)} style={{ padding: '7px 14px', fontSize: 12, fontWeight: 500, cursor: 'pointer', background: view === v ? 'var(--accent-dim)' : 'transparent', color: view === v ? 'var(--accent)' : 'var(--text-muted)' }}>
               {v.charAt(0).toUpperCase() + v.slice(1)}
             </div>
@@ -148,9 +147,9 @@ export default function Week({ onAddTask, onEditTask }) {
 
       {/* Week nav */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-        <div onClick={() => view==='week' ? setWeekOffset(o=>o-1) : setMonthOffset(o=>o-1)} style={{ width: 32, height: 32, borderRadius: 8, background: 'var(--bg-card)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'var(--text-muted)', fontSize: 16 }}>‹</div>
-        <div onClick={() => { setWeekOffset(0); setMonthOffset(0) }} style={{ flex: 1, textAlign: 'center', fontSize: 12, fontWeight: 500, color: (view==='week'?weekOffset:monthOffset)===0 ? 'var(--text-dim)' : 'var(--accent)', cursor: 'pointer', padding: '6px 0', background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 20 }}>Current</div>
-        <div onClick={() => view==='week' ? setWeekOffset(o=>o+1) : setMonthOffset(o=>o+1)} style={{ width: 32, height: 32, borderRadius: 8, background: 'var(--bg-card)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'var(--text-muted)', fontSize: 16 }}>›</div>
+        <div onClick={() => view==='day' ? setDayOffset(o=>o-1) : view==='week' ? setWeekOffset(o=>o-1) : setMonthOffset(o=>o-1)} style={{ width: 32, height: 32, borderRadius: 8, background: 'var(--bg-card)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'var(--text-muted)', fontSize: 16 }}>‹</div>
+        <div onClick={() => { setWeekOffset(0); setMonthOffset(0); setDayOffset(0) }} style={{ flex: 1, textAlign: 'center', fontSize: 12, fontWeight: 500, color: (view==='day'?dayOffset:view==='week'?weekOffset:monthOffset)===0 ? 'var(--text-dim)' : 'var(--accent)', cursor: 'pointer', padding: '6px 0', background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 20 }}>Current</div>
+        <div onClick={() => view==='day' ? setDayOffset(o=>o+1) : view==='week' ? setWeekOffset(o=>o+1) : setMonthOffset(o=>o+1)} style={{ width: 32, height: 32, borderRadius: 8, background: 'var(--bg-card)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'var(--text-muted)', fontSize: 16 }}>›</div>
       </div>
 
       {/* Sector filters */}
@@ -172,7 +171,9 @@ export default function Week({ onAddTask, onEditTask }) {
           which week / month you've scrolled to */}
       <div style={{ textAlign: 'center', marginBottom: 14 }}>
         <div style={{ fontSize: 17, fontWeight: 600, color: 'var(--text-primary)', letterSpacing: '-0.2px' }}>
-          {view === 'week'
+          {view === 'day'
+            ? new Date(dayDate + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })
+            : view === 'week'
             ? `${MONTH_NAMES[new Date(weekDates[0] + 'T00:00:00').getMonth()]} ${new Date(weekDates[0] + 'T00:00:00').getFullYear()}`
             : `${MONTH_NAMES[monthMonth]} ${monthYear}`}
         </div>
@@ -181,22 +182,27 @@ export default function Week({ onAddTask, onEditTask }) {
             {fmtDate(weekDates[0])} — {fmtDate(weekDates[6])}
           </div>
         )}
+        {view === 'day' && (
+          <div style={{ fontSize: 12, color: 'var(--text-muted)', fontFamily: "'DM Mono'", marginTop: 3 }}>
+            {fmtDate(dayDate)}{dayDate === todayStr ? ' · Today' : ''}
+          </div>
+        )}
       </div>
 
-      {/* ── WEEK VIEW ── */}
-      {view === 'week' && (
+      {/* ── DAY + WEEK VIEW (same row renderer, different date list) ── */}
+      {(view === 'week' || view === 'day') && (
         <div>
-          {weekDates.map((date, i) => {
+          {(view === 'day' ? [dayDate] : weekDates).map((date, i) => {
             const isPast = date < todayStr
             const isToday = date === todayStr
             const d = new Date(date + 'T00:00:00')
             const items = allItemsForDay(date)
             return (
-              <div key={date} ref={isToday ? todayRef : null} style={{ marginBottom: 16 }}>
+              <div key={date} style={{ marginBottom: 16 }}>
                 {/* Day header */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
                   <div style={{ width: 36, height: 36, borderRadius: '50%', background: isToday ? 'var(--accent)' : 'transparent', border: isToday ? 'none' : `1px solid ${isPast ? 'var(--border)' : 'var(--border)'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 500, color: isToday ? '#fff' : isPast ? 'var(--text-dim)' : 'var(--text-muted)', flexShrink: 0 }}>{d.getDate()}</div>
-                  <div style={{ fontSize: 13, fontWeight: 500, color: isToday ? 'var(--accent)' : isPast ? 'var(--text-dim)' : 'var(--text-muted)' }}>{DAY_NAMES[i]}</div>
+                  <div style={{ fontSize: 13, fontWeight: 500, color: isToday ? 'var(--accent)' : isPast ? 'var(--text-dim)' : 'var(--text-muted)' }}>{DAY_NAMES[(new Date(date + 'T00:00:00').getDay() + 6) % 7]}</div>
                   <div style={{ flex: 1 }} />
                   <div style={{ fontSize: 11, color: 'var(--text-dim)' }}>{items.length > 0 ? `${items.length} item${items.length>1?'s':''}` : ''}</div>
                   <div onClick={() => openDaySheet(date)} style={{ fontSize: 18, color: 'var(--text-dim)', cursor: 'pointer', paddingLeft: 8 }}>+</div>
@@ -288,31 +294,76 @@ export default function Week({ onAddTask, onEditTask }) {
       )}
 
       {/* ── MONTH VIEW ── */}
+      {/* ── MONTH VIEW — continuous vertical scroll, Google-style cells ── */}
       {view === 'month' && (
         <div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', gap: 2, marginBottom: 4 }}>
-            {['M','T','W','T','F','S','S'].map((d,i) => <div key={i} style={{ textAlign:'center',fontSize:11,fontWeight:600,color:'var(--text-dim)',padding:'4px 0' }}>{d}</div>)}
+          {/* Sticky weekday header so it stays put while scrolling months */}
+          <div style={{ position: 'sticky', top: 0, zIndex: 5, background: 'var(--bg)', display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', paddingBottom: 6 }}>
+            {['M','T','W','T','F','S','S'].map((d,i) => (
+              <div key={i} style={{ textAlign: 'center', fontSize: 11, fontWeight: 600, color: 'var(--text-dim)', padding: '4px 0' }}>{d}</div>
+            ))}
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', gap: 3 }}>
-            {calCells.map((day, idx) => {
-              if (!day) return <div key={idx} />
-              const dateStr = toStr(new Date(monthYear, monthMonth, day))
-              const isToday = dateStr === todayStr
-              const isPast = dateStr < todayStr
-              const dt = tasksForDay(dateStr)
-              const de = eventsForDay(dateStr)
-              return (
-                <div key={idx} onClick={() => openDaySheet(dateStr)} style={{ background: isToday ? 'var(--accent-dim)' : 'var(--bg-card)', border: `1px solid ${isToday ? 'var(--accent-border)' : 'var(--border)'}`, borderRadius: 8, padding: '5px 3px', height: 54, overflow: 'hidden', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                  <div style={{ fontSize: 11, fontWeight: isToday?600:400, color: isToday ? 'var(--accent-text)' : isPast ? 'var(--text-dim)' : 'var(--text-muted)', marginBottom: 4 }}>{day}</div>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 2, justifyContent: 'center' }}>
-                    {de.slice(0,3).map((ev,ti) => <div key={'e'+ti} style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--event-color)' }} />)}
-                    {dt.slice(0,4).map((t,ti) => <div key={'t'+ti} style={{ width: 6, height: 6, borderRadius: '50%', background: SECTOR_COLORS[t.sector?.toLowerCase()] || 'var(--accent)' }} />)}
-                  </div>
-                  {(dt.length + de.length) > 0 && <div style={{ fontSize: 8, color: 'var(--text-dim)', marginTop: 2 }}>{dt.length + de.length}</div>}
+
+          {MONTH_WINDOW.map(off => {
+            const mDate = new Date(today.getFullYear(), today.getMonth() + monthOffset + off, 1)
+            const mYear = mDate.getFullYear(), mMonth = mDate.getMonth()
+            const dim = new Date(mYear, mMonth + 1, 0).getDate()
+            const fdow = (new Date(mYear, mMonth, 1).getDay() + 6) % 7
+            const cells = [...Array(fdow).fill(null), ...Array.from({ length: dim }, (_, i) => i + 1)]
+            while (cells.length % 7 !== 0) cells.push(null)
+
+            return (
+              <div key={`${mYear}-${mMonth}`} ref={off === 0 ? currentMonthRef : null} style={{ marginBottom: 26 }}>
+                <div style={{ fontSize: 17, fontWeight: 600, color: off === 0 ? 'var(--accent)' : 'var(--text-primary)', margin: '4px 0 8px', letterSpacing: '-0.2px' }}>
+                  {MONTH_NAMES[mMonth]} {mYear}
                 </div>
-              )
-            })}
-          </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', borderTop: '1px solid var(--border)', borderLeft: '1px solid var(--border)' }}>
+                  {cells.map((day, idx) => {
+                    if (!day) return <div key={idx} style={{ borderRight: '1px solid var(--border)', borderBottom: '1px solid var(--border)', minHeight: 84, background: 'var(--bg-card2)', opacity: 0.35 }} />
+                    const ds = toStr(new Date(mYear, mMonth, day))
+                    const isToday = ds === todayStr
+                    const de = eventsForDay(ds)
+                    const dt = tasksForDay(ds)
+                    const chips = [
+                      ...de.map(e => ({ key: 'e' + e.id, label: e.title, color: 'var(--event-color)', solid: true })),
+                      ...dt.map(t => ({ key: 't' + t.id, label: t.name, color: SECTOR_COLORS[t.sector?.toLowerCase()] || 'var(--accent)', solid: false, done: t.completed })),
+                    ]
+                    const shown = chips.slice(0, 3)
+                    const extra = chips.length - shown.length
+
+                    return (
+                      <div key={idx} onClick={() => openDaySheet(ds)}
+                        style={{ borderRight: '1px solid var(--border)', borderBottom: '1px solid var(--border)', minHeight: 84, padding: '3px 3px 4px', cursor: 'pointer', overflow: 'hidden', background: isToday ? 'var(--accent-dim)' : 'transparent' }}>
+                        <div style={{
+                          width: 21, height: 21, borderRadius: '50%', margin: '1px auto 3px',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          fontSize: 11.5, fontWeight: isToday ? 700 : 500,
+                          background: isToday ? 'var(--accent)' : 'transparent',
+                          color: isToday ? 'var(--on-accent)' : ds < todayStr ? 'var(--text-dim)' : 'var(--text-secondary)',
+                        }}>{day}</div>
+
+                        {shown.map(ch => (
+                          <div key={ch.key} style={{
+                            fontSize: 9, lineHeight: '13px', height: 13, marginBottom: 2,
+                            padding: '0 3px', borderRadius: 3,
+                            background: ch.solid ? ch.color : 'transparent',
+                            color: ch.solid ? 'var(--on-accent)' : ch.color,
+                            borderLeft: ch.solid ? 'none' : `2px solid ${ch.color}`,
+                            textDecoration: ch.done ? 'line-through' : 'none',
+                            opacity: ch.done ? 0.5 : 1,
+                            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                          }}>{ch.label}</div>
+                        ))}
+                        {extra > 0 && <div style={{ fontSize: 8.5, color: 'var(--text-muted)', paddingLeft: 3 }}>+{extra} more</div>}
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            )
+          })}
+
           <div style={{ marginTop: 20, paddingTop: 16, borderTop: '1px solid var(--border)' }}>
             <div className="section-label">This month</div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 8 }}>

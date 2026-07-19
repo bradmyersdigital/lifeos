@@ -47,6 +47,10 @@
 
 html, body, #root {
   height: 100%;
+  /* stop iOS double-tap zoom and the focus-zoom-then-stuck behaviour */
+  touch-action: manipulation;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
   background: var(--bg);
   color: var(--text-primary);
   font-family: 'DM Sans', sans-serif;
@@ -196,10 +200,16 @@ body { overflow: hidden; }
 .field input, .field select, .field textarea {
   width: 100%; background: var(--bg-input);
   border: 1px solid var(--border); border-radius: 10px;
-  padding: 10px 12px; font-size: 15px; color: var(--text-primary);
+  padding: 10px 12px; color: var(--text-primary);
   font-family: 'DM Sans', sans-serif; outline: none;
   -webkit-appearance: none; appearance: none;
+  /* MUST stay >= 16px — iOS Safari zooms the viewport on focus below this
+     and frequently fails to zoom back out */
+  font-size: 16px;
 }
+
+/* same rule for any input not inside .field */
+input, select, textarea, button { font-size: 16px; }
 .field input:focus, .field select:focus, .field textarea:focus { border-color: var(--accent-border); }
 .field textarea { min-height: 80px; resize: none; line-height: 1.5; }
 .field select { background-image: none; }

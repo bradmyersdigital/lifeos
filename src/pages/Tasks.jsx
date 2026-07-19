@@ -106,7 +106,7 @@ export default function Tasks({ onAddTask, onEditTask }) {
         <div style={{ fontSize: 20, fontWeight: 500 }}>All tasks</div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 10, padding: '7px 11px' }}>
           <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><circle cx="5.5" cy="5.5" r="4" stroke="var(--text-dim)" strokeWidth="1.4"/><line x1="8.5" y1="8.5" x2="12" y2="12" stroke="var(--text-dim)" strokeWidth="1.4" strokeLinecap="round"/></svg>
-          <input style={{ background: 'none', border: 'none', outline: 'none', fontSize: 13, color: 'var(--text-primary)', fontFamily: "'DM Sans'", width: 110 }} placeholder="Search..." value={search} onChange={e => setSearch(e.target.value)} />
+          <input style={{ background: 'none', border: 'none', outline: 'none', fontSize: 16, color: 'var(--text-primary)', fontFamily: "'DM Sans'", width: 130, minWidth: 0 }} placeholder="Search..." value={search} onChange={e => setSearch(e.target.value)} />
         </div>
       </div>
 

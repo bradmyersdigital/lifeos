@@ -96,7 +96,7 @@ export default function EventModal({ event, date, onClose, onSaved, sectors = []
           <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 10 }}>
             {[['','Never'],['weekly','Weekly'],['biweekly','Bi-weekly'],['monthly','Monthly'],['yearly','Yearly']].map(([val, label]) => (
               <div key={val} onClick={() => setRecurring(val)}
-                style={{ padding: '7px 14px', borderRadius: 20, fontSize: 13, fontWeight: 500, cursor: 'pointer', border: '1px solid', background: recurring === val ? 'var(--accent-dim)' : '#161618', borderColor: recurring === val ? 'var(--accent-border)' : '#242428', color: recurring === val ? 'var(--accent)' : '#666' }}>
+                style={{ padding: '7px 14px', borderRadius: 20, fontSize: 13, fontWeight: 500, cursor: 'pointer', border: '1px solid', background: recurring === val ? 'var(--accent-dim)' : 'var(--bg-card)', borderColor: recurring === val ? 'var(--accent-border)' : 'var(--border)', color: recurring === val ? 'var(--accent)' : 'var(--text-muted)' }}>
                 {label}
               </div>
             ))}
@@ -105,11 +105,11 @@ export default function EventModal({ event, date, onClose, onSaved, sectors = []
           {/* Weekly day selector */}
           {recurring === 'weekly' && (
             <div>
-              <div style={{ fontSize: 12, color: '#555', marginBottom: 8 }}>Which days?</div>
+              <div style={{ fontSize: 12, color: 'var(--text-dim)', marginBottom: 8 }}>Which days?</div>
               <div style={{ display: 'flex', gap: 6 }}>
                 {DAY_SHORT.map((label, i) => (
                   <div key={i} onClick={() => toggleDay(i)}
-                    style={{ flex: 1, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 10, fontSize: 12, fontWeight: 600, cursor: 'pointer', background: recurringDays.includes(i) ? 'var(--accent-dim)' : '#0f0f11', border: `1px solid ${recurringDays.includes(i) ? 'var(--accent-border)' : '#242428'}`, color: recurringDays.includes(i) ? 'var(--accent)' : '#444' }}>
+                    style={{ flex: 1, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 10, fontSize: 12, fontWeight: 600, cursor: 'pointer', background: recurringDays.includes(i) ? 'var(--accent-dim)' : 'var(--bg-input)', border: `1px solid ${recurringDays.includes(i) ? 'var(--accent-border)' : 'var(--border)'}`, color: recurringDays.includes(i) ? 'var(--accent)' : 'var(--text-dim)' }}>
                     {label}
                   </div>
                 ))}
@@ -120,11 +120,11 @@ export default function EventModal({ event, date, onClose, onSaved, sectors = []
           {/* Biweekly day selector - same as weekly */}
           {recurring === 'biweekly' && (
             <div>
-              <div style={{ fontSize: 12, color: '#555', marginBottom: 8 }}>Which days?</div>
+              <div style={{ fontSize: 12, color: 'var(--text-dim)', marginBottom: 8 }}>Which days?</div>
               <div style={{ display: 'flex', gap: 6 }}>
                 {DAY_SHORT.map((label, i) => (
                   <div key={i} onClick={() => toggleDay(i)}
-                    style={{ flex: 1, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 10, fontSize: 12, fontWeight: 600, cursor: 'pointer', background: recurringDays.includes(i) ? 'var(--accent-dim)' : '#0f0f11', border: `1px solid ${recurringDays.includes(i) ? 'var(--accent-border)' : '#242428'}`, color: recurringDays.includes(i) ? 'var(--accent)' : '#444' }}>
+                    style={{ flex: 1, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 10, fontSize: 12, fontWeight: 600, cursor: 'pointer', background: recurringDays.includes(i) ? 'var(--accent-dim)' : 'var(--bg-input)', border: `1px solid ${recurringDays.includes(i) ? 'var(--accent-border)' : 'var(--border)'}`, color: recurringDays.includes(i) ? 'var(--accent)' : 'var(--text-dim)' }}>
                     {label}
                   </div>
                 ))}
@@ -135,25 +135,25 @@ export default function EventModal({ event, date, onClose, onSaved, sectors = []
           {/* Monthly day selector */}
           {recurring === 'monthly' && (
             <div>
-              <div style={{ fontSize: 12, color: '#555', marginBottom: 8 }}>Which day of month?</div>
+              <div style={{ fontSize: 12, color: 'var(--text-dim)', marginBottom: 8 }}>Which day of month?</div>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
                 {Array.from({length: 31}, (_, i) => i + 1).map(d => (
                   <div key={d} onClick={() => setRecurringDayOfMonth(d)}
-                    style={{ width: 38, height: 38, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 10, fontSize: 12, fontWeight: 500, cursor: 'pointer', background: recurringDayOfMonth === d ? 'var(--accent-dim)' : '#0f0f11', border: `1px solid ${recurringDayOfMonth === d ? 'var(--accent-border)' : '#242428'}`, color: recurringDayOfMonth === d ? 'var(--accent)' : '#555' }}>
+                    style={{ width: 38, height: 38, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 10, fontSize: 12, fontWeight: 500, cursor: 'pointer', background: recurringDayOfMonth === d ? 'var(--accent-dim)' : 'var(--bg-input)', border: `1px solid ${recurringDayOfMonth === d ? 'var(--accent-border)' : 'var(--border)'}`, color: recurringDayOfMonth === d ? 'var(--accent)' : 'var(--text-dim)' }}>
                     {d}
                   </div>
                 ))}
               </div>
-              <div style={{ fontSize: 11, color: '#555', marginTop: 6 }}>Repeats on the {ordinal(recurringDayOfMonth)} of each month</div>
+              <div style={{ fontSize: 11, color: 'var(--text-dim)', marginTop: 6 }}>Repeats on the {ordinal(recurringDayOfMonth)} of each month</div>
             </div>
           )}
 
           {recurring === 'yearly' && (
             <div>
-              <div style={{ fontSize: 12, color: '#555', marginBottom: 8 }}>Which date each year?</div>
+              <div style={{ fontSize: 12, color: 'var(--text-dim)', marginBottom: 8 }}>Which date each year?</div>
               <input type="date" value={yearlyDate} onChange={e => setYearlyDate(e.target.value)}
-                style={{ width: '100%', background: '#0f0f11', border: '1px solid #242428', borderRadius: 10, padding: '10px 12px', fontSize: 15, color: '#e8e6e1', fontFamily: "'DM Sans'", outline: 'none', WebkitAppearance: 'none' }} />
-              <div style={{ fontSize: 11, color: '#555', marginTop: 6 }}>
+                style={{ width: '100%', background: 'var(--bg-input)', border: '1px solid var(--border)', borderRadius: 10, padding: '10px 12px', fontSize: 15, color: 'var(--text-primary)', fontFamily: "'DM Sans'", outline: 'none', WebkitAppearance: 'none' }} />
+              <div style={{ fontSize: 11, color: 'var(--text-dim)', marginTop: 6 }}>
                 {yearlyDate ? `Repeats every year on ${new Date(yearlyDate + 'T00:00:00').toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}` : 'Pick a date above'}
               </div>
             </div>
@@ -177,7 +177,7 @@ export default function EventModal({ event, date, onClose, onSaved, sectors = []
         </div>
 
         <div style={{ display: 'flex', gap: 10, marginTop: 18 }}>
-          {isEdit && <button onClick={handleDelete} style={{ flex:1,padding:11,borderRadius:10,background:'#2a0a0a',border:'1px solid #7a1010',color:'#f87171',fontSize:14,fontWeight:500,cursor:'pointer',fontFamily:"'DM Sans'" }}>Delete</button>}
+          {isEdit && <button onClick={handleDelete} style={{ flex:1,padding:11,borderRadius:10,background:'var(--danger-dim)',border:'1px solid var(--danger-border)',color:'var(--danger)',fontSize:14,fontWeight:500,cursor:'pointer',fontFamily:"'DM Sans'" }}>Delete</button>}
           <button className="btn-ghost" style={{ flex: 1 }} onClick={onClose}>Cancel</button>
           <button className="btn-primary" style={{ flex: 2 }} onClick={handleSave} disabled={saving}>{saving ? 'Saving…' : isEdit ? 'Save changes' : 'Add event'}</button>
         </div>

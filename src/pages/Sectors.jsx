@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
+import SortableList from '../components/SortableList'
 import { fmtDate } from '../utils'
 import TaskModal from '../components/TaskModal'
 
@@ -364,10 +365,7 @@ export default function Sectors({ onEditTask }) {
   const [sectors, setSectors] = useState([])
   const [selected, setSelected] = useState(null)
   const [sectorModal, setSectorModal] = useState(null)
-  const dragItem = useRef(null)
-  const dragOver = useRef(null)
-  const touchStartY = useRef(null)
-  const touchDragIdx = useRef(null)
+  const draggedRef = useRef(false)
 
   useEffect(() => { loadSectors() }, [])
 
@@ -390,62 +388,6 @@ export default function Sectors({ onEditTask }) {
     }
   }
 
-  // Desktop drag
-  const handleDragStart = idx => { dragItem.current = idx }
-  const handleDragEnter = idx => { dragOver.current = idx }
-  const handleDragEnd = async () => {
-    if (dragItem.current === null || dragOver.current === null || dragItem.current === dragOver.current) return
-    const reordered = [...sectors]
-    const [moved] = reordered.splice(dragItem.current, 1)
-    reordered.splice(dragOver.current, 0, moved)
-    setSectors(reordered)
-    dragItem.current = null; dragOver.current = null
-    await saveOrder(reordered)
-  }
-
-  // Mobile long-press drag
-  const longPressTimer = useRef(null)
-  const isDragging = useRef(false)
-
-  const handleTouchStart = (e, idx) => {
-    touchStartY.current = e.touches[0].clientY
-    touchDragIdx.current = idx
-    isDragging.current = false
-    longPressTimer.current = setTimeout(() => {
-      isDragging.current = true
-    }, 300)
-  }
-  const handleTouchMove = (e) => {
-    if (!isDragging.current) {
-      clearTimeout(longPressTimer.current)
-      return
-    }
-    e.preventDefault()
-    e.stopPropagation()
-    const y = e.touches[0].clientY
-    const cardH = 160
-    const newIdx = Math.max(0, Math.min(sectors.length - 1,
-      Math.floor((y - (e.currentTarget.getBoundingClientRect?.()?.top || 0)) / cardH)
-    ))
-    const delta = Math.round((y - touchStartY.current) / cardH)
-    const targetIdx = Math.max(0, Math.min(sectors.length - 1, touchDragIdx.current + delta))
-    if (targetIdx !== touchDragIdx.current) {
-      const reordered = [...sectors]
-      const [moved] = reordered.splice(touchDragIdx.current, 1)
-      reordered.splice(targetIdx, 0, moved)
-      setSectors(reordered)
-      touchDragIdx.current = targetIdx
-      touchStartY.current = y
-    }
-  }
-  const handleTouchEnd = async () => {
-    clearTimeout(longPressTimer.current)
-    if (isDragging.current) await saveOrder(sectors)
-    isDragging.current = false
-    touchDragIdx.current = null
-    touchStartY.current = null
-  }
-
   if (selected) return <SectorDetail sector={selected} onEditTask={onEditTask} onAddTask={() => {}} onBack={() => setSelected(null)} />
 
   return (
@@ -459,20 +401,18 @@ export default function Sectors({ onEditTask }) {
       </div>
       <div style={{ fontSize: 12, color: 'var(--text-dim)', marginBottom: 16 }}>Hold and drag to reorder</div>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-        {sectors.map((s, idx) => (
-          <div key={s.id}
-            draggable
-            onDragStart={() => handleDragStart(idx)}
-            onDragEnter={() => handleDragEnter(idx)}
-            onDragEnd={handleDragEnd}
-            onDragOver={e => e.preventDefault()}
-            onTouchStart={e => handleTouchStart(e, idx)}
-            onTouchMove={handleTouchMove}
-            onTouchEnd={handleTouchEnd}
-            onClick={() => setSelected(s)}
-            style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 14, padding: '12px 14px', cursor: 'grab', position: 'relative', userSelect: 'none', WebkitUserSelect: 'none', touchAction: 'none', WebkitTouchCallout: 'none', display: 'flex', alignItems: 'center', gap: 13, borderLeft: `3px solid ${s.color || 'var(--accent)'}` }}
-          >
+      <SortableList
+        items={sectors}
+        gap={8}
+        onReorder={(next) => {
+          draggedRef.current = true
+          setTimeout(() => { draggedRef.current = false }, 260)
+          setSectors(next)
+          saveOrder(next)
+        }}
+        renderItem={(s, { dragging }) => (
+          <div onClick={() => { if (!draggedRef.current) setSelected(s) }}
+            style={{ background: dragging ? 'var(--bg-card2)' : 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 14, padding: '12px 14px', position: 'relative', display: 'flex', alignItems: 'center', gap: 13, borderLeft: `3px solid ${s.color || 'var(--accent)'}` }}>
             <div style={{ fontSize: 26, flexShrink: 0, lineHeight: 1 }}>{s.icon}</div>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontSize: 15, fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.name}</div>
@@ -483,8 +423,8 @@ export default function Sectors({ onEditTask }) {
             </div>
             <div style={{ fontSize: 17, color: 'var(--text-dim)', flexShrink: 0, lineHeight: 1 }}>›</div>
           </div>
-        ))}
-      </div>
+        )}
+      />
 
       {sectorModal && <SectorModal sector={sectorModal === 'new' ? null : sectorModal} onClose={() => setSectorModal(null)} onSaved={loadSectors} />}
     </div>
