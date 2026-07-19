@@ -9,26 +9,29 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
-  --accent: #d4520f;
-  --accent-dim: #1e1208;
-  --accent-border: #7a3410;
-  --accent-text: #e8823a;
-  --bg: #0f0f11;
-  --bg-card: #161618;
-  --bg-card2: #1a1a1e;
-  --bg-input: #0f0f11;
-  --border: #242428;
-  --border-hover: #383840;
-  --text-primary: #e8e6e1;
+  /* Luxury palette — cognac gold / black / champagne / amber */
+  --accent:         #c3955b;
+  --accent-dim:     #1e160a;
+  --accent-border:  #6b4f28;
+  --accent-text:    #d4a96a;
+  --bg:             #0d0d0f;
+  --bg-card:        #161614;
+  --bg-card2:       #1c1c19;
+  --bg-input:       #0d0d0f;
+  --border:         #2a2820;
+  --border-hover:   #3a3630;
+  --text-primary:   #e8e6e1;
   --text-secondary: #c0bdb7;
-  --text-muted: #666;
-  --text-dim: #444;
-  --font-mono: 'DM Mono', monospace;
-  --nav-height: 64px;
-  --safe-bottom: env(safe-area-inset-bottom, 0px);
-  --event-color: #10b981;
-  --event-dim: #0a1e14;
-  --event-border: #1a4a2a;
+  --text-muted:     #666260;
+  --text-dim:       #444240;
+  --event-color:    #c3955b;
+  --event-dim:      #1e160a;
+  --event-border:   #6b4f28;
+  --amber:          #ba6a36;
+  --champagne:      #e6c8b7;
+  --font-mono:      'DM Mono', monospace;
+  --nav-height:     64px;
+  --safe-bottom:    env(safe-area-inset-bottom, 0px);
 }
 
 html, body, #root {

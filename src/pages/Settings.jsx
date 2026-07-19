@@ -1,123 +1,78 @@
-import React, { useState } from 'react'
-import { useTheme, DEFAULT_THEME } from '../ThemeContext'
-
-const PRESETS = [
-  { name: 'Default', theme: { ...DEFAULT_THEME } },
-  {
-    name: 'Ocean', theme: {
-      ...DEFAULT_THEME,
-      accent: '#3b82f6', accentDim: '#0c1a2e', accentBorder: '#1a3a5c', accentText: '#93c5fd',
-      event: '#06b6d4', eventDim: '#0a1e24', eventBorder: '#0e4a5c',
-    }
-  },
-  {
-    name: 'Forest', theme: {
-      ...DEFAULT_THEME,
-      accent: '#10b981', accentDim: '#0a1e14', accentBorder: '#1a4a2a', accentText: '#6ee7b7',
-      event: '#84cc16', eventDim: '#0e1e08', eventBorder: '#2a4a10',
-    }
-  },
-  {
-    name: 'Violet', theme: {
-      ...DEFAULT_THEME,
-      accent: '#a78bfa', accentDim: '#16112e', accentBorder: '#3a2a6c', accentText: '#c4b5fd',
-      event: '#e879f9', eventDim: '#2a0e2e', eventBorder: '#5a1a5c',
-    }
-  },
-  {
-    name: 'Rose', theme: {
-      ...DEFAULT_THEME,
-      accent: '#f43f5e', accentDim: '#2a0a14', accentBorder: '#7a1030', accentText: '#fb7185',
-      event: '#f97316', eventDim: '#2a1000', eventBorder: '#7a3010',
-    }
-  },
-  {
-    name: 'Gold', theme: {
-      ...DEFAULT_THEME,
-      accent: '#f59e0b', accentDim: '#1e1200', accentBorder: '#7a4a00', accentText: '#fcd34d',
-      event: '#eab308', eventDim: '#1a1400', eventBorder: '#6a5200',
-    }
-  },
-]
-
-const COLOR_FIELDS = [
-  { key: 'accent', label: 'Primary accent', desc: 'Tasks, active nav, buttons' },
-  { key: 'event', label: 'Events color', desc: 'All event-related colors' },
-  { key: 'bg', label: 'Page background', desc: 'Main app background' },
-  { key: 'bgCard', label: 'Card background', desc: 'Cards and tiles' },
-  { key: 'textPrimary', label: 'Primary text', desc: 'Main text color' },
-]
+import React from 'react'
+import { useTheme } from '../ThemeContext.jsx'
 
 export default function Settings() {
-  const { theme, updateTheme } = useTheme()
-  const [activePreset, setActivePreset] = useState('Default')
-
-  const applyPreset = (preset) => {
-    setActivePreset(preset.name)
-    updateTheme(preset.theme)
-  }
-
-  const updateColor = (key, value) => {
-    const next = { ...theme, [key]: value }
-    if (key === 'accent') {
-      next.accentDim = value + '22'
-      next.accentBorder = value + '99'
-      next.accentText = value
-    }
-    if (key === 'event') {
-      next.eventDim = value + '22'
-      next.eventBorder = value + '66'
-    }
-    setActivePreset(null)
-    updateTheme(next)
-  }
+  const { mode, setMode } = useTheme()
+  const isDark = mode === 'dark'
 
   return (
     <div>
-      <div style={{ fontSize: 20, fontWeight: 500, marginBottom: 6 }}>Settings</div>
-      <div style={{ fontSize: 13, color: '#555', marginBottom: 24 }}>Customize your interface</div>
+      <div style={{ fontSize: 20, fontWeight: 500, marginBottom: 24 }}>Settings</div>
 
-      <div className="section-label">Color presets</div>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 10, marginBottom: 24 }}>
-        {PRESETS.map(preset => (
-          <div key={preset.name} onClick={() => applyPreset(preset)}
-            style={{ background: activePreset === preset.name ? preset.theme.accentDim : '#161618', border: `2px solid ${activePreset === preset.name ? preset.theme.accent : '#242428'}`, borderRadius: 14, padding: 14, cursor: 'pointer', transition: 'all 0.15s' }}>
-            <div style={{ display: 'flex', gap: 5, marginBottom: 8 }}>
-              <div style={{ width: 18, height: 18, borderRadius: '50%', background: preset.theme.accent }} />
-              <div style={{ width: 18, height: 18, borderRadius: '50%', background: preset.theme.event }} />
-              <div style={{ width: 18, height: 18, borderRadius: '50%', background: preset.theme.bgCard, border: '1px solid #333' }} />
+      {/* Appearance */}
+      <div className="section-label">Appearance</div>
+
+      {/* Dark / Light toggle */}
+      <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 16, overflow: 'hidden', marginBottom: 20 }}>
+
+        {/* Mode toggle row */}
+        <div style={{ padding: '16px 18px', borderBottom: '1px solid var(--border)' }}>
+          <div style={{ fontSize: 14, fontWeight: 500, color: 'var(--text-primary)', marginBottom: 14 }}>Color mode</div>
+          <div style={{ display: 'flex', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 12, overflow: 'hidden' }}>
+            <div onClick={() => setMode('dark')} style={{ flex: 1, padding: '12px', textAlign: 'center', cursor: 'pointer', background: isDark ? 'var(--accent-dim)' : 'transparent', transition: 'background 0.2s' }}>
+              <div style={{ fontSize: 22, marginBottom: 4 }}>🌙</div>
+              <div style={{ fontSize: 13, fontWeight: 500, color: isDark ? 'var(--accent)' : 'var(--text-muted)' }}>Dark</div>
             </div>
-            <div style={{ fontSize: 13, fontWeight: 500, color: activePreset === preset.name ? preset.theme.accent : '#e8e6e1' }}>{preset.name}</div>
+            <div style={{ width: 1, background: 'var(--border)' }} />
+            <div onClick={() => setMode('light')} style={{ flex: 1, padding: '12px', textAlign: 'center', cursor: 'pointer', background: !isDark ? 'var(--accent-dim)' : 'transparent', transition: 'background 0.2s' }}>
+              <div style={{ fontSize: 22, marginBottom: 4 }}>☀️</div>
+              <div style={{ fontSize: 13, fontWeight: 500, color: !isDark ? 'var(--accent)' : 'var(--text-muted)' }}>Light</div>
+            </div>
           </div>
-        ))}
-      </div>
+        </div>
 
-      <div className="section-label">Custom colors</div>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 24 }}>
-        {COLOR_FIELDS.map(field => (
-          <div key={field.key} style={{ background: '#161618', border: '1px solid #242428', borderRadius: 14, padding: 14, display: 'flex', alignItems: 'center', gap: 14 }}>
-            <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 14, fontWeight: 500, color: '#e8e6e1', marginBottom: 2 }}>{field.label}</div>
-              <div style={{ fontSize: 12, color: '#555' }}>{field.desc}</div>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <div style={{ fontFamily: "'DM Mono'", fontSize: 11, color: '#555' }}>{theme[field.key]}</div>
-              <div style={{ position: 'relative', width: 36, height: 36 }}>
-                <div style={{ width: 36, height: 36, borderRadius: 10, background: theme[field.key], border: '2px solid #333' }} />
-                <input type="color" value={theme[field.key]} onChange={e => updateColor(field.key, e.target.value)}
-                  style={{ opacity: 0, position: 'absolute', inset: 0, width: '100%', height: '100%', cursor: 'pointer', border: 'none', padding: 0 }} />
+        {/* Palette preview */}
+        <div style={{ padding: '16px 18px' }}>
+          <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 12 }}>LifeOS palette</div>
+          <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+            {[
+              { color: '#c3955b', label: 'Cognac' },
+              { color: '#ba6a36', label: 'Amber' },
+              { color: '#e6c8b7', label: 'Champagne' },
+              { color: isDark ? '#0d0d0f' : '#f5f0eb', label: isDark ? 'Black' : 'White', border: true },
+              { color: '#e8e6e1', label: 'Off-white', border: isDark },
+            ].map(({ color, label, border }) => (
+              <div key={label} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5 }}>
+                <div style={{ width: 36, height: 36, borderRadius: 10, background: color, border: border ? '1px solid var(--border)' : 'none' }} />
+                <div style={{ fontSize: 9, color: 'var(--text-dim)', textAlign: 'center' }}>{label}</div>
               </div>
-            </div>
+            ))}
           </div>
-        ))}
+        </div>
       </div>
 
-      <button onClick={() => applyPreset(PRESETS[0])} style={{ width: '100%', padding: 14, borderRadius: 14, background: '#161618', border: '1px solid #242428', color: '#555', fontSize: 14, fontWeight: 500, cursor: 'pointer', fontFamily: "'DM Sans'" }}>
-        Reset to default
-      </button>
+      {/* About */}
+      <div className="section-label">About</div>
+      <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 16, padding: '16px 18px', marginBottom: 16 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12 }}>
+          <div style={{ fontSize: 14, color: 'var(--text-secondary)' }}>App</div>
+          <div style={{ fontSize: 14, fontWeight: 500, color: 'var(--text-primary)' }}>LifeOS</div>
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12 }}>
+          <div style={{ fontSize: 14, color: 'var(--text-secondary)' }}>Version</div>
+          <div style={{ fontSize: 14, fontWeight: 500, color: 'var(--text-primary)' }}>1.0.0</div>
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+          <div style={{ fontSize: 14, color: 'var(--text-secondary)' }}>Built by</div>
+          <div style={{ fontSize: 14, fontWeight: 500, color: 'var(--accent)' }}>Brad Myers</div>
+        </div>
+      </div>
 
-      <div style={{ textAlign: 'center', fontSize: 12, color: '#333', marginTop: 16 }}>
-        Changes apply instantly across the whole app
+      {/* Brand note */}
+      <div style={{ padding: '14px 18px', background: 'var(--accent-dim)', border: '1px solid var(--accent-border)', borderRadius: 14, marginBottom: 16 }}>
+        <div style={{ fontSize: 12, color: 'var(--accent-text)', lineHeight: 1.6 }}>
+          LifeOS is your personal operating system — one place for tasks, habits, goals, notes, finance, and more. Built for people who want to live intentionally.
+        </div>
       </div>
     </div>
   )

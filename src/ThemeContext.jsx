@@ -1,44 +1,109 @@
 import React, { createContext, useContext, useState, useEffect } from 'react'
 
-export const DEFAULT_THEME = {
-  accent: '#d4520f',
-  accentDim: '#1e1208',
-  accentBorder: '#7a3410',
-  accentText: '#e8823a',
-  event: '#10b981',
-  eventDim: '#0a1e14',
-  eventBorder: '#1a4a2a',
-  bg: '#0f0f11',
-  bgCard: '#161618',
-  textPrimary: '#e8e6e1',
-  textMuted: '#555555',
+// ── Color palette ─────────────────────────────────────────────────────────────
+// Cognac gold:  #c3955b   Amber:      #ba6a36
+// Champagne:    #e6c8b7   Off-white:  #e8e6e1
+// Dark bg:      #0d0d0f   Light bg:   #f5f0eb
+
+const DARK = {
+  mode: 'dark',
+  accent:       '#c3955b',   // cognac gold — primary action color
+  accentDim:    '#1e160a',   // very dark cognac tint for backgrounds
+  accentBorder: '#6b4f28',   // mid cognac for borders
+  accentText:   '#d4a96a',   // lighter cognac for text on dark
+  bg:           '#0d0d0f',   // near black
+  bgCard:       '#161614',   // slightly lifted card bg — warm tinted
+  bgCard2:      '#1c1c19',   // second card level
+  bgInput:      '#0d0d0f',
+  border:       '#2a2820',   // warm dark border
+  borderHover:  '#3a3630',
+  textPrimary:  '#e8e6e1',   // off-white
+  textSecondary:'#c0bdb7',
+  textMuted:    '#666260',
+  textDim:      '#444240',
+  event:        '#c3955b',   // use cognac for events too — unified palette
+  eventDim:     '#1e160a',
+  eventBorder:  '#6b4f28',
+  amber:        '#ba6a36',   // amber as secondary accent
+  champagne:    '#e6c8b7',   // champagne for highlights
 }
 
-const ThemeContext = createContext({ theme: DEFAULT_THEME, updateTheme: () => {} })
+const LIGHT = {
+  mode: 'light',
+  accent:       '#ba6a36',   // amber as main accent on light — pops more
+  accentDim:    '#f5ede4',   // very light champagne tint
+  accentBorder: '#d4956a',   // mid amber border
+  accentText:   '#9a4e22',   // dark amber for text on light
+  bg:           '#f5f0eb',   // warm off-white / champagne base
+  bgCard:       '#ffffff',   // pure white cards
+  bgCard2:      '#faf6f2',   // slight champagne card
+  bgInput:      '#f5f0eb',
+  border:       '#e0d8cf',   // warm light border
+  borderHover:  '#cfc5b8',
+  textPrimary:  '#1a1814',   // near black warm
+  textSecondary:'#4a4640',
+  textMuted:    '#8a8480',
+  textDim:      '#b0ada8',
+  event:        '#ba6a36',
+  eventDim:     '#f5ede4',
+  eventBorder:  '#d4956a',
+  amber:        '#ba6a36',
+  champagne:    '#c3955b',
+}
+
+const ThemeContext = createContext({ theme: DARK, mode: 'dark', toggleMode: () => {}, setMode: () => {} })
 export function useTheme() { return useContext(ThemeContext) }
 
-function injectThemeStyle(t) {
+function injectTheme(t) {
   let el = document.getElementById('lifeos-theme')
   if (!el) { el = document.createElement('style'); el.id = 'lifeos-theme'; document.head.appendChild(el) }
+
   el.textContent = `
     :root {
       --accent: ${t.accent};
       --accent-dim: ${t.accentDim};
       --accent-border: ${t.accentBorder};
       --accent-text: ${t.accentText};
+      --bg: ${t.bg};
+      --bg-card: ${t.bgCard};
+      --bg-card2: ${t.bgCard2};
+      --bg-input: ${t.bgInput};
+      --border: ${t.border};
+      --border-hover: ${t.borderHover};
+      --text-primary: ${t.textPrimary};
+      --text-secondary: ${t.textSecondary};
+      --text-muted: ${t.textMuted};
+      --text-dim: ${t.textDim};
       --event-color: ${t.event};
       --event-dim: ${t.eventDim};
       --event-border: ${t.eventBorder};
-      --bg: ${t.bg};
-      --bg-card: ${t.bgCard};
-      --bg-card2: ${t.bgCard};
-      --bg-input: ${t.bg};
-      --text-primary: ${t.textPrimary};
-      --text-muted: ${t.textMuted};
+      --amber: ${t.amber};
+      --champagne: ${t.champagne};
     }
-    html, body, #root { background: ${t.bg} !important; }
-    .bottom-nav { background: ${t.bgCard} !important; }
-    .btn-primary { background: ${t.accent} !important; }
+
+    html, body, #root {
+      background: ${t.bg} !important;
+      color: ${t.textPrimary} !important;
+    }
+
+    /* Cards & inputs */
+    .bottom-nav { background: ${t.bgCard} !important; border-top-color: ${t.border} !important; }
+    input, select, textarea {
+      background: ${t.bgInput} !important;
+      color: ${t.textPrimary} !important;
+      border-color: ${t.border} !important;
+    }
+
+    /* Buttons */
+    .btn-primary {
+      background: ${t.accent} !important;
+      color: ${t.mode === 'dark' ? '#fff' : '#fff'} !important;
+    }
+    .btn-ghost {
+      background: ${t.bgCard} !important;
+      border-color: ${t.border} !important;
+      color: ${t.textMuted} !important;
+    }
     .btn-task {
       background: ${t.accentDim} !important;
       border: 1px solid ${t.accentBorder} !important;
@@ -52,19 +117,15 @@ function injectThemeStyle(t) {
       border: 1px solid ${t.eventBorder} !important;
       color: ${t.event} !important;
     }
-    .btn-event svg line, .btn-event svg path, .btn-event svg rect, .btn-event svg circle {
-      stroke: ${t.event} !important;
-    }
+
+    /* Events */
     .event-card {
       background: ${t.eventDim} !important;
       border-color: ${t.eventBorder} !important;
     }
     .event-text { color: ${t.event} !important; }
-    .streak-badge {
-      background: ${t.accentDim} !important;
-      border-color: ${t.accentBorder} !important;
-    }
-    .streak-badge .streak-num { color: ${t.accent} !important; }
+
+    /* Pills & tabs */
     .pill-active {
       background: ${t.accentDim} !important;
       border-color: ${t.accentBorder} !important;
@@ -74,31 +135,63 @@ function injectThemeStyle(t) {
       background: ${t.accentDim} !important;
       color: ${t.accent} !important;
     }
+    .streak-badge {
+      background: ${t.accentDim} !important;
+      border-color: ${t.accentBorder} !important;
+    }
+    .streak-badge .streak-num { color: ${t.accent} !important; }
+
+    /* Progress */
     .prog-fill { background: ${t.accent} !important; }
+
+    /* Nav active */
     .nav-item.active span { color: ${t.accent} !important; }
     .action-btn { color: ${t.accentText}; }
+
+    /* Section labels */
+    .section-label { color: ${t.textMuted} !important; }
+
+    /* Modal */
+    .modal-overlay { background: rgba(0,0,0,${t.mode === 'dark' ? '0.75' : '0.45'}) !important; }
+    .modal-sheet {
+      background: ${t.bgCard} !important;
+      border-top-color: ${t.border} !important;
+    }
+    .field-label { color: ${t.textMuted} !important; }
   `
+
+  // Also set body bg directly for iOS overscroll areas
+  document.body.style.background = t.bg
+  document.documentElement.style.background = t.bg
 }
 
 export function ThemeProvider({ children }) {
-  const [theme, setTheme] = useState(() => {
+  const [mode, setModeState] = useState(() => {
     try {
-      const s = localStorage.getItem('lifeos_theme')
-      return s ? { ...DEFAULT_THEME, ...JSON.parse(s) } : { ...DEFAULT_THEME }
-    } catch { return { ...DEFAULT_THEME } }
+      const saved = localStorage.getItem('lifeos_mode')
+      if (saved) return saved
+      // Default dark regardless of system
+      return 'dark'
+    } catch { return 'dark' }
   })
 
-  useEffect(() => { injectThemeStyle(theme) }, [theme])
+  const theme = mode === 'dark' ? DARK : LIGHT
 
-  const updateTheme = (next) => {
-    setTheme(next)
-    injectThemeStyle(next)
-    localStorage.setItem('lifeos_theme', JSON.stringify(next))
+  useEffect(() => { injectTheme(theme) }, [mode])
+
+  const setMode = (m) => {
+    setModeState(m)
+    localStorage.setItem('lifeos_mode', m)
+    injectTheme(m === 'dark' ? DARK : LIGHT)
   }
 
+  const toggleMode = () => setMode(mode === 'dark' ? 'light' : 'dark')
+
   return (
-    <ThemeContext.Provider value={{ theme, updateTheme }}>
+    <ThemeContext.Provider value={{ theme, mode, toggleMode, setMode }}>
       {children}
     </ThemeContext.Provider>
   )
 }
+
+export { DARK, LIGHT }
