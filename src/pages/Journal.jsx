@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { supabase } from '../lib/supabase'
+import FolderList, { FolderHeader } from '../components/FolderList'
 
 function todayStr() { return new Date().toISOString().split('T')[0] }
 function fmt(d) { return new Date(d + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' }) }
@@ -204,7 +205,7 @@ function JournalEntry({ entry, onBack, onSaved, categories }) {
 export default function Journal() {
   const [entries, setEntries] = useState([])
   const [categories, setCategories] = useState([])
-  const [activeFilter, setActiveFilter] = useState('All Entries')
+  const [activeFilter, setActiveFilter] = useState(null) // null = folder index
   const [openEntry, setOpenEntry] = useState(null)
   const [showNewCat, setShowNewCat] = useState(false)
   const [newCatName, setNewCatName] = useState('')
@@ -247,7 +248,7 @@ export default function Journal() {
     ...categories,
   ]
 
-  const filtered = activeFilter === 'All Entries' ? entries : entries.filter(e => (e.journal_type || 'reflection') === activeFilter)
+  const filtered = (!activeFilter || activeFilter === 'All Entries') ? entries : entries.filter(e => (e.journal_type || 'reflection') === activeFilter)
   const todayEntry = entries.find(e => e.date === todayStr())
   const streak = (() => {
     let s = 0, d = new Date()
@@ -269,7 +270,7 @@ export default function Journal() {
       </div>
 
       {/* Today card */}
-      <div onClick={() => openToday()} style={{ background: todayEntry ? 'var(--accent-dim)' : 'var(--bg-card)', border: `1px solid ${todayEntry ? 'var(--accent-border)' : 'var(--border)'}`, borderRadius: 16, padding: 18, marginBottom: 20, cursor: 'pointer' }}>
+      {!activeFilter && <div onClick={() => openToday()} style={{ background: todayEntry ? 'var(--accent-dim)' : 'var(--bg-card)', border: `1px solid ${todayEntry ? 'var(--accent-border)' : 'var(--border)'}`, borderRadius: 16, padding: 18, marginBottom: 20, cursor: 'pointer' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div>
             <div style={{ fontSize: 13, fontWeight: 600, color: todayEntry ? 'var(--accent)' : 'var(--text-muted)', marginBottom: 3 }}>
@@ -279,31 +280,37 @@ export default function Journal() {
           </div>
           <div style={{ fontSize: 22, color: todayEntry ? 'var(--accent)' : 'var(--text-dim)' }}>›</div>
         </div>
-      </div>
+      </div>}
 
       {/* Stats */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 8, marginBottom: 18 }}>
+      {!activeFilter && <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 8, marginBottom: 18 }}>
         {[['Total', entries.length, 'var(--text-primary)'],['This month', entries.filter(e => e.date.startsWith(new Date().toISOString().slice(0,7))).length,'var(--accent)'],['Streak', streak, 'var(--warn)']].map(([l,v,col]) => (
           <div key={l} style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 12, padding: 12 }}>
             <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 3 }}>{l}</div>
             <div style={{ fontSize: 20, fontWeight: 600, color: col }}>{v}</div>
           </div>
         ))}
-      </div>
+      </div>}
 
-      {/* Category filters */}
-      <div style={{ display: 'flex', gap: 6, overflowX: 'auto', WebkitOverflowScrolling: 'touch', paddingBottom: 6, marginBottom: 16, alignItems: 'center' }}>
-        {ALL_FILTERS.map(f => (
-          <div key={f.id} onClick={() => setActiveFilter(f.id)}
-            style={{ padding: '6px 14px', borderRadius: 20, fontSize: 12, fontWeight: 500, cursor: 'pointer', border: '1px solid', whiteSpace: 'nowrap', flexShrink: 0, background: activeFilter === f.id ? 'var(--accent-dim)' : 'var(--bg-card)', borderColor: activeFilter === f.id ? 'var(--accent-border)' : 'var(--border)', color: activeFilter === f.id ? 'var(--accent)' : 'var(--text-muted)' }}>
-            {f.icon} {f.label}
-          </div>
-        ))}
+      {/* Journal folders */}
+      {!activeFilter && (
+        <FolderList
+          folders={ALL_FILTERS.map(f => ({
+            id: f.id,
+            icon: f.icon,
+            label: f.label,
+            count: f.id === 'All Entries' ? entries.length : entries.filter(e => (e.journal_type || 'reflection') === f.id).length,
+          }))}
+          onOpen={(f) => setActiveFilter(f.id)}
+        />
+      )}
+
+      {!activeFilter && (
         <div onClick={() => setShowNewCat(!showNewCat)}
-          style={{ padding: '6px 12px', borderRadius: 20, fontSize: 12, fontWeight: 500, cursor: 'pointer', border: '1px dashed var(--accent-border)', whiteSpace: 'nowrap', flexShrink: 0, color: 'var(--accent)', background: 'var(--accent-dim)' }}>
-          + Add
+          style={{ marginTop: 10, padding: '11px 16px', borderRadius: 14, fontSize: 13, fontWeight: 500, cursor: 'pointer', border: '1px dashed var(--accent-border)', color: 'var(--accent)', background: 'var(--accent-dim)', textAlign: 'center' }}>
+          + New journal
         </div>
-      </div>
+      )}
 
       {showNewCat && (
         <div style={{ display: 'flex', gap: 8, marginBottom: 14, alignItems: 'center' }}>
@@ -315,15 +322,24 @@ export default function Journal() {
         </div>
       )}
 
-      {/* Entries list */}
-      {filtered.length === 0 && !loading && (
+      {/* Entries list — only inside a folder */}
+      {activeFilter && (
+        <FolderHeader
+          icon={(ALL_FILTERS.find(f => f.id === activeFilter) || {}).icon}
+          title={(ALL_FILTERS.find(f => f.id === activeFilter) || {}).label || activeFilter}
+          subtitle={`${filtered.length} entr${filtered.length === 1 ? 'y' : 'ies'}`}
+          onBack={() => setActiveFilter(null)}
+        />
+      )}
+
+      {activeFilter && filtered.length === 0 && !loading && (
         <div onClick={() => openToday()} style={{ textAlign: 'center', padding: '40px 20px', color: 'var(--text-dim)', fontSize: 14, border: '1px dashed var(--border)', borderRadius: 14, cursor: 'pointer' }}>
           <div style={{ fontSize: 36, marginBottom: 10 }}>📓</div>
-          <div>No {activeFilter === 'All Entries' ? '' : activeFilter} entries yet</div>
+          <div>No entries here yet</div>
         </div>
       )}
 
-      {filtered.map(entry => {
+      {activeFilter && filtered.map(entry => {
         const typeInfo = JOURNAL_TYPES.find(t => t.id === (entry.journal_type || 'reflection')) || JOURNAL_TYPES[0]
         const preview = entry.prompts?.win || entry.reflection || ''
         return (

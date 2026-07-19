@@ -458,7 +458,7 @@ export default function Sectors({ onEditTask }) {
       </div>
       <div style={{ fontSize: 12, color: 'var(--text-dim)', marginBottom: 16 }}>Hold and drag to reorder</div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: 12 }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
         {sectors.map((s, idx) => (
           <div key={s.id}
             draggable
@@ -470,18 +470,17 @@ export default function Sectors({ onEditTask }) {
             onTouchMove={handleTouchMove}
             onTouchEnd={handleTouchEnd}
             onClick={() => setSelected(s)}
-            style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 16, padding: 20, cursor: 'grab', position: 'relative', userSelect: 'none', WebkitUserSelect: 'none', touchAction: 'none', WebkitTouchCallout: 'none' }}
+            style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 14, padding: '12px 14px', cursor: 'grab', position: 'relative', userSelect: 'none', WebkitUserSelect: 'none', touchAction: 'none', WebkitTouchCallout: 'none', display: 'flex', alignItems: 'center', gap: 13, borderLeft: `3px solid ${s.color || 'var(--accent)'}` }}
           >
-            <div style={{ fontSize: 40, marginBottom: 8 }}>{s.icon}</div>
-            <div style={{ fontSize: 16, fontWeight: 500, marginBottom: 4 }}>{s.name}</div>
-            <div style={{ width: 32, height: 3, background: s.color || 'var(--accent)', borderRadius: 2, marginBottom: 8 }} />
-            <div style={{ display: 'flex', gap: 10 }}>
-              <div style={{ fontSize: 11, color: 'var(--text-dim)' }}>{s._taskCount || 0} tasks</div>
-              <div style={{ fontSize: 11, color: 'var(--text-dim)' }}>{s._projCount || 0} projects</div>
+            <div style={{ fontSize: 26, flexShrink: 0, lineHeight: 1 }}>{s.icon}</div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 15, fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.name}</div>
+              <div style={{ fontSize: 11.5, color: 'var(--text-muted)', marginTop: 2 }}>{s._taskCount || 0} tasks · {s._projCount || 0} projects</div>
             </div>
-            <div onClick={e => { e.stopPropagation(); setSectorModal(s) }} style={{ position: 'absolute', top: 12, right: 12, width: 28, height: 28, borderRadius: 8, background: 'var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+            <div onClick={e => { e.stopPropagation(); setSectorModal(s) }} style={{ width: 28, height: 28, borderRadius: 8, background: 'var(--bg-card2)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}>
               <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M9 1.5L10.5 3L4.5 9H3V7.5L9 1.5Z" stroke="var(--text-muted)" strokeWidth="1.3" fill="none" strokeLinecap="round" strokeLinejoin="round"/></svg>
             </div>
+            <div style={{ fontSize: 17, color: 'var(--text-dim)', flexShrink: 0, lineHeight: 1 }}>›</div>
           </div>
         ))}
       </div>

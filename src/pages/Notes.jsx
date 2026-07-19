@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { supabase } from '../lib/supabase'
+import FolderList from '../components/FolderList'
 
 const DEFAULT_CATS = [
   { name: 'Ideas', color: 'var(--purple)' },
@@ -370,37 +371,31 @@ export default function Notes() {
         ))}
       </div>
 
-      {/* Category cards grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: 10, marginBottom: 16 }}>
-        {categories.map(cat => {
-          const count = notes.filter(n => n.category === cat.name).length
-          const recent = notes.filter(n => n.category === cat.name)[0]
-          const preview = recent ? (recent.title || (recent.body || recent.text || '').substring(0, 35) || 'Untitled') : null
-          return (
-            <div key={cat.name} onClick={() => { setActiveCat(cat); setView('category') }}
-              style={{ background: 'var(--bg-card)', border: `1px solid ${cat.color}44`, borderTop: `3px solid ${cat.color}`, borderRadius: 14, padding: 16, cursor: 'pointer', minHeight: 110, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-              <div>
-                <div style={{ fontSize: 15, fontWeight: 600, color: cat.color, marginBottom: 6 }}>{cat.name}</div>
-                {preview && <div style={{ fontSize: 12, color: 'var(--text-muted)', lineHeight: 1.4, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>{preview}</div>}
-              </div>
-              <div style={{ fontSize: 11, color: 'var(--text-dim)', fontFamily: "'DM Mono'", marginTop: 10 }}>{count} note{count !== 1 ? 's' : ''}</div>
-            </div>
-          )
-        })}
-      </div>
-
-      {/* Uncategorized */}
-      {uncategorizedCount > 0 && (
-        <div onClick={() => { setActiveCat({ name: '__uncategorized__', color: 'var(--text-dim)' }); setView('category') }}
-          style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 14, padding: 16, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 14 }}>
-          <div style={{ width: 42, height: 42, borderRadius: 12, background: 'var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, flexShrink: 0 }}>📄</div>
-          <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 15, fontWeight: 500, color: 'var(--text-muted)' }}>Uncategorized</div>
-            <div style={{ fontSize: 12, color: 'var(--text-dim)', marginTop: 2 }}>{uncategorizedCount} note{uncategorizedCount !== 1 ? 's' : ''}</div>
-          </div>
-          <div style={{ fontSize: 18, color: 'var(--border-hover)' }}>›</div>
-        </div>
-      )}
+      {/* Folders */}
+      <FolderList
+        folders={[
+          ...categories.map(cat => {
+            const catNotes = notes.filter(n => n.category === cat.name)
+            const recent = catNotes[0]
+            return {
+              id: cat.name,
+              icon: cat.color,
+              color: cat.color,
+              label: cat.name,
+              count: catNotes.length,
+              subtitle: recent ? (recent.title || (recent.body || recent.text || '').substring(0, 40) || 'Untitled') : null,
+            }
+          }),
+          ...(uncategorizedCount > 0
+            ? [{ id: '__uncategorized__', icon: '\u{1F4C4}', label: 'Uncategorized', count: uncategorizedCount, color: 'var(--text-muted)' }]
+            : []),
+        ]}
+        onOpen={(f) => {
+          setActiveCat({ name: f.id, color: f.color || 'var(--text-dim)' })
+          setView('category')
+        }}
+        emptyText="No categories yet — tap Edit to add one"
+      />
 
       {notes.length === 0 && !showManage && (
         <div style={{ textAlign: 'center', padding: '40px 20px', color: 'var(--text-dim)', fontSize: 14, border: '1px dashed var(--border)', borderRadius: 14, marginTop: 10 }}>

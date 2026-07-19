@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
+import FolderList, { FolderHeader } from '../components/FolderList'
 
 const IMPORTANCE = ['Critical','High','Medium','Low']
 const IMP_STYLES = {
@@ -234,12 +235,12 @@ export default function Projects({ onAddTask, onEditTask }) {
   const [sectors, setSectors] = useState([])
   const [selected, setSelected] = useState(null)
   const [filter, setFilter] = useState('active')
-  const [sectorFilter, setSectorFilter] = useState('all')
+  const [folder, setFolder] = useState(null) // null = folder index, else { id, label, icon }
   const [showModal, setShowModal] = useState(false)
 
   useEffect(() => {
     loadProjects()
-    supabase.from('sectors').select('name').order('sort_order').order('name').then(({ data }) => setSectors(data || []))
+    supabase.from('sectors').select('*').order('sort_order').order('name').then(({ data }) => setSectors(data || []))
   }, [])
 
   const loadProjects = async () => {
@@ -249,42 +250,77 @@ export default function Projects({ onAddTask, onEditTask }) {
 
   if (selected) return <ProjectDetail project={selected} onBack={()=>setSelected(null)} onAddTask={onAddTask} onEditTask={onEditTask} onRefresh={loadProjects} />
 
+  const inFolder = (p) => {
+    if (!folder) return true
+    if (folder.id === '__all__') return true
+    if (folder.id === '__none__') return !p.sector
+    return p.sector === folder.id
+  }
   const filtered = projects.filter(p => {
     if (filter !== 'all' && p.status !== filter) return false
-    if (sectorFilter !== 'all' && p.sector !== sectorFilter) return false
-    return true
+    return inFolder(p)
   })
 
+  // ── Folder index ──────────────────────────────────────────────────────────
+  if (!folder) {
+    const folders = [
+      { id: '__all__', icon: '\u{1F5C2}\uFE0F', label: 'All Projects', count: projects.length, color: 'var(--accent)' },
+      ...sectors.map(s => ({
+        id: s.name,
+        icon: s.icon || '\u{1F4C1}',
+        label: s.name,
+        count: projects.filter(p => p.sector === s.name).length,
+      })),
+    ]
+    const noSector = projects.filter(p => !p.sector).length
+    if (noSector > 0) folders.push({ id: '__none__', icon: '\u{1F4C4}', label: 'Unsorted', count: noSector })
+
+    return (
+      <div>
+        <div style={{ display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:18 }}>
+          <div style={{ fontSize:20,fontWeight:500 }}>Projects</div>
+          <div onClick={()=>setShowModal(true)} style={{ display:'flex',alignItems:'center',gap:6,background:'var(--accent-dim)',border:'1px solid var(--accent-border)',borderRadius:10,padding:'7px 14px',cursor:'pointer',fontSize:13,color:'var(--accent)',fontWeight:500 }}>
+            <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><line x1="6.5" y1="1" x2="6.5" y2="12" stroke="var(--accent)" strokeWidth="1.8" strokeLinecap="round"/><line x1="1" y1="6.5" x2="12" y2="6.5" stroke="var(--accent)" strokeWidth="1.8" strokeLinecap="round"/></svg>
+            New project
+          </div>
+        </div>
+
+        <div style={{ display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:8,marginBottom:20 }}>
+          {[['Active',projects.filter(p=>p.status==='active').length],['Backlog',projects.filter(p=>p.status==='backlog').length],['Done',projects.filter(p=>p.status==='completed').length]].map(([label,val])=>(
+            <div key={label} style={{ background:'var(--bg-card)',border:'1px solid var(--border)',borderRadius:11,padding:12 }}>
+              <div style={{ fontSize:11,color:'var(--text-dim)',marginBottom:3 }}>{label}</div>
+              <div style={{ fontSize:22,fontWeight:500 }}>{val}</div>
+            </div>
+          ))}
+        </div>
+
+        <FolderList folders={folders} onOpen={setFolder} emptyText="No projects yet" />
+
+        {showModal&&<ProjectModal onClose={()=>setShowModal(false)} onSaved={loadProjects} />}
+      </div>
+    )
+  }
+
+  // ── Inside a folder ───────────────────────────────────────────────────────
   return (
     <div>
-      <div style={{ display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:18 }}>
-        <div style={{ fontSize:20,fontWeight:500 }}>Projects</div>
-        <div onClick={()=>setShowModal(true)} style={{ display:'flex',alignItems:'center',gap:6,background:'var(--accent-dim)',border:'1px solid var(--accent-border)',borderRadius:10,padding:'7px 14px',cursor:'pointer',fontSize:13,color:'var(--accent)',fontWeight:500 }}>
-          <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><line x1="6.5" y1="1" x2="6.5" y2="12" stroke="var(--accent)" strokeWidth="1.8" strokeLinecap="round"/><line x1="1" y1="6.5" x2="12" y2="6.5" stroke="var(--accent)" strokeWidth="1.8" strokeLinecap="round"/></svg>
-          New project
-        </div>
-      </div>
+      <FolderHeader
+        icon={folder.icon}
+        title={folder.label}
+        subtitle={`${filtered.length} project${filtered.length===1?'':'s'}`}
+        onBack={()=>setFolder(null)}
+        right={
+        <div onClick={()=>setShowModal(true)} style={{ display:'flex',alignItems:'center',gap:6,background:'var(--accent-dim)',border:'1px solid var(--accent-border)',borderRadius:10,padding:'7px 12px',cursor:'pointer',fontSize:12,color:'var(--accent)',fontWeight:500,flexShrink:0 }}>
+            <svg width="12" height="12" viewBox="0 0 13 13" fill="none"><line x1="6.5" y1="1" x2="6.5" y2="12" stroke="var(--accent)" strokeWidth="1.8" strokeLinecap="round"/><line x1="1" y1="6.5" x2="12" y2="6.5" stroke="var(--accent)" strokeWidth="1.8" strokeLinecap="round"/></svg>
+            New
+          </div>
+        }
+      />
 
-      <div style={{ display:'flex',gap:6,marginBottom:10,overflowX:'auto',WebkitOverflowScrolling:'touch',paddingBottom:4 }}>
+      <div style={{ display:'flex',gap:6,marginBottom:18,overflowX:'auto',WebkitOverflowScrolling:'touch',paddingBottom:4 }}>
         {['all','active','backlog','completed'].map(f=>(
           <div key={f} onClick={()=>setFilter(f)} style={{ padding:'5px 13px',borderRadius:20,fontSize:12,fontWeight:500,cursor:'pointer',border:'1px solid',transition:'all 0.15s',background:filter===f?'var(--accent-dim)':'var(--bg-card)',borderColor:filter===f?'var(--accent-border)':'var(--border)',color:filter===f?'var(--accent)':'var(--text-muted)' }}>
             {f.charAt(0).toUpperCase()+f.slice(1)}
-          </div>
-        ))}
-      </div>
-
-      <div style={{ display:'flex',gap:6,marginBottom:18,overflowX:'auto',WebkitOverflowScrolling:'touch',paddingBottom:4,flexShrink:0 }}>
-        <div onClick={()=>setSectorFilter('all')} style={{ padding:'4px 11px',borderRadius:20,fontSize:11,fontWeight:500,cursor:'pointer',border:'1px solid',background:sectorFilter==='all'?'var(--blue-dim)':'var(--bg-card)',borderColor:sectorFilter==='all'?'var(--blue-border)':'var(--border)',color:sectorFilter==='all'?'var(--blue)':'var(--text-dim)' }}>All sectors</div>
-        {sectors.map(s=>(
-          <div key={s.name} onClick={()=>setSectorFilter(s.name)} style={{ padding:'4px 11px',borderRadius:20,fontSize:11,fontWeight:500,cursor:'pointer',border:'1px solid',whiteSpace:'nowrap',flexShrink:0,background:sectorFilter===s.name?'var(--blue-dim)':'var(--bg-card)',borderColor:sectorFilter===s.name?'var(--blue-border)':'var(--border)',color:sectorFilter===s.name?'var(--blue)':'var(--text-dim)' }}>{s.name}</div>
-        ))}
-      </div>
-
-      <div style={{ display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:8,marginBottom:20 }}>
-        {[['Active',projects.filter(p=>p.status==='active').length],['Backlog',projects.filter(p=>p.status==='backlog').length],['Done',projects.filter(p=>p.status==='completed').length]].map(([label,val])=>(
-          <div key={label} style={{ background:'var(--bg-card)',border:'1px solid var(--border)',borderRadius:11,padding:12 }}>
-            <div style={{ fontSize:11,color:'var(--text-dim)',marginBottom:3 }}>{label}</div>
-            <div style={{ fontSize:22,fontWeight:500 }}>{val}</div>
           </div>
         ))}
       </div>
