@@ -265,7 +265,7 @@ export default function Projects({ onAddTask, onEditTask }) {
         </div>
       </div>
 
-      <div style={{ display:'flex',gap:6,marginBottom:10,flexWrap:'wrap' }}>
+      <div style={{ display:'flex',gap:6,marginBottom:10,overflowX:'auto',WebkitOverflowScrolling:'touch',paddingBottom:4 }}>
         {['all','active','backlog','completed'].map(f=>(
           <div key={f} onClick={()=>setFilter(f)} style={{ padding:'5px 13px',borderRadius:20,fontSize:12,fontWeight:500,cursor:'pointer',border:'1px solid',transition:'all 0.15s',background:filter===f?'#1e1208':'var(--bg-card)',borderColor:filter===f?'#7a3410':'var(--border)',color:filter===f?'#d4520f':'#666' }}>
             {f.charAt(0).toUpperCase()+f.slice(1)}
@@ -273,10 +273,10 @@ export default function Projects({ onAddTask, onEditTask }) {
         ))}
       </div>
 
-      <div style={{ display:'flex',gap:6,marginBottom:18,flexWrap:'wrap' }}>
+      <div style={{ display:'flex',gap:6,marginBottom:18,overflowX:'auto',WebkitOverflowScrolling:'touch',paddingBottom:4,flexShrink:0 }}>
         <div onClick={()=>setSectorFilter('all')} style={{ padding:'4px 11px',borderRadius:20,fontSize:11,fontWeight:500,cursor:'pointer',border:'1px solid',background:sectorFilter==='all'?'#0c1a2e':'var(--bg-card)',borderColor:sectorFilter==='all'?'#1a3a5c':'var(--border)',color:sectorFilter==='all'?'#93c5fd':'#555' }}>All sectors</div>
         {sectors.map(s=>(
-          <div key={s.name} onClick={()=>setSectorFilter(s.name)} style={{ padding:'4px 11px',borderRadius:20,fontSize:11,fontWeight:500,cursor:'pointer',border:'1px solid',whiteSpace:'nowrap',background:sectorFilter===s.name?'#0c1a2e':'var(--bg-card)',borderColor:sectorFilter===s.name?'#1a3a5c':'var(--border)',color:sectorFilter===s.name?'#93c5fd':'#555' }}>{s.name}</div>
+          <div key={s.name} onClick={()=>setSectorFilter(s.name)} style={{ padding:'4px 11px',borderRadius:20,fontSize:11,fontWeight:500,cursor:'pointer',border:'1px solid',whiteSpace:'nowrap',flexShrink:0,background:sectorFilter===s.name?'#0c1a2e':'var(--bg-card)',borderColor:sectorFilter===s.name?'#1a3a5c':'var(--border)',color:sectorFilter===s.name?'#93c5fd':'#555' }}>{s.name}</div>
         ))}
       </div>
 

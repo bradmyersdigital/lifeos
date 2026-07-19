@@ -84,7 +84,7 @@ export default function Week({ onAddTask, onEditTask }) {
   const allItemsForDay = (date) => {
     const t = tasksForDay(date).map(x => ({ ...x, _type: 'task' }))
     const e = eventsForDay(date).map(x => ({ ...x, _type: 'event' }))
-    const r = showRoutines ? routines.map(x => ({ ...x, _type: 'routine' })) : []
+    const r = (showRoutines && date === todayStr) ? routines.map(x => ({ ...x, _type: 'routine' })) : []
     return [...t, ...e, ...r].sort((a,b) => {
       const at = a._type==='task' ? timeToMins(a.time_block) : a._type==='event' ? timeToMins(a.start_time) : timeToMins(a.time)
       const bt = b._type==='task' ? timeToMins(b.time_block) : b._type==='event' ? timeToMins(b.start_time) : timeToMins(b.time)
