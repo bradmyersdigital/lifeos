@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { supabase } from '../lib/supabase'
+import { fmtDate } from '../utils'
 
 const URG_STYLE = {
   urgent: { bg: 'var(--danger-dim)', color: 'var(--danger)' },
@@ -90,7 +91,7 @@ export default function Tasks({ onAddTask, onEditTask }) {
           <div style={{ fontSize: 14, color: 'var(--text-secondary)' }}>{task.name}</div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 3, flexWrap: 'wrap' }}>
             {task.time_block && <span style={{ fontFamily: "'DM Mono'", fontSize: 11, color: 'var(--text-dim)' }}>{task.time_block}</span>}
-            {task.start_date && <span style={{ fontFamily: "'DM Mono'", fontSize: 11, color: isOverdue ? 'var(--danger)' : 'var(--text-dim)' }}>{isOverdue ? `${task.start_date} ⚠` : task.start_date}</span>}
+            {task.start_date && <span style={{ fontFamily: "'DM Mono'", fontSize: 11, color: isOverdue ? 'var(--danger)' : 'var(--text-dim)' }}>{isOverdue ? `${fmtDate(task.start_date)} ⚠` : fmtDate(task.start_date)}</span>}
             <span style={{ fontSize: 10, fontWeight: 600, padding: '2px 7px', borderRadius: 6, background: urg.bg, color: urg.color }}>{task.urgency}</span>
             {task.projects && <span style={{ fontSize: 11, color: 'var(--accent)' }}>{task.projects.name} →</span>}
           </div>

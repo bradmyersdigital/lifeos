@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
+import { fmtDate } from '../utils'
 import TaskModal from '../components/TaskModal'
 
 const TIMEFRAMES = [
@@ -125,7 +126,7 @@ function GoalDetail({ tf, goal, onBack, onSaved }) {
           <div style={{ fontSize: 12, color: 'var(--text-dim)', marginBottom: 8 }}>Select a task to link:</div>
           {allTasks.map(t => (
             <div key={t.id} onClick={() => linkTask(t.id)} style={{ padding: '8px 10px', borderRadius: 9, cursor: 'pointer', fontSize: 13, color: 'var(--text-secondary)', marginBottom: 4, background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
-              {t.name} {t.start_date && <span style={{ fontSize: 11, color: 'var(--text-dim)' }}>· {t.start_date}</span>}
+              {t.name} {t.start_date && <span style={{ fontSize: 11, color: 'var(--text-dim)' }}>· {fmtDate(t.start_date)}</span>}
             </div>
           ))}
         </div>
@@ -139,7 +140,7 @@ function GoalDetail({ tf, goal, onBack, onSaved }) {
         <div key={task.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '11px 14px', background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 12, marginBottom: 6, opacity: task.completed ? 0.4 : 1 }}>
           <div style={{ flex: 1 }}>
             <div style={{ fontSize: 14, color: task.completed ? 'var(--text-dim)' : 'var(--text-secondary)', textDecoration: task.completed ? 'line-through' : 'none' }}>{task.name}</div>
-            {task.start_date && <div style={{ fontSize: 11, color: 'var(--text-dim)', fontFamily: "'DM Mono'", marginTop: 2 }}>{task.start_date}</div>}
+            {task.start_date && <div style={{ fontSize: 11, color: 'var(--text-dim)', fontFamily: "'DM Mono'", marginTop: 2 }}>{fmtDate(task.start_date)}</div>}
           </div>
           <div onClick={() => unlinkTask(task.id)} style={{ fontSize: 11, color: 'var(--text-dim)', cursor: 'pointer', padding: '3px 8px', background: 'var(--border)', borderRadius: 6 }}>unlink</div>
         </div>

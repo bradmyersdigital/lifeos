@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
+import { fmtDate } from '../utils'
 import TaskModal from '../components/TaskModal'
 
 const EMOJI_PICKS = ['💼','🏠','🏃','📚','🎨','❤️','💰','🌱','⚡','🎯','🔥','✨','🎵','🏋️','🧠','💡','🌍','🚀','📝','🎮','🏆','🛠️','📊','🎭','🧘','🍎','☀️','🌙','💎','🦁']
@@ -135,7 +136,7 @@ function SectorDetail({ sector, onEditTask, onAddTask, onBack }) {
           <div style={{ fontSize: 14, color: 'var(--text-secondary)' }}>{task.name}</div>
           <div style={{ display: 'flex', gap: 8, marginTop: 2, flexWrap: 'wrap' }}>
             {task.time_block && <span style={{ fontFamily: "'DM Mono'", fontSize: 11, color: 'var(--text-dim)' }}>{task.time_block}</span>}
-            {task.start_date && <span style={{ fontFamily: "'DM Mono'", fontSize: 11, color: isOverdue ? 'var(--danger)' : 'var(--text-dim)' }}>{task.start_date}</span>}
+            {task.start_date && <span style={{ fontFamily: "'DM Mono'", fontSize: 11, color: isOverdue ? 'var(--danger)' : 'var(--text-dim)' }}>{fmtDate(task.start_date)}</span>}
             <span style={{ fontSize: 10, fontWeight: 600, padding: '1px 6px', borderRadius: 5, background: urg.bg, color: urg.color }}>{task.urgency}</span>
           </div>
         </div>
@@ -191,7 +192,7 @@ function SectorDetail({ sector, onEditTask, onAddTask, onBack }) {
         <div style={{ display:'flex',alignItems:'center',gap:8,marginBottom:20 }}>
           <div className="prog-bar" style={{ flex:1 }}><div className="prog-fill" style={{ width:pct+'%',background:color }} /></div>
           <div style={{ fontFamily:"'DM Mono'",fontSize:12,color:'var(--text-muted)' }}>{pct}%</div>
-          {selectedProject.due_date && <div style={{ fontFamily:"'DM Mono'",fontSize:11,color:selectedProject.due_date<today?'var(--danger)':'var(--text-dim)' }}>Due {selectedProject.due_date}</div>}
+          {selectedProject.due_date && <div style={{ fontFamily:"'DM Mono'",fontSize:11,color:selectedProject.due_date<today?'var(--danger)':'var(--text-dim)' }}>Due {fmtDate(selectedProject.due_date)}</div>}
         </div>
 
         {/* Add Task */}
@@ -217,7 +218,7 @@ function SectorDetail({ sector, onEditTask, onAddTask, onBack }) {
                   <div style={{fontSize:14,color:task.completed?'var(--text-dim)':'var(--text-secondary)',textDecoration:task.completed?'line-through':'none'}}>{task.name}</div>
                   <div style={{display:'flex',gap:8,marginTop:2,flexWrap:'wrap'}}>
                     {task.time_block&&<span style={{fontFamily:"'DM Mono'",fontSize:11,color:'var(--text-dim)'}}>{task.time_block}</span>}
-                    {task.start_date&&<span style={{fontFamily:"'DM Mono'",fontSize:11,color:isOverdue?'var(--danger)':'var(--text-dim)'}}>{task.start_date}</span>}
+                    {task.start_date&&<span style={{fontFamily:"'DM Mono'",fontSize:11,color:isOverdue?'var(--danger)':'var(--text-dim)'}}>{fmtDate(task.start_date)}</span>}
                   </div>
                 </div>
               </div>

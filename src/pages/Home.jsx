@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
+import { fmtDate } from '../utils'
 
 const SECTOR_COLORS = {
   business: '#d4520f', 'real estate': '#10b981', health: '#10b981',
@@ -408,7 +409,7 @@ export default function Home({ onAddTask, onEditTask, onAddEvent }) {
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 18 }}>
         <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 14, padding: 16 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 10 }}>
-            <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.09em', color: 'var(--text-dim)', textTransform: 'uppercase' }}>Today's blocks</div>
+            <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.09em', color: 'var(--text-dim)', textTransform: 'uppercase' }}>Today's Focus</div>
             <div style={{ fontSize: 10, color: 'var(--text-dim)', fontFamily: "'DM Mono'" }}>{todayDone}/{tasks.length}</div>
           </div>
           {todayAllItems.length === 0
@@ -426,7 +427,7 @@ export default function Home({ onAddTask, onEditTask, onAddEvent }) {
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: 14, color: item.completed ? 'var(--text-dim)' : 'var(--text-primary)', textDecoration: item.completed ? 'line-through' : 'none', wordBreak: 'break-word', lineHeight: 1.3 }}>{item.name}</div>
-                  {item._isRolledOver && <div style={{ fontSize: 10, color: 'var(--danger)', fontFamily: "'DM Mono'", marginTop: 1 }}>⚠ overdue · was {item._originalDate}</div>}
+                  {item._isRolledOver && <div style={{ fontSize: 10, color: 'var(--danger)', fontFamily: "'DM Mono'", marginTop: 1 }}>⚠ overdue · was {fmtDate(item._originalDate)}</div>}
                 </div>
                 {!item._isRolledOver && item.time_block && <div style={{ fontFamily: "'DM Mono'", fontSize: 10, color: 'var(--text-dim)', flexShrink: 0 }}>{item.time_block}</div>}
               </div>
@@ -543,7 +544,7 @@ export default function Home({ onAddTask, onEditTask, onAddEvent }) {
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                       <div style={{ fontSize: 10, color: 'var(--text-dim)', fontFamily: "'DM Mono'" }}>{pct}% · {tasksLeft} left</div>
-                      {p.due_date && <div style={{ fontSize: 10, fontFamily: "'DM Mono'", color: isOverdue ? 'var(--danger)' : 'var(--text-dim)' }}>Due {p.due_date}</div>}
+                      {p.due_date && <div style={{ fontSize: 10, fontFamily: "'DM Mono'", color: isOverdue ? 'var(--danger)' : 'var(--text-dim)' }}>Due {fmtDate(p.due_date)}</div>}
                     </div>
                   </div>
                 )
@@ -559,20 +560,28 @@ export default function Home({ onAddTask, onEditTask, onAddEvent }) {
           <div className="section-label" style={{ margin: 0 }}>Habits</div>
           <div style={{ fontSize: 11, color: 'var(--text-dim)', fontFamily: "'DM Mono'" }}>{doneHabitsToday}/{habits.length} today</div>
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: 8 }}>
-          {habits.slice(0, 4).map(h => {
-            const done = habitLogs.some(l => l.habit_id === h.id && l.completed_date === todayStr)
-            return (
-              <div key={h.id} onClick={() => toggleHabit(h)} style={{ background: 'var(--bg-card)', border: `1px solid ${done ? 'var(--success-dim)' : 'var(--border)'}`, borderRadius: 12, padding: 12, display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', transition: 'border-color 0.15s' }}>
-                <div style={{ width: 30, height: 30, background: done ? 'var(--success-dim)' : 'var(--bg-card)', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14 }}>{h.icon}</div>
-                <span style={{ fontSize: 13, color: done ? 'var(--success)' : 'var(--text-secondary)', flex: 1 }}>{h.name}</span>
-                <div style={{ width: 22, height: 22, borderRadius: '50%', background: done ? 'var(--success)' : 'transparent', border: `1.5px solid ${done ? 'var(--success)' : 'var(--border-hover)'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, transition: 'all 0.2s' }}>
-                  {done && <svg width="10" height="10" viewBox="0 0 10 10"><polyline points="1.5,5 4,7.5 8.5,2.5" stroke="white" strokeWidth="1.8" fill="none" strokeLinecap="round"/></svg>}
-                </div>
-              </div>
-            )
-          })}
-        </div>
+        {habits.length === 0 ? (
+          <div style={{ padding: 14, textAlign: 'center', fontSize: 13, color: 'var(--text-dim)', border: '1px dashed var(--border)', borderRadius: 12 }}>
+            No habits yet — add one in Habits
+          </div>
+        ) : (
+          <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch', paddingBottom: 4 }}>
+            <div style={{ display: 'grid', gridTemplateRows: 'repeat(2, auto)', gridAutoFlow: 'column', gridAutoColumns: 'calc(50vw - 20px)', gap: 8 }}>
+              {habits.map(h => {
+                const done = habitLogs.some(l => l.habit_id === h.id && l.completed_date === todayStr)
+                return (
+                  <div key={h.id} onClick={() => toggleHabit(h)} style={{ background: 'var(--bg-card)', border: `1px solid ${done ? 'var(--success-border)' : 'var(--border)'}`, borderRadius: 12, padding: 12, display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', transition: 'border-color 0.15s' }}>
+                    <div style={{ width: 30, height: 30, background: done ? 'var(--success-dim)' : 'var(--bg-card2)', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, flexShrink: 0 }}>{h.icon}</div>
+                    <span style={{ fontSize: 13, color: done ? 'var(--success)' : 'var(--text-secondary)', flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{h.name}</span>
+                    <div style={{ width: 22, height: 22, borderRadius: '50%', background: done ? 'var(--success)' : 'transparent', border: `1.5px solid ${done ? 'var(--success)' : 'var(--border-hover)'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, transition: 'all 0.2s' }}>
+                      {done && <svg width="10" height="10" viewBox="0 0 10 10"><polyline points="1.5,5 4,7.5 8.5,2.5" stroke="white" strokeWidth="1.8" fill="none" strokeLinecap="round"/></svg>}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Upcoming subscriptions */}

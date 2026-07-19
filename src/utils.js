@@ -1,3 +1,10 @@
+/** ISO 'YYYY-MM-DD' -> 'DD/MM/YYYY'. Pass-through for anything else. */
+export function fmtDate(d) {
+  if (!d) return ''
+  const m = String(d).match(/^(\d{4})-(\d{2})-(\d{2})/)
+  return m ? `${m[3]}/${m[2]}/${m[1]}` : String(d)
+}
+
 export function fmtTime(t) {
   if (!t) return ''
   if (t.includes('AM') || t.includes('PM')) {

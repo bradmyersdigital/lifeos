@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { supabase } from '../lib/supabase'
-import { fmtTime, eventOccursOn } from '../utils'
+import { fmtTime, eventOccursOn, fmtDate } from '../utils'
 import EventModal from '../components/EventModal'
 
 const DAY_NAMES = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun']
@@ -21,13 +21,11 @@ function timeToMins(t) {
 export default function Week({ onAddTask, onEditTask }) {
   const [tasks, setTasks] = useState([])
   const [events, setEvents] = useState([])
-  const [routines, setRoutines] = useState([])
   const [sectors, setSectors] = useState([])
   const [view, setView] = useState('week')
   const [weekOffset, setWeekOffset] = useState(0)
   const [monthOffset, setMonthOffset] = useState(0)
   const [activeFilter, setActiveFilter] = useState('All')
-  const [showRoutines, setShowRoutines] = useState(false)
   const [showOverdue, setShowOverdue] = useState(false)
   const [eventModal, setEventModal] = useState(null)
   const [daySheet, setDaySheet] = useState(null)
@@ -60,7 +58,6 @@ export default function Week({ onAddTask, onEditTask }) {
     const far = new Date(today); far.setFullYear(far.getFullYear() - 1)
     supabase.from('tasks').select('*, projects(name)').then(({ data }) => setTasks(data || []))
     supabase.from('events').select('*').then(({ data }) => setEvents(data || []))
-    supabase.from('routines').select('*').order('time').then(({ data }) => setRoutines(data || []))
     supabase.from('sectors').select('*').then(({ data }) => setSectors(data || []))
   }, [weekOffset, monthOffset])
 
@@ -84,8 +81,7 @@ export default function Week({ onAddTask, onEditTask }) {
   const allItemsForDay = (date) => {
     const t = tasksForDay(date).map(x => ({ ...x, _type: 'task' }))
     const e = eventsForDay(date).map(x => ({ ...x, _type: 'event' }))
-    const r = (showRoutines && date === todayStr) ? routines.map(x => ({ ...x, _type: 'routine' })) : []
-    return [...t, ...e, ...r].sort((a,b) => {
+    return [...t, ...e].sort((a,b) => {
       const at = a._type==='task' ? timeToMins(a.time_block) : a._type==='event' ? timeToMins(a.start_time) : timeToMins(a.time)
       const bt = b._type==='task' ? timeToMins(b.time_block) : b._type==='event' ? timeToMins(b.start_time) : timeToMins(b.time)
       return at - bt
@@ -128,11 +124,6 @@ export default function Week({ onAddTask, onEditTask }) {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14 }}>
         <div>
           <div style={{ fontSize: 22, fontWeight: 500 }}>{view === 'week' ? 'Week' : 'Month'}</div>
-          <div style={{ fontSize: 12, color: 'var(--text-muted)', fontFamily: "'DM Mono'", marginTop: 2 }}>
-            {view === 'week'
-              ? `${weekDates[0]} — ${weekDates[6]}`
-              : `${MONTH_NAMES[monthMonth]} ${monthYear}`}
-          </div>
         </div>
         <div style={{ display: 'flex', background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 10, overflow: 'hidden' }}>
           {['week','month'].map(v => (
@@ -171,17 +162,25 @@ export default function Week({ onAddTask, onEditTask }) {
         ))}
       </div>
 
-      {/* Routines toggle */}
-      <div style={{ marginBottom: 12 }}>
-        <div onClick={() => setShowRoutines(!showRoutines)} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '5px 12px', borderRadius: 20, fontSize: 12, fontWeight: 500, cursor: 'pointer', border: '1px solid', background: showRoutines ? 'var(--accent-dim)' : 'var(--bg-card)', borderColor: showRoutines ? 'var(--accent-border)' : 'var(--border)', color: showRoutines ? 'var(--accent)' : 'var(--text-muted)' }}>
-          🕐 {showRoutines ? 'Hide routines' : 'Show routines'}
-        </div>
-      </div>
-
       {/* Legend */}
       <div style={{ display: 'flex', gap: 12, marginBottom: 16, fontSize: 12, color: 'var(--text-muted)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}><div style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--accent)' }} /> Tasks</div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}><div style={{ width: 20, height: 8, borderRadius: 4, background: 'var(--event-dim)', border: '1px solid var(--event-color)' }} /> Events</div>
+      </div>
+
+      {/* Period label — sits directly above the calendar so it's clear
+          which week / month you've scrolled to */}
+      <div style={{ textAlign: 'center', marginBottom: 14 }}>
+        <div style={{ fontSize: 17, fontWeight: 600, color: 'var(--text-primary)', letterSpacing: '-0.2px' }}>
+          {view === 'week'
+            ? `${MONTH_NAMES[new Date(weekDates[0] + 'T00:00:00').getMonth()]} ${new Date(weekDates[0] + 'T00:00:00').getFullYear()}`
+            : `${MONTH_NAMES[monthMonth]} ${monthYear}`}
+        </div>
+        {view === 'week' && (
+          <div style={{ fontSize: 12, color: 'var(--text-muted)', fontFamily: "'DM Mono'", marginTop: 3 }}>
+            {fmtDate(weekDates[0])} — {fmtDate(weekDates[6])}
+          </div>
+        )}
       </div>
 
       {/* ── WEEK VIEW ── */}
@@ -217,14 +216,6 @@ export default function Week({ onAddTask, onEditTask }) {
                             <div style={{ fontFamily: "'DM Mono'", fontSize: 11, color: 'var(--event-border)', flexShrink: 0, textAlign: 'right' }}>
                               {fmtTime(item.start_time)}{item.end_time ? ` → ${fmtTime(item.end_time)}` : ''}
                             </div>
-                          </div>
-                        )
-                        if (item._type === 'routine') return (
-                          <div key={item.id + '-r'} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 14px', background: 'var(--bg-card)', border: '1px dashed var(--purple-border)', borderRadius: 12, opacity: 0.75 }}>
-                            <div style={{ fontFamily: "'DM Mono'", fontSize: 11, color: 'var(--purple)', minWidth: 55, flexShrink: 0 }}>{fmtTime(item.time)}</div>
-                            <div style={{ width: 1, height: 20, background: 'var(--purple-border)', flexShrink: 0 }} />
-                            <div style={{ fontSize: 13, color: 'var(--text-muted)', flex: 1 }}>{item.icon && item.icon + ' '}{item.name}</div>
-                            {item.duration && <div style={{ fontSize: 11, color: 'var(--text-dim)', fontFamily: "'DM Mono'" }}>{item.duration}m</div>}
                           </div>
                         )
                         // Task
@@ -267,7 +258,7 @@ export default function Week({ onAddTask, onEditTask }) {
                       <div onClick={() => toggleTask(task)} style={{ width: 20, height: 20, borderRadius: '50%', border: '1.5px solid var(--danger)', background: 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, cursor: 'pointer' }} />
                       <div onClick={() => onEditTask(task)} style={{ flex: 1, minWidth: 0, cursor: 'pointer' }}>
                         <div style={{ fontSize: 14, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{task.name}</div>
-                        <div style={{ fontSize: 11, color: 'var(--danger)', fontFamily: "'DM Mono'", marginTop: 2 }}>Was due {task.start_date}</div>
+                        <div style={{ fontSize: 11, color: 'var(--danger)', fontFamily: "'DM Mono'", marginTop: 2 }}>Was due {fmtDate(task.start_date)}</div>
                       </div>
                       {task.time_block && <div style={{ fontFamily: "'DM Mono'", fontSize: 11, color: 'var(--text-muted)', flexShrink: 0 }}>{fmtTime(task.time_block)}</div>}
                     </div>

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
+import { fmtDate } from '../utils'
 import FolderList, { FolderHeader } from '../components/FolderList'
 
 const IMPORTANCE = ['Critical','High','Medium','Low']
@@ -178,7 +179,7 @@ function ProjectDetail({ project, onBack, onAddTask, onEditTask, onRefresh }) {
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 20 }}>
         <div className="prog-bar" style={{ flex: 1 }}><div className="prog-fill" style={{ width: pct+'%', background: color }} /></div>
         <div style={{ fontFamily: "'DM Mono'", fontSize: 12, color: 'var(--text-muted)' }}>{pct}%</div>
-        {project.due_date && <div style={{ fontFamily: "'DM Mono'", fontSize: 11, color: project.due_date < today ? 'var(--danger)' : 'var(--text-dim)' }}>Due {project.due_date}</div>}
+        {project.due_date && <div style={{ fontFamily: "'DM Mono'", fontSize: 11, color: project.due_date < today ? 'var(--danger)' : 'var(--text-dim)' }}>Due {fmtDate(project.due_date)}</div>}
       </div>
 
       <div style={{ marginBottom: 18 }}>
@@ -202,7 +203,7 @@ function ProjectDetail({ project, onBack, onAddTask, onEditTask, onRefresh }) {
                 <div style={{ fontSize:14,color:task.completed?'var(--text-dim)':'var(--text-secondary)',textDecoration:task.completed?'line-through':'none' }}>{task.name}</div>
                 <div style={{ display:'flex',gap:8,marginTop:2,flexWrap:'wrap' }}>
                   {task.time_block&&<span style={{ fontFamily:"'DM Mono'",fontSize:11,color:'var(--text-dim)' }}>{task.time_block}</span>}
-                  {task.start_date&&<span style={{ fontFamily:"'DM Mono'",fontSize:11,color:isOverdue?'var(--danger)':'var(--text-dim)' }}>{task.start_date}</span>}
+                  {task.start_date&&<span style={{ fontFamily:"'DM Mono'",fontSize:11,color:isOverdue?'var(--danger)':'var(--text-dim)' }}>{fmtDate(task.start_date)}</span>}
                 </div>
               </div>
             </div>
@@ -352,7 +353,7 @@ export default function Projects({ onAddTask, onEditTask }) {
             </div>
             <div style={{ display:'flex',alignItems:'center' }}>
               <div style={{ fontSize:12,color:'var(--text-dim)' }}>{done} of {tasks.length} tasks done</div>
-              {project.due_date&&<div style={{ fontFamily:"'DM Mono'",fontSize:11,color:isOverdue?'var(--danger)':isSoon?'var(--warn)':'var(--text-dim)',marginLeft:'auto' }}>Due {project.due_date}{isOverdue?' ↑':''}</div>}
+              {project.due_date&&<div style={{ fontFamily:"'DM Mono'",fontSize:11,color:isOverdue?'var(--danger)':isSoon?'var(--warn)':'var(--text-dim)',marginLeft:'auto' }}>Due {fmtDate(project.due_date)}{isOverdue?' ↑':''}</div>}
             </div>
           </div>
         )
