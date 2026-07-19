@@ -8,6 +8,7 @@ function fmtShort(d) { return new Date(d + 'T12:00:00').toLocaleDateString('en-U
 
 const JOURNAL_TYPES = [
   { id: 'reflection', label: 'Daily Reflection', icon: '📓', hasPrompts: true },
+  { id: 'free',       label: 'Entry',            icon: '📝', hasPrompts: false },
   { id: 'fitness',    label: 'Fitness',          icon: '💪', hasPrompts: false },
   { id: 'travel',     label: 'Travel',           icon: '✈️', hasPrompts: false },
   { id: 'family',     label: 'Family',           icon: '❤️', hasPrompts: false },
@@ -230,10 +231,15 @@ export default function Journal() {
     setNewCatName(''); setShowNewCat(false); load()
   }
 
-  const openToday = (type = 'reflection') => {
+  // Daily Reflection — one per day, carries the prompt template
+  const openReflection = () => {
     const today = todayStr()
-    const existing = entries.find(e => e.date === today && (e.journal_type || 'reflection') === type)
-    setOpenEntry(existing || { date: today, journal_type: type, prompts: {}, reflection: '' })
+    const existing = entries.find(e => e.date === today && (e.journal_type || 'reflection') === 'reflection')
+    setOpenEntry(existing || { date: today, journal_type: 'reflection', prompts: {}, reflection: '' })
+  }
+  // Plain entry — always a fresh blank, no template
+  const openBlank = () => {
+    setOpenEntry({ date: todayStr(), journal_type: 'free', prompts: {}, reflection: '' })
   }
 
   if (openEntry) return <JournalEntry entry={openEntry} categories={categories} onBack={() => { setOpenEntry(null); load() }} onSaved={load} />
@@ -241,6 +247,7 @@ export default function Journal() {
   const ALL_FILTERS = [
     { id: 'All Entries', label: 'All Entries', icon: '📒' },
     { id: 'reflection', label: 'Daily Reflection', icon: '📓' },
+    { id: 'free', label: 'Entries', icon: '📝' },
     { id: 'fitness', label: 'Fitness', icon: '💪' },
     { id: 'travel', label: 'Travel', icon: '✈️' },
     { id: 'family', label: 'Family', icon: '❤️' },
@@ -263,14 +270,19 @@ export default function Journal() {
           <div style={{ fontSize: 20, fontWeight: 500, color: 'var(--text-primary)' }}>Journal</div>
           <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>{entries.length} entries · {streak} day streak</div>
         </div>
-        <div onClick={() => openToday('reflection')} className="action-btn btn-task" style={{ gap: 6 }}>
-          <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><line x1="6.5" y1="1" x2="6.5" y2="12" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/><line x1="1" y1="6.5" x2="12" y2="6.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/></svg>
-          New entry
+        <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+          <div onClick={openReflection} className="action-btn btn-task" style={{ gap: 5, padding: '9px 12px', fontSize: 12.5 }}>
+            📓 Reflection
+          </div>
+          <div onClick={openBlank} style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '9px 12px', borderRadius: 12, fontSize: 12.5, fontWeight: 500, cursor: 'pointer', background: 'var(--bg-card)', border: '1px solid var(--border)', color: 'var(--text-secondary)' }}>
+            <svg width="12" height="12" viewBox="0 0 13 13" fill="none"><line x1="6.5" y1="1" x2="6.5" y2="12" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/><line x1="1" y1="6.5" x2="12" y2="6.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/></svg>
+            Entry
+          </div>
         </div>
       </div>
 
       {/* Today card */}
-      {!activeFilter && <div onClick={() => openToday()} style={{ background: todayEntry ? 'var(--accent-dim)' : 'var(--bg-card)', border: `1px solid ${todayEntry ? 'var(--accent-border)' : 'var(--border)'}`, borderRadius: 16, padding: 18, marginBottom: 20, cursor: 'pointer' }}>
+      {!activeFilter && <div onClick={openReflection} style={{ background: todayEntry ? 'var(--accent-dim)' : 'var(--bg-card)', border: `1px solid ${todayEntry ? 'var(--accent-border)' : 'var(--border)'}`, borderRadius: 16, padding: 18, marginBottom: 20, cursor: 'pointer' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div>
             <div style={{ fontSize: 13, fontWeight: 600, color: todayEntry ? 'var(--accent)' : 'var(--text-muted)', marginBottom: 3 }}>
@@ -333,7 +345,7 @@ export default function Journal() {
       )}
 
       {activeFilter && filtered.length === 0 && !loading && (
-        <div onClick={() => openToday()} style={{ textAlign: 'center', padding: '40px 20px', color: 'var(--text-dim)', fontSize: 14, border: '1px dashed var(--border)', borderRadius: 14, cursor: 'pointer' }}>
+        <div onClick={openReflection} style={{ textAlign: 'center', padding: '40px 20px', color: 'var(--text-dim)', fontSize: 14, border: '1px dashed var(--border)', borderRadius: 14, cursor: 'pointer' }}>
           <div style={{ fontSize: 36, marginBottom: 10 }}>📓</div>
           <div>No entries here yet</div>
         </div>

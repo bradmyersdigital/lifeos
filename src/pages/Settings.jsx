@@ -1,79 +1,188 @@
-import React from 'react'
-import { useTheme } from '../ThemeContext.jsx'
+import React, { useState } from 'react'
+import { useTheme, buildTheme } from '../ThemeContext.jsx'
+
+/* ── Primitives ─────────────────────────────────────────────────────────── */
+
+function Section({ title, children }) {
+  return (
+    <div style={{ marginBottom: 26 }}>
+      <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--accent)', letterSpacing: '0.02em', marginBottom: 10, paddingLeft: 2 }}>
+        {title}
+      </div>
+      <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 16, overflow: 'hidden' }}>
+        {children}
+      </div>
+    </div>
+  )
+}
+
+function Row({ icon, title, subtitle, right, onClick, last }) {
+  return (
+    <div onClick={onClick}
+      style={{
+        display: 'flex', alignItems: 'center', gap: 14,
+        padding: '14px 16px', cursor: onClick ? 'pointer' : 'default',
+        borderBottom: last ? 'none' : '1px solid var(--border)',
+        WebkitTapHighlightColor: 'transparent',
+      }}>
+      {icon !== undefined && (
+        <div style={{ width: 26, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: 18 }}>{icon}</div>
+      )}
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontSize: 15.5, fontWeight: 500, color: 'var(--text-primary)' }}>{title}</div>
+        {subtitle && <div style={{ fontSize: 12.5, color: 'var(--text-muted)', marginTop: 2 }}>{subtitle}</div>}
+      </div>
+      {right}
+    </div>
+  )
+}
+
+function Toggle({ on, onChange, disabled }) {
+  return (
+    <div onClick={() => !disabled && onChange(!on)}
+      style={{
+        width: 50, height: 30, borderRadius: 15, flexShrink: 0,
+        background: on ? 'var(--accent)' : 'var(--bg-card2)',
+        border: `1px solid ${on ? 'var(--accent)' : 'var(--border)'}`,
+        position: 'relative', cursor: disabled ? 'default' : 'pointer',
+        transition: 'background 0.2s, border-color 0.2s',
+        opacity: disabled ? 0.4 : 1,
+      }}>
+      <div style={{
+        width: 24, height: 24, borderRadius: '50%',
+        background: on ? 'var(--bg)' : 'var(--text-muted)',
+        position: 'absolute', top: 2, left: on ? 23 : 2,
+        transition: 'left 0.2s, background 0.2s',
+        boxShadow: '0 1px 3px rgba(0,0,0,0.25)',
+      }} />
+    </div>
+  )
+}
+
+const Chevron = () => <div style={{ fontSize: 17, color: 'var(--text-dim)', flexShrink: 0, lineHeight: 1 }}>›</div>
+
+/* ── Palette picker ─────────────────────────────────────────────────────── */
+
+function PaletteSheet({ palettes, current, mode, onPick, onClose }) {
+  return (
+    <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
+      <div className="modal-sheet">
+        <div className="modal-handle" />
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18 }}>
+          <div style={{ fontSize: 17, fontWeight: 600, color: 'var(--text-primary)' }}>
+            Palettes · {palettes.length}
+          </div>
+          <div onClick={onClose} style={{ fontSize: 14, color: 'var(--accent)', cursor: 'pointer', fontWeight: 500 }}>Done</div>
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, paddingBottom: 10 }}>
+          {palettes.map(p => {
+            const t = buildTheme(p.id, mode)
+            const selected = current === p.id
+            return (
+              <div key={p.id} onClick={() => onPick(p.id)}
+                style={{
+                  background: t.bgCard,
+                  border: `1.5px solid ${selected ? t.accent : t.border}`,
+                  borderRadius: 16, padding: '14px 12px', cursor: 'pointer',
+                  display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 11,
+                }}>
+                <div style={{ fontSize: 13.5, fontWeight: 500, color: t.textPrimary, textAlign: 'center', lineHeight: 1.25 }}>
+                  {p.name}
+                </div>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  {[t.accent, t.accentBorder, t.bg].map((c, i) => (
+                    <div key={i} style={{ width: 26, height: 26, borderRadius: '50%', background: c, border: `1px solid ${t.border}` }} />
+                  ))}
+                </div>
+                <div style={{
+                  width: '100%', textAlign: 'center', padding: '9px 0', borderRadius: 20,
+                  fontSize: 13.5, fontWeight: 500,
+                  background: selected ? t.bgCard2 : t.accent,
+                  color: selected ? t.textMuted : t.onAccent,
+                }}>
+                  {selected ? 'Selected' : 'Use'}
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+/* ── Page ───────────────────────────────────────────────────────────────── */
 
 export default function Settings() {
-  const { mode, setMode } = useTheme()
-  const isDark = mode === 'dark'
+  const { mode, setMode, paletteId, setPalette, palettes, useSystem, setUseSystem } = useTheme()
+  const [sheet, setSheet] = useState(false)
+  const activePalette = palettes.find(p => p.id === paletteId) || palettes[0]
 
   return (
     <div>
-      <div style={{ fontSize: 20, fontWeight: 500, marginBottom: 24 }}>Settings</div>
+      <div style={{ fontSize: 26, fontWeight: 600, color: 'var(--text-primary)', marginBottom: 24, letterSpacing: '-0.4px' }}>
+        Settings
+      </div>
 
-      {/* Appearance */}
-      <div className="section-label">Appearance</div>
-
-      {/* Dark / Light toggle */}
-      <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 16, overflow: 'hidden', marginBottom: 20 }}>
-
-        {/* Mode toggle row */}
-        <div style={{ padding: '16px 18px', borderBottom: '1px solid var(--border)' }}>
-          <div style={{ fontSize: 14, fontWeight: 500, color: 'var(--text-primary)', marginBottom: 14 }}>Color mode</div>
-          <div style={{ display: 'flex', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 12, overflow: 'hidden' }}>
-            <div onClick={() => setMode('dark')} style={{ flex: 1, padding: '12px', textAlign: 'center', cursor: 'pointer', background: isDark ? 'var(--accent-dim)' : 'transparent', transition: 'background 0.2s' }}>
-              <div style={{ fontSize: 22, marginBottom: 4 }}>🌙</div>
-              <div style={{ fontSize: 13, fontWeight: 500, color: isDark ? 'var(--accent)' : 'var(--text-muted)' }}>Dark</div>
-            </div>
-            <div style={{ width: 1, background: 'var(--border)' }} />
-            <div onClick={() => setMode('light')} style={{ flex: 1, padding: '12px', textAlign: 'center', cursor: 'pointer', background: !isDark ? 'var(--accent-dim)' : 'transparent', transition: 'background 0.2s' }}>
-              <div style={{ fontSize: 22, marginBottom: 4 }}>☀️</div>
-              <div style={{ fontSize: 13, fontWeight: 500, color: !isDark ? 'var(--accent)' : 'var(--text-muted)' }}>Light</div>
-            </div>
-          </div>
-        </div>
-
-        {/* Palette preview */}
-        <div style={{ padding: '16px 18px' }}>
-          <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 12 }}>LifeOS palette</div>
-          <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-            {[
-              { color: '#c3955b', label: 'Cognac' },
-              { color: '#ba6a36', label: 'Amber' },
-              { color: '#e6c8b7', label: 'Champagne' },
-              { color: isDark ? '#0d0d0f' : '#f5f0eb', label: isDark ? 'Black' : 'White', border: true },
-              { color: '#e8e6e1', label: 'Off-white', border: isDark },
-            ].map(({ color, label, border }) => (
-              <div key={label} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5 }}>
-                <div style={{ width: 36, height: 36, borderRadius: 10, background: color, border: border ? '1px solid var(--border)' : 'none' }} />
-                <div style={{ fontSize: 9, color: 'var(--text-dim)', textAlign: 'center' }}>{label}</div>
+      <Section title="Appearance">
+        <Row
+          icon="🖥️"
+          title="Use system theme"
+          subtitle="Match your device's light / dark setting"
+          right={<Toggle on={useSystem} onChange={setUseSystem} />}
+        />
+        <Row
+          icon="🌙"
+          title="Dark mode"
+          subtitle={useSystem ? `Controlled by system · currently ${mode}` : null}
+          right={<Toggle on={mode === 'dark'} onChange={v => setMode(v ? 'dark' : 'light')} disabled={useSystem} />}
+        />
+        <Row
+          icon="🎨"
+          title="App palette"
+          subtitle={activePalette.name}
+          onClick={() => setSheet(true)}
+          right={
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <div style={{ display: 'flex', gap: 4 }}>
+                {[0, 1].map(i => (
+                  <div key={i} style={{
+                    width: 16, height: 16, borderRadius: '50%',
+                    background: i === 0 ? 'var(--accent)' : 'var(--accent-border)',
+                    border: '1px solid var(--border)',
+                  }} />
+                ))}
               </div>
-            ))}
-          </div>
+              <Chevron />
+            </div>
+          }
+          last
+        />
+      </Section>
+
+      <Section title="About">
+        <Row title="App" right={<div style={{ fontSize: 14.5, color: 'var(--text-muted)' }}>LifeOS</div>} />
+        <Row title="Version" right={<div style={{ fontSize: 14.5, color: 'var(--text-muted)', fontFamily: "'DM Mono'" }}>1.0.0</div>} />
+        <Row title="Built by" right={<div style={{ fontSize: 14.5, color: 'var(--accent)', fontWeight: 500 }}>Brad Myers</div>} last />
+      </Section>
+
+      <div style={{ padding: '15px 18px', background: 'var(--accent-dim)', border: '1px solid var(--accent-border)', borderRadius: 16, marginBottom: 20 }}>
+        <div style={{ fontSize: 12.5, color: 'var(--accent-text)', lineHeight: 1.65 }}>
+          LifeOS is your personal operating system — one place for tasks, habits, goals, notes, finance, and more.
+          Built for people who want to live intentionally.
         </div>
       </div>
 
-      {/* About */}
-      <div className="section-label">About</div>
-      <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 16, padding: '16px 18px', marginBottom: 16 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12 }}>
-          <div style={{ fontSize: 14, color: 'var(--text-secondary)' }}>App</div>
-          <div style={{ fontSize: 14, fontWeight: 500, color: 'var(--text-primary)' }}>LifeOS</div>
-        </div>
-        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12 }}>
-          <div style={{ fontSize: 14, color: 'var(--text-secondary)' }}>Version</div>
-          <div style={{ fontSize: 14, fontWeight: 500, color: 'var(--text-primary)' }}>1.0.0</div>
-        </div>
-        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-          <div style={{ fontSize: 14, color: 'var(--text-secondary)' }}>Built by</div>
-          <div style={{ fontSize: 14, fontWeight: 500, color: 'var(--accent)' }}>Brad Myers</div>
-        </div>
-      </div>
-
-      {/* Brand note */}
-      <div style={{ padding: '14px 18px', background: 'var(--accent-dim)', border: '1px solid var(--accent-border)', borderRadius: 14, marginBottom: 16 }}>
-        <div style={{ fontSize: 12, color: 'var(--accent-text)', lineHeight: 1.6 }}>
-          LifeOS is your personal operating system — one place for tasks, habits, goals, notes, finance, and more. Built for people who want to live intentionally.
-        </div>
-      </div>
+      {sheet && (
+        <PaletteSheet
+          palettes={palettes}
+          current={paletteId}
+          mode={mode}
+          onPick={setPalette}
+          onClose={() => setSheet(false)}
+        />
+      )}
     </div>
   )
 }
