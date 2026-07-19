@@ -161,7 +161,7 @@ function Shell() {
     <div className="app-shell">
       {/* Hamburger button — always visible top-left */}
       <div onClick={() => setDrawerOpen(true)}
-        style={{ position: 'fixed', top: 'env(safe-area-inset-top, 12px)', left: 16, zIndex: 100, width: 38, height: 38, borderRadius: 11, background: 'rgba(15,15,17,0.9)', border: '1px solid #242428', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4, cursor: 'pointer', marginTop: 8 }}>
+        style={{ position: 'fixed', top: 'calc(env(safe-area-inset-top, 44px) + 10px)', left: 16, zIndex: 100, width: 38, height: 38, borderRadius: 11, background: 'rgba(15,15,17,0.9)', border: '1px solid #242428', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4, cursor: 'pointer' }}>
         <div style={{ width: 16, height: 1.5, background: '#888', borderRadius: 1 }} />
         <div style={{ width: 16, height: 1.5, background: '#888', borderRadius: 1 }} />
         <div style={{ width: 12, height: 1.5, background: '#888', borderRadius: 1 }} />
