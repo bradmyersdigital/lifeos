@@ -87,7 +87,7 @@ function Drawer({ open, onClose, navigate, location }) {
       <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)', zIndex: 200, backdropFilter: 'blur(2px)', WebkitBackdropFilter: 'blur(2px)' }} />
 
       {/* Drawer panel */}
-      <div ref={drawerRef} onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}
+      <div ref={drawerRef} onTouchStart={onTouchStart} onTouchEnd={onTouchEnd} className="drawer-panel"
         style={{ position: 'fixed', top: 0, left: 0, bottom: 0, width: 280, background: '#0f0f11', borderRight: '1px solid #1e1e24', zIndex: 201, display: 'flex', flexDirection: 'column', overflowY: 'auto', WebkitOverflowScrolling: 'touch' }}>
 
         {/* Drawer header */}
@@ -167,7 +167,7 @@ function Shell() {
   return (
     <div className="app-shell">
       {/* Hamburger button — always visible top-left */}
-      <div onClick={() => setDrawerOpen(true)}
+      <div onClick={() => setDrawerOpen(true)} className="hamburger-btn"
         style={{ position: 'fixed', top: 'calc(env(safe-area-inset-top, 44px) + 10px)', left: 16, zIndex: 100, width: 40, height: 40, borderRadius: 14, background: 'rgba(22,22,20,0.82)', border: '1px solid var(--border)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 5, cursor: 'pointer', boxShadow: '0 4px 16px rgba(0,0,0,0.25)' }}>
         <div style={{ width: 15, height: 1.5, background: 'var(--text-muted)', borderRadius: 2 }} />
         <div style={{ width: 15, height: 1.5, background: 'var(--text-muted)', borderRadius: 2 }} />
