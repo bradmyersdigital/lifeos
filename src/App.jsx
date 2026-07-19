@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { ThemeProvider } from './ThemeContext.jsx'
+import { ThemeProvider, useTheme } from './ThemeContext.jsx'
 import { BrowserRouter, Routes, Route, useNavigate, useLocation } from 'react-router-dom'
 import Home from './pages/Home'
 import Week from './pages/Week'
@@ -137,6 +137,7 @@ function Drawer({ open, onClose, navigate, location }) {
 function Shell() {
   const navigate = useNavigate()
   const location = useLocation()
+  const { mode } = useTheme()
   const [taskModal, setTaskModal] = useState(null)
   const [eventModal, setEventModal] = useState(null)
   const [refreshKey, setRefreshKey] = useState(0)
@@ -147,6 +148,12 @@ function Shell() {
     else document.documentElement.style.overflow = ''
     return () => { document.documentElement.style.overflow = '' }
   }, [taskModal, drawerOpen])
+
+  // Sync body class with theme mode for CSS overrides
+  useEffect(() => {
+    document.body.classList.toggle('light-mode', mode === 'light')
+    document.body.classList.toggle('dark-mode', mode === 'dark')
+  }, [mode])
 
   const openAdd = (mode, ctx = {}) => setTaskModal({ mode, task: null, ...ctx })
   const openAddEvent = () => setEventModal({ event: null, date: new Date().toISOString().split('T')[0] })
@@ -161,10 +168,10 @@ function Shell() {
     <div className="app-shell">
       {/* Hamburger button — always visible top-left */}
       <div onClick={() => setDrawerOpen(true)}
-        style={{ position: 'fixed', top: 'calc(env(safe-area-inset-top, 44px) + 10px)', left: 16, zIndex: 100, width: 38, height: 38, borderRadius: 11, background: 'rgba(15,15,17,0.9)', border: '1px solid #242428', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4, cursor: 'pointer' }}>
-        <div style={{ width: 16, height: 1.5, background: '#888', borderRadius: 1 }} />
-        <div style={{ width: 16, height: 1.5, background: '#888', borderRadius: 1 }} />
-        <div style={{ width: 12, height: 1.5, background: '#888', borderRadius: 1 }} />
+        style={{ position: 'fixed', top: 'calc(env(safe-area-inset-top, 44px) + 10px)', left: 16, zIndex: 100, width: 40, height: 40, borderRadius: 14, background: 'rgba(22,22,20,0.82)', border: '1px solid var(--border)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 5, cursor: 'pointer', boxShadow: '0 4px 16px rgba(0,0,0,0.25)' }}>
+        <div style={{ width: 15, height: 1.5, background: 'var(--text-muted)', borderRadius: 2 }} />
+        <div style={{ width: 15, height: 1.5, background: 'var(--text-muted)', borderRadius: 2 }} />
+        <div style={{ width: 10, height: 1.5, background: 'var(--text-muted)', borderRadius: 2 }} />
       </div>
 
       {/* Drawer */}

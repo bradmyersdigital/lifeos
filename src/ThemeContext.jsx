@@ -160,9 +160,19 @@ function injectTheme(t) {
     .field-label { color: ${t.textMuted} !important; }
   `
 
-  // Also set body bg directly for iOS overscroll areas
+  // Force body + all cards to use theme colors on iOS
   document.body.style.background = t.bg
   document.documentElement.style.background = t.bg
+
+  // Patch card backgrounds for light mode
+  const cardStyle = document.getElementById('lifeos-cards')
+  const el2 = cardStyle || document.createElement('style')
+  if (!cardStyle) { el2.id = 'lifeos-cards'; document.head.appendChild(el2) }
+  el2.textContent = `
+    .card, [class*="card"] { background: ${t.bgCard} !important; border-color: ${t.border} !important; }
+    .modal-sheet { background: ${t.bgCard} !important; }
+    .bottom-nav { background: ${t.bgCard} !important; border-top-color: ${t.border} !important; }
+  `
 }
 
 export function ThemeProvider({ children }) {
@@ -177,12 +187,23 @@ export function ThemeProvider({ children }) {
 
   const theme = mode === 'dark' ? DARK : LIGHT
 
-  useEffect(() => { injectTheme(theme) }, [mode])
+  useEffect(() => {
+    injectTheme(theme)
+    document.body.classList.toggle('light-mode', mode === 'light')
+    document.body.classList.toggle('dark-mode', mode === 'dark')
+    document.body.style.background = theme.bg
+    document.documentElement.style.background = theme.bg
+  }, [mode])
 
   const setMode = (m) => {
     setModeState(m)
     localStorage.setItem('lifeos_mode', m)
-    injectTheme(m === 'dark' ? DARK : LIGHT)
+    const t = m === 'dark' ? DARK : LIGHT
+    injectTheme(t)
+    document.body.classList.toggle('light-mode', m === 'light')
+    document.body.classList.toggle('dark-mode', m === 'dark')
+    document.body.style.background = t.bg
+    document.documentElement.style.background = t.bg
   }
 
   const toggleMode = () => setMode(mode === 'dark' ? 'light' : 'dark')
