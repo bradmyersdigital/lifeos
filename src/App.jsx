@@ -192,9 +192,7 @@ function Drawer({ open, onClose, navigate, location, order, setOrder, nav, setNa
           />
         </div>
 
-        <div style={{ padding: '14px 20px 32px', borderTop: '1px solid var(--border)' }}>
-          <div style={{ fontSize: 11, color: 'var(--text-dim)' }}>Beyond Horizons · Brad Myers</div>
-        </div>
+        <div style={{ height: 'calc(env(safe-area-inset-bottom, 20px) + 16px)' }} />
       </div>
     </>
   )

@@ -83,6 +83,11 @@ export default function Week({ onAddTask, onEditTask }) {
     .filter(t => activeFilter === 'All' || t.sector === activeFilter)
     .sort((a,b) => a.start_date > b.start_date ? 1 : -1)
 
+  useEffect(() => {
+    if (view !== 'month') return
+    selectedChipRef.current?.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' })
+  }, [monthOffset, view])
+
   // Day view
   const dayDate = (() => { const d = new Date(today); d.setDate(d.getDate() + dayOffset); return toStr(d) })()
 
@@ -96,20 +101,33 @@ export default function Week({ onAddTask, onEditTask }) {
     setDaySheet({ date, tasks: tasksForDay(date), events: eventsForDay(date) })
   }
 
-  // Touch swipe for week
-  const handleTouchStart = (e) => { touchStartX.current = e.touches[0].clientX }
+  // Swipe to page. Attached to the calendar surface only — on the root it
+  // fired anywhere on the page, including the filters and header.
+  const touchStartY = useRef(null)
+  const handleTouchStart = (e) => {
+    touchStartX.current = e.touches[0].clientX
+    touchStartY.current = e.touches[0].clientY
+  }
   const handleTouchEnd = (e) => {
     if (touchStartX.current === null) return
     const dx = e.changedTouches[0].clientX - touchStartX.current
-    if (Math.abs(dx) > 100) {
-      if (view === 'week') setWeekOffset(o => o + (dx < 0 ? 1 : -1))
+    const dy = e.changedTouches[0].clientY - touchStartY.current
+    // must be clearly horizontal, or a diagonal scroll flips the month
+    if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 1.6) {
+      if (view === 'day') setDayOffset(o => o + (dx < 0 ? 1 : -1))
+      else if (view === 'week') setWeekOffset(o => o + (dx < 0 ? 1 : -1))
       else setMonthOffset(o => o + (dx < 0 ? 1 : -1))
     }
     touchStartX.current = null
+    touchStartY.current = null
   }
 
+  // Month/year strip — a rolling window around today
+  const MONTH_STRIP = Array.from({ length: 36 }, (_, i) => i - 12)
+  const selectedChipRef = useRef(null)
+
   return (
-    <div onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
+    <div>
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14 }}>
         <div>
@@ -180,9 +198,39 @@ export default function Week({ onAddTask, onEditTask }) {
         )}
       </div>
 
+      {/* Month / year strip — jump straight to any month */}
+      {view === 'month' && (
+        <div style={{ display: 'flex', gap: 7, overflowX: 'auto', WebkitOverflowScrolling: 'touch', paddingBottom: 8, marginBottom: 10, alignItems: 'center' }}>
+          {MONTH_STRIP.map(off => {
+            const d = new Date(today.getFullYear(), today.getMonth() + off, 1)
+            const m = d.getMonth(), y = d.getFullYear()
+            const selected = off === monthOffset
+            return (
+              <React.Fragment key={off}>
+                {m === 0 && (
+                  <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-muted)', padding: '0 4px', flexShrink: 0, fontFamily: "'DM Mono'" }}>{y}</div>
+                )}
+                <div
+                  ref={selected ? selectedChipRef : null}
+                  onClick={() => setMonthOffset(off)}
+                  style={{
+                    flexShrink: 0, padding: '7px 15px', borderRadius: 20,
+                    fontSize: 13.5, fontWeight: 500, cursor: 'pointer',
+                    background: selected ? 'var(--accent-dim)' : 'transparent',
+                    border: `1px solid ${selected ? 'var(--accent-border)' : 'var(--border)'}`,
+                    color: selected ? 'var(--accent)' : 'var(--text-muted)',
+                  }}>
+                  {MONTH_NAMES[m].slice(0, 3)}
+                </div>
+              </React.Fragment>
+            )
+          })}
+        </div>
+      )}
+
       {/* ── DAY + WEEK VIEW (same row renderer, different date list) ── */}
       {(view === 'week' || view === 'day') && (
-        <div>
+        <div onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
           {(view === 'day' ? [dayDate] : weekDates).map((date, i) => {
             const isPast = date < todayStr
             const isToday = date === todayStr
@@ -295,7 +343,7 @@ export default function Week({ onAddTask, onEditTask }) {
         const cellHeight = `calc((100dvh - 330px) / ${rows})`
 
         return (
-          <div>
+          <div onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', marginBottom: 4 }}>
               {['M','T','W','T','F','S','S'].map((d,i) => (
                 <div key={i} style={{ textAlign: 'center', fontSize: 11, fontWeight: 600, color: 'var(--text-dim)', padding: '2px 0' }}>{d}</div>
