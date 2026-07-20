@@ -17,24 +17,29 @@ import Journal from './pages/Journal'
 import TaskModal from './components/TaskModal'
 import EventModal from './components/EventModal'
 import SortableList from './components/SortableList'
+import {
+  HomeIcon, WeekIcon, TasksIcon, SectorsIcon, HabitsIcon,
+  ProjectsIcon, NotesIcon, JournalIcon, GoalsIcon, FocusIcon,
+  FinanceIcon, GroceryIcon, SettingsIcon,
+} from './components/Icons'
 
 /* ── Destination registry — one source of truth for nav + drawer ────────── */
 
-const HOME = { path: '/', label: 'Home', emoji: '🏠', desc: 'Your daily command center', Icon: HomeIcon }
+const HOME = { path: '/', label: 'Home', desc: 'Your daily command center', Icon: HomeIcon }
 
 const DESTINATIONS = [
-  { path: '/projects', label: 'Projects',    emoji: '📋', desc: 'Track active projects' },
-  { path: '/notes',    label: 'Notes',       emoji: '📝', desc: 'Quick capture & notes' },
-  { path: '/journal',  label: 'Journal',     emoji: '📓', desc: 'Daily entries & reflection' },
-  { path: '/goals',    label: 'Goals',       emoji: '🎯', desc: 'Long-term goals' },
-  { path: '/focus',    label: 'Focus Timer', emoji: '⏱️', desc: 'Deep work sessions' },
-  { path: '/week',     label: 'Week',        emoji: '🗓️', desc: 'Week & month calendar', Icon: WeekIcon },
-  { path: '/tasks',    label: 'Tasks',       emoji: '✅', desc: 'Everything on your plate', Icon: TasksIcon },
-  { path: '/sectors',  label: 'Sectors',     emoji: '🗂️', desc: 'Life areas', Icon: SectorsIcon },
-  { path: '/habits',   label: 'Habits',      emoji: '🔁', desc: 'Streaks & routines', Icon: HabitsIcon },
-  { path: '/finance',  label: 'Finance',     emoji: '💰', desc: 'Income, subs & bills' },
-  { path: '/grocery',  label: 'Grocery',     emoji: '🛒', desc: 'Shopping list' },
-  { path: '/settings', label: 'Settings',    emoji: '⚙️', desc: 'Theme & preferences' },
+  { path: '/projects', label: 'Projects',    desc: 'Track active projects',     Icon: ProjectsIcon },
+  { path: '/notes',    label: 'Notes',       desc: 'Quick capture & notes',     Icon: NotesIcon },
+  { path: '/journal',  label: 'Journal',     desc: 'Daily entries & reflection',Icon: JournalIcon },
+  { path: '/goals',    label: 'Goals',       desc: 'Long-term goals',           Icon: GoalsIcon },
+  { path: '/focus',    label: 'Focus Timer', desc: 'Deep work sessions',        Icon: FocusIcon },
+  { path: '/week',     label: 'Week',        desc: 'Week & month calendar',     Icon: WeekIcon },
+  { path: '/tasks',    label: 'Tasks',       desc: 'Everything on your plate',  Icon: TasksIcon },
+  { path: '/sectors',  label: 'Sectors',     desc: 'Life areas',                Icon: SectorsIcon },
+  { path: '/habits',   label: 'Habits',      desc: 'Streaks & routines',        Icon: HabitsIcon },
+  { path: '/finance',  label: 'Finance',     desc: 'Income, subs & bills',      Icon: FinanceIcon },
+  { path: '/grocery',  label: 'Grocery',     desc: 'Shopping list',             Icon: GroceryIcon },
+  { path: '/settings', label: 'Settings',    desc: 'Theme & preferences',       Icon: SettingsIcon },
 ]
 
 const byPath = (p) => DESTINATIONS.find(d => d.path === p)
@@ -106,7 +111,7 @@ function Drawer({ open, onClose, navigate, location, order, setOrder, nav, setNa
         {/* Home — always present, always first in the tab bar */}
         <div onClick={() => go(HOME.path)}
           style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '13px 20px', cursor: 'pointer', background: location.pathname === '/' ? 'var(--accent-dim)' : 'transparent', borderLeft: `3px solid ${location.pathname === '/' ? 'var(--accent)' : 'transparent'}` }}>
-          <div style={{ width: 34, height: 34, borderRadius: 10, background: 'var(--bg-card)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 17, flexShrink: 0 }}>{HOME.emoji}</div>
+          <div style={{ width: 34, height: 34, borderRadius: 10, background: 'var(--bg-card)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}><HOME.Icon active={location.pathname === '/'} size={18} /></div>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontSize: 14.5, fontWeight: 500, color: location.pathname === '/' ? 'var(--accent)' : 'var(--text-primary)' }}>{HOME.label}</div>
             <div style={{ fontSize: 11, color: 'var(--text-dim)', marginTop: 1 }}>{HOME.desc}</div>
@@ -114,27 +119,55 @@ function Drawer({ open, onClose, navigate, location, order, setOrder, nav, setNa
           <div style={{ fontSize: 9, color: 'var(--text-dim)', border: '1px solid var(--border)', borderRadius: 5, padding: '2px 5px', flexShrink: 0 }}>PINNED</div>
         </div>
 
-        {/* Reorderable list */}
-        <div style={{ padding: '14px 20px 6px' }}>
+        {/* Docked — what's already in the tab bar, kept out of the list below */}
+        {nav.length > 0 && (
+          <div style={{ padding: '14px 20px 0' }}>
+            <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 8 }}>
+              Docked · {nav.length}/{NAV_SLOTS}
+            </div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+              {nav.map(byPath).filter(Boolean).map(d => (
+                <div key={d.path} onClick={() => go(d.path)}
+                  style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 8px 6px 7px', borderRadius: 10, background: 'var(--accent-dim)', border: '1px solid var(--accent-border)', cursor: 'pointer' }}>
+                  <d.Icon active={true} size={15} />
+                  <span style={{ fontSize: 12, fontWeight: 500, color: 'var(--accent)' }}>{d.label}</span>
+                  <span onClick={e => { e.stopPropagation(); togglePin(d.path) }}
+                    style={{ fontSize: 13, color: 'var(--accent)', opacity: 0.65, padding: '0 1px', lineHeight: 1 }}>×</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Everything not docked */}
+        <div style={{ padding: '16px 20px 6px' }}>
           <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Menu</div>
           <div style={{ fontSize: 10.5, color: 'var(--text-dim)', marginTop: 4, lineHeight: 1.45 }}>
-            Hold to reorder · tap ☆ to pin to the tab bar ({nav.length}/{NAV_SLOTS})
+            Hold to reorder · tap ☆ to dock
           </div>
           {notice && <div style={{ fontSize: 10.5, color: 'var(--warn)', marginTop: 5 }}>{notice}</div>}
         </div>
 
         <div style={{ flex: 1, padding: '0 0 12px' }}>
+          {order.filter(p => !nav.includes(p)).length === 0 && (
+            <div style={{ padding: '10px 20px', fontSize: 12, color: 'var(--text-dim)' }}>
+              Everything is docked.
+            </div>
+          )}
           <SortableList
-            items={order.map(p => ({ id: p, ...byPath(p) })).filter(d => d.path)}
+            items={order.filter(p => !nav.includes(p)).map(p => ({ id: p, ...byPath(p) })).filter(d => d.path)}
             gap={2}
             onReorder={(next) => {
               draggedRef.current = true
               setTimeout(() => { draggedRef.current = false }, 260)
-              setOrder(next.map(d => d.path))
+              // splice the new visible sequence back into the full order,
+              // leaving docked entries at their existing indices
+              const seq = next.map(d => d.path)
+              let i = 0
+              setOrder(order.map(p => (nav.includes(p) ? p : seq[i++])))
             }}
             renderItem={(d, { dragging }) => {
               const isActive = location.pathname === d.path
-              const pinned = nav.includes(d.path)
               return (
                 <div onClick={() => go(d.path)}
                   style={{
@@ -144,14 +177,14 @@ function Drawer({ open, onClose, navigate, location, order, setOrder, nav, setNa
                     borderLeft: `3px solid ${isActive ? 'var(--accent)' : 'transparent'}`,
                     borderRadius: dragging ? 14 : 0,
                   }}>
-                  <div style={{ width: 34, height: 34, borderRadius: 10, background: isActive ? 'var(--accent-dim)' : 'var(--bg-card)', border: `1px solid ${isActive ? 'var(--accent-border)' : 'var(--border)'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 17, flexShrink: 0 }}>{d.emoji}</div>
+                  <div style={{ width: 34, height: 34, borderRadius: 10, background: isActive ? 'var(--accent-dim)' : 'var(--bg-card)', border: `1px solid ${isActive ? 'var(--accent-border)' : 'var(--border)'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}><d.Icon active={isActive} size={18} /></div>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontSize: 14.5, fontWeight: 500, color: isActive ? 'var(--accent)' : 'var(--text-primary)' }}>{d.label}</div>
                     <div style={{ fontSize: 11, color: 'var(--text-dim)', marginTop: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{d.desc}</div>
                   </div>
                   <div onClick={e => { e.stopPropagation(); togglePin(d.path) }}
-                    style={{ width: 30, height: 30, borderRadius: 9, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0, fontSize: 15, color: pinned ? 'var(--accent)' : 'var(--text-dim)', background: pinned ? 'var(--accent-dim)' : 'transparent', border: `1px solid ${pinned ? 'var(--accent-border)' : 'transparent'}` }}>
-                    {pinned ? '★' : '☆'}
+                    style={{ width: 30, height: 30, borderRadius: 9, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0, fontSize: 15, color: 'var(--text-dim)' }}>
+                    ☆
                   </div>
                 </div>
               )
@@ -228,13 +261,11 @@ function Shell() {
       </div>
 
       <nav className="bottom-nav">
-        {navItems.map(({ path, label, emoji, Icon }) => {
+        {navItems.map(({ path, label, Icon }) => {
           const active = activeNav === path
           return (
             <div key={path} className={`nav-item${active ? ' active' : ''}`} onClick={() => navigate(path)}>
-              {Icon
-                ? <Icon active={active} />
-                : <span style={{ fontSize: 17, lineHeight: '20px', filter: active ? 'none' : 'grayscale(0.7)' }}>{emoji}</span>}
+              <Icon active={active} />
               <span>{label}</span>
             </div>
           )
@@ -249,27 +280,4 @@ function Shell() {
 
 export default function App() {
   return <ThemeProvider><BrowserRouter><Shell /></BrowserRouter></ThemeProvider>
-}
-
-/* ── Nav icons ──────────────────────────────────────────────────────────── */
-
-function HomeIcon({ active }) {
-  const c = active ? 'var(--accent)' : 'var(--text-muted)'
-  return <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><rect x="2" y="2" width="7" height="7" rx="2" fill={c}/><rect x="11" y="2" width="7" height="7" rx="2" fill={c} opacity="0.5"/><rect x="2" y="11" width="7" height="7" rx="2" fill={c} opacity="0.5"/><rect x="11" y="11" width="7" height="7" rx="2" fill={c} opacity="0.5"/></svg>
-}
-function WeekIcon({ active }) {
-  const c = active ? 'var(--accent)' : 'var(--text-muted)'
-  return <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><rect x="2" y="4" width="16" height="13" rx="2" stroke={c} strokeWidth="1.5"/><line x1="2" y1="8" x2="18" y2="8" stroke={c} strokeWidth="1.5"/><line x1="7" y1="2" x2="7" y2="6" stroke={c} strokeWidth="1.5" strokeLinecap="round"/><line x1="13" y1="2" x2="13" y2="6" stroke={c} strokeWidth="1.5" strokeLinecap="round"/></svg>
-}
-function TasksIcon({ active }) {
-  const c = active ? 'var(--accent)' : 'var(--text-muted)'
-  return <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><circle cx="5" cy="6" r="1.5" fill={c}/><line x1="8" y1="6" x2="18" y2="6" stroke={c} strokeWidth="1.5" strokeLinecap="round"/><circle cx="5" cy="10" r="1.5" fill={c} opacity="0.6"/><line x1="8" y1="10" x2="15" y2="10" stroke={c} strokeWidth="1.5" strokeLinecap="round" opacity="0.6"/><circle cx="5" cy="14" r="1.5" fill={c} opacity="0.4"/><line x1="8" y1="14" x2="13" y2="14" stroke={c} strokeWidth="1.5" strokeLinecap="round" opacity="0.4"/></svg>
-}
-function SectorsIcon({ active }) {
-  const c = active ? 'var(--accent)' : 'var(--text-muted)'
-  return <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><rect x="2" y="2" width="7" height="7" rx="2" stroke={c} strokeWidth="1.5"/><rect x="11" y="2" width="7" height="7" rx="2" stroke={c} strokeWidth="1.5" opacity="0.7"/><rect x="2" y="11" width="7" height="7" rx="2" stroke={c} strokeWidth="1.5" opacity="0.7"/><rect x="11" y="11" width="7" height="7" rx="2" stroke={c} strokeWidth="1.5" opacity="0.4"/></svg>
-}
-function HabitsIcon({ active }) {
-  const c = active ? 'var(--accent)' : 'var(--text-muted)'
-  return <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="7.5" stroke={c} strokeWidth="1.5"/><polyline points="7,10 9,12 13,8" stroke={c} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
 }

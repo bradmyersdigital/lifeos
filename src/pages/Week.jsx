@@ -4,7 +4,6 @@ import { fmtTime, eventOccursOn, fmtDate } from '../utils'
 import EventModal from '../components/EventModal'
 
 const DAY_NAMES = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun']
-const MONTH_WINDOW = [-2,-1,0,1,2,3,4,5,6]
 const MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December']
 function toStr(d) { return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}` }
 const SECTOR_COLORS = { business:'#d4520f','real estate':'#10b981',health:'#10b981','personal growth':'#a78bfa',hobbies:'#f59e0b',family:'#f43f5e' }
@@ -25,7 +24,6 @@ export default function Week({ onAddTask, onEditTask }) {
   const [sectors, setSectors] = useState([])
   const [view, setView] = useState('week')
   const [dayOffset, setDayOffset] = useState(0)
-  const currentMonthRef = useRef(null)
   const [weekOffset, setWeekOffset] = useState(0)
   const [monthOffset, setMonthOffset] = useState(0)
   const [activeFilter, setActiveFilter] = useState('All')
@@ -45,13 +43,6 @@ export default function Week({ onAddTask, onEditTask }) {
     d.setDate(today.getDate() - daysFromMon + i + weekOffset * 7)
     return toStr(d)
   })
-
-  // land on the anchor month whenever month view opens or is paged
-  useEffect(() => {
-    if (view !== 'month' || !currentMonthRef.current) return
-    const t = setTimeout(() => currentMonthRef.current?.scrollIntoView({ block: 'start' }), 60)
-    return () => clearTimeout(t)
-  }, [view, monthOffset])
 
   useEffect(() => {
     // no date filter — the month view scrolls across a wide window
@@ -293,90 +284,75 @@ export default function Week({ onAddTask, onEditTask }) {
         </div>
       )}
 
-      {/* ── MONTH VIEW ── */}
-      {/* ── MONTH VIEW — continuous vertical scroll, Google-style cells ── */}
-      {view === 'month' && (
-        <div>
-          {/* Sticky weekday header so it stays put while scrolling months */}
-          <div style={{ position: 'sticky', top: 0, zIndex: 5, background: 'var(--bg)', display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', paddingBottom: 6 }}>
-            {['M','T','W','T','F','S','S'].map((d,i) => (
-              <div key={i} style={{ textAlign: 'center', fontSize: 11, fontWeight: 600, color: 'var(--text-dim)', padding: '4px 0' }}>{d}</div>
-            ))}
-          </div>
+      {/* ── MONTH VIEW — one month per page, swipe left/right ── */}
+      {view === 'month' && (() => {
+        const dim = new Date(monthYear, monthMonth + 1, 0).getDate()
+        const fdow = (new Date(monthYear, monthMonth, 1).getDay() + 6) % 7
+        const cells = [...Array(fdow).fill(null), ...Array.from({ length: dim }, (_, i) => i + 1)]
+        while (cells.length % 7 !== 0) cells.push(null)
+        const rows = cells.length / 7
+        // fill whatever vertical space is left below the controls
+        const cellHeight = `calc((100dvh - 330px) / ${rows})`
 
-          {MONTH_WINDOW.map(off => {
-            const mDate = new Date(today.getFullYear(), today.getMonth() + monthOffset + off, 1)
-            const mYear = mDate.getFullYear(), mMonth = mDate.getMonth()
-            const dim = new Date(mYear, mMonth + 1, 0).getDate()
-            const fdow = (new Date(mYear, mMonth, 1).getDay() + 6) % 7
-            const cells = [...Array(fdow).fill(null), ...Array.from({ length: dim }, (_, i) => i + 1)]
-            while (cells.length % 7 !== 0) cells.push(null)
-
-            return (
-              <div key={`${mYear}-${mMonth}`} ref={off === 0 ? currentMonthRef : null} style={{ marginBottom: 26 }}>
-                <div style={{ fontSize: 17, fontWeight: 600, color: off === 0 ? 'var(--accent)' : 'var(--text-primary)', margin: '4px 0 8px', letterSpacing: '-0.2px' }}>
-                  {MONTH_NAMES[mMonth]} {mYear}
-                </div>
-
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', borderTop: '1px solid var(--border)', borderLeft: '1px solid var(--border)' }}>
-                  {cells.map((day, idx) => {
-                    if (!day) return <div key={idx} style={{ borderRight: '1px solid var(--border)', borderBottom: '1px solid var(--border)', minHeight: 84, background: 'var(--bg-card2)', opacity: 0.35 }} />
-                    const ds = toStr(new Date(mYear, mMonth, day))
-                    const isToday = ds === todayStr
-                    const de = eventsForDay(ds)
-                    const dt = tasksForDay(ds)
-                    const chips = [
-                      ...de.map(e => ({ key: 'e' + e.id, label: e.title, color: 'var(--event-color)', solid: true })),
-                      ...dt.map(t => ({ key: 't' + t.id, label: t.name, color: SECTOR_COLORS[t.sector?.toLowerCase()] || 'var(--accent)', solid: false, done: t.completed })),
-                    ]
-                    const shown = chips.slice(0, 3)
-                    const extra = chips.length - shown.length
-
-                    return (
-                      <div key={idx} onClick={() => openDaySheet(ds)}
-                        style={{ borderRight: '1px solid var(--border)', borderBottom: '1px solid var(--border)', minHeight: 84, padding: '3px 3px 4px', cursor: 'pointer', overflow: 'hidden', background: isToday ? 'var(--accent-dim)' : 'transparent' }}>
-                        <div style={{
-                          width: 21, height: 21, borderRadius: '50%', margin: '1px auto 3px',
-                          display: 'flex', alignItems: 'center', justifyContent: 'center',
-                          fontSize: 11.5, fontWeight: isToday ? 700 : 500,
-                          background: isToday ? 'var(--accent)' : 'transparent',
-                          color: isToday ? 'var(--on-accent)' : ds < todayStr ? 'var(--text-dim)' : 'var(--text-secondary)',
-                        }}>{day}</div>
-
-                        {shown.map(ch => (
-                          <div key={ch.key} style={{
-                            fontSize: 9, lineHeight: '13px', height: 13, marginBottom: 2,
-                            padding: '0 3px', borderRadius: 3,
-                            background: ch.solid ? ch.color : 'transparent',
-                            color: ch.solid ? 'var(--on-accent)' : ch.color,
-                            borderLeft: ch.solid ? 'none' : `2px solid ${ch.color}`,
-                            textDecoration: ch.done ? 'line-through' : 'none',
-                            opacity: ch.done ? 0.5 : 1,
-                            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                          }}>{ch.label}</div>
-                        ))}
-                        {extra > 0 && <div style={{ fontSize: 8.5, color: 'var(--text-muted)', paddingLeft: 3 }}>+{extra} more</div>}
-                      </div>
-                    )
-                  })}
-                </div>
-              </div>
-            )
-          })}
-
-          <div style={{ marginTop: 20, paddingTop: 16, borderTop: '1px solid var(--border)' }}>
-            <div className="section-label">This month</div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 8 }}>
-              {[['Tasks', tasks.length,'var(--text-primary)'],['Events', events.length,'var(--event-color)'],['Done', tasks.filter(t=>t.completed).length,'var(--success)'],['Left', tasks.filter(t=>!t.completed).length,'var(--accent)']].map(([l,v,c]) => (
-                <div key={l} style={{ background:'var(--bg-card)',border:'1px solid var(--border)',borderRadius:12,padding:12 }}>
-                  <div style={{ fontSize:11,color:'var(--text-dim)',marginBottom:3 }}>{l}</div>
-                  <div style={{ fontSize:20,fontWeight:500,color:c }}>{v}</div>
-                </div>
+        return (
+          <div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', marginBottom: 4 }}>
+              {['M','T','W','T','F','S','S'].map((d,i) => (
+                <div key={i} style={{ textAlign: 'center', fontSize: 11, fontWeight: 600, color: 'var(--text-dim)', padding: '2px 0' }}>{d}</div>
               ))}
             </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', borderTop: '1px solid var(--border)', borderLeft: '1px solid var(--border)' }}>
+              {cells.map((day, idx) => {
+                const base = { borderRight: '1px solid var(--border)', borderBottom: '1px solid var(--border)', minHeight: 76, height: cellHeight }
+                if (!day) return <div key={idx} style={{ ...base, background: 'var(--bg-card2)', opacity: 0.35 }} />
+
+                const ds = toStr(new Date(monthYear, monthMonth, day))
+                const isToday = ds === todayStr
+                const de = eventsForDay(ds)
+                const dt = tasksForDay(ds)
+                const chips = [
+                  ...de.map(e => ({ key: 'e' + e.id, label: e.title, color: 'var(--event-color)', solid: true })),
+                  ...dt.map(t => ({ key: 't' + t.id, label: t.name, color: SECTOR_COLORS[t.sector?.toLowerCase()] || 'var(--accent)', solid: false, done: t.completed })),
+                ]
+                const shown = chips.slice(0, 4)
+                const extra = chips.length - shown.length
+
+                return (
+                  <div key={idx} onClick={() => openDaySheet(ds)}
+                    style={{ ...base, padding: '3px 3px 4px', cursor: 'pointer', overflow: 'hidden', background: isToday ? 'var(--accent-dim)' : 'transparent' }}>
+                    <div style={{
+                      width: 22, height: 22, borderRadius: '50%', margin: '1px auto 3px',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      fontSize: 12, fontWeight: isToday ? 700 : 500,
+                      background: isToday ? 'var(--accent)' : 'transparent',
+                      color: isToday ? 'var(--on-accent)' : ds < todayStr ? 'var(--text-dim)' : 'var(--text-secondary)',
+                    }}>{day}</div>
+
+                    {shown.map(ch => (
+                      <div key={ch.key} style={{
+                        fontSize: 9, lineHeight: '13px', height: 13, marginBottom: 2,
+                        padding: '0 3px', borderRadius: 3,
+                        background: ch.solid ? ch.color : 'transparent',
+                        color: ch.solid ? 'var(--on-accent)' : ch.color,
+                        borderLeft: ch.solid ? 'none' : `2px solid ${ch.color}`,
+                        textDecoration: ch.done ? 'line-through' : 'none',
+                        opacity: ch.done ? 0.5 : 1,
+                        overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                      }}>{ch.label}</div>
+                    ))}
+                    {extra > 0 && <div style={{ fontSize: 8.5, color: 'var(--text-muted)', paddingLeft: 3 }}>+{extra}</div>}
+                  </div>
+                )
+              })}
+            </div>
+
+            <div style={{ textAlign: 'center', fontSize: 11, color: 'var(--text-dim)', marginTop: 10 }}>
+              Swipe left or right to change month
+            </div>
           </div>
-        </div>
-      )}
+        )
+      })()}
 
       {/* Day sheet modal */}
       {daySheet && (
