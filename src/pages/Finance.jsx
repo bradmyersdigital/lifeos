@@ -278,424 +278,607 @@ function EntryModal({ type, item, onClose, onSaved }) {
 }
 
 // ── Main Finance ─────────────────────────────────────────────────────────────
+// ── Account kinds ────────────────────────────────────────────────────────────
+const ACCOUNT_KINDS = [
+  { id: 'checking',   label: 'Checking',   icon: '🏦', asset: true,  liquid: true  },
+  { id: 'savings',    label: 'Savings',    icon: '🐷', asset: true,  liquid: true  },
+  { id: 'cash',       label: 'Cash',       icon: '💵', asset: true,  liquid: true  },
+  { id: 'investment', label: 'Investment', icon: '📈', asset: true,  liquid: false },
+  { id: 'property',   label: 'Property',   icon: '🏠', asset: true,  liquid: false },
+  { id: 'credit',     label: 'Credit card',icon: '💳', asset: false, liquid: false },
+  { id: 'loan',       label: 'Loan',       icon: '🧾', asset: false, liquid: false },
+]
+const kindDef = (k) => ACCOUNT_KINDS.find(x => x.id === k) || ACCOUNT_KINDS[0]
+
+/* Category list used across the page. Kept as a shape ({name,color}) so a
+   user-defined category table can drop in later without touching consumers. */
+const customCats = SUB_CATEGORIES.map(n => ({ name: n, color: CAT_COLORS[n] || 'var(--text-dim)' }))
+
+/** Next time this item actually hits the account. Null if we can't know. */
+function nextChargeDate(item, kind) {
+  const today = new Date(); today.setHours(0, 0, 0, 0)
+
+  if (kind === 'bill') {
+    if (!item.due_date) return null
+    const d = new Date(item.due_date + 'T00:00:00')
+    const step = { weekly: () => d.setDate(d.getDate() + 7), biweekly: () => d.setDate(d.getDate() + 14),
+                   monthly: () => d.setMonth(d.getMonth() + 1), yearly: () => d.setFullYear(d.getFullYear() + 1) }[item.frequency]
+    if (!step) return d
+    let guard = 0
+    while (d < today && guard++ < 400) step()
+    return d
+  }
+
+  if (!item.billing_day) return null
+  const day = item.billing_day
+  const clamp = (y, m) => new Date(y, m, Math.min(day, new Date(y, m + 1, 0).getDate()))
+
+  if (item.frequency === 'yearly') {
+    const m = (item.billing_month || 1) - 1
+    let d = clamp(today.getFullYear(), m)
+    if (d < today) d = clamp(today.getFullYear() + 1, m)
+    return d
+  }
+  let d = clamp(today.getFullYear(), today.getMonth())
+  if (d < today) d = clamp(today.getFullYear(), today.getMonth() + 1)
+  return d
+}
+
+const daysUntil = (d) => Math.round((d - new Date().setHours(0, 0, 0, 0)) / 86400000)
+const dueLabel = (n) =>
+  n < 0  ? `${Math.abs(n)}d overdue`
+: n === 0 ? 'Today'
+: n === 1 ? 'Tomorrow'
+: `In ${n} days`
+
+// ── Account modal ────────────────────────────────────────────────────────────
+function AccountModal({ item, onClose, onSaved }) {
+  const isEdit = !!item
+  const [name, setName] = useState(item?.name || '')
+  const [kind, setKind] = useState(item?.kind || 'checking')
+  const [balance, setBalance] = useState(item?.balance ?? '')
+  const [institution, setInstitution] = useState(item?.institution || '')
+  const [saving, setSaving] = useState(false)
+
+  const def = kindDef(kind)
+
+  const handleSave = async () => {
+    if (!name.trim()) return
+    setSaving(true)
+    const payload = {
+      name: name.trim(), kind,
+      balance: Math.abs(parseFloat(balance) || 0),
+      institution: institution.trim() || null,
+      updated_at: new Date().toISOString(),
+    }
+    if (isEdit) await supabase.from('finance_accounts').update(payload).eq('id', item.id)
+    else await supabase.from('finance_accounts').insert(payload)
+    setSaving(false); onSaved(); onClose()
+  }
+
+  const handleDelete = async () => {
+    if (!window.confirm(`Delete "${item.name}"?`)) return
+    await supabase.from('finance_accounts').delete().eq('id', item.id)
+    onSaved(); onClose()
+  }
+
+  return (
+    <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
+      <div className="modal-sheet">
+        <div className="modal-handle" />
+        <div className="modal-title">{isEdit ? 'Edit account' : 'Add account'}<div className="modal-close" onClick={onClose}>×</div></div>
+
+        <div className="field">
+          <div className="field-label">Type</div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+            {ACCOUNT_KINDS.map(k => (
+              <div key={k.id} onClick={() => setKind(k.id)}
+                style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '8px 12px', borderRadius: 10, fontSize: 13, cursor: 'pointer',
+                  background: kind === k.id ? 'var(--accent-dim)' : 'var(--bg-input)',
+                  border: `1px solid ${kind === k.id ? 'var(--accent-border)' : 'var(--border)'}`,
+                  color: kind === k.id ? 'var(--accent)' : 'var(--text-muted)' }}>
+                <span>{k.icon}</span>{k.label}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="field"><div className="field-label">Account name</div>
+          <input type="text" placeholder="e.g. Main checking" value={name} onChange={e => setName(e.target.value)} />
+        </div>
+
+        <div className="field">
+          <div className="field-label">{def.asset ? 'Current balance ($)' : 'Amount owed ($)'}</div>
+          <input type="number" inputMode="decimal" placeholder="0.00" value={balance} onChange={e => setBalance(e.target.value)} />
+          {!def.asset && <div style={{ fontSize: 11.5, color: 'var(--text-dim)', marginTop: 6 }}>Enter what you owe as a positive number — it's counted against you.</div>}
+        </div>
+
+        <div className="field"><div className="field-label">Institution (optional)</div>
+          <input type="text" placeholder="e.g. Chase" value={institution} onChange={e => setInstitution(e.target.value)} />
+        </div>
+
+        <div style={{ display: 'flex', gap: 10, marginTop: 18 }}>
+          {isEdit && <button onClick={handleDelete} style={{ flex: 1, padding: 11, borderRadius: 10, background: 'var(--danger-dim)', border: '1px solid var(--danger-border)', color: 'var(--danger)', fontSize: 14, fontWeight: 500, cursor: 'pointer', fontFamily: "'DM Sans'" }}>Delete</button>}
+          <button className="btn-ghost" style={{ flex: 1 }} onClick={onClose}>Cancel</button>
+          <button className="btn-primary" style={{ flex: 2 }} onClick={handleSave} disabled={saving || !name.trim()}>{saving ? 'Saving…' : isEdit ? 'Save' : 'Add account'}</button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ── Small building blocks ────────────────────────────────────────────────────
+function StatTile({ label, value, sub, color, onClick }) {
+  return (
+    <div onClick={onClick} style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 14, padding: 14, cursor: onClick ? 'pointer' : 'default' }}>
+      <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 5 }}>{label}</div>
+      <div style={{ fontSize: 21, fontWeight: 600, color: color || 'var(--text-primary)', fontFamily: "'DM Mono'", letterSpacing: '-0.5px' }}>{value}</div>
+      {sub && <div style={{ fontSize: 11, color: 'var(--text-dim)', marginTop: 3 }}>{sub}</div>}
+    </div>
+  )
+}
+
+function Row({ icon, iconBg, title, subtitle, right, rightSub, onClick, dim }) {
+  const isImg = typeof icon === 'string' && icon.startsWith('data:')
+  return (
+    <div onClick={onClick} style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '13px 15px', background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 14, marginBottom: 7, cursor: onClick ? 'pointer' : 'default', opacity: dim ? 0.5 : 1 }}>
+      <div style={{ width: 40, height: 40, borderRadius: 11, background: iconBg || 'var(--bg-card2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 19, flexShrink: 0, overflow: 'hidden' }}>
+        {isImg ? <img src={icon} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : icon}
+      </div>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontSize: 14.5, fontWeight: 500, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{title}</div>
+        {subtitle && <div style={{ fontSize: 11.5, color: 'var(--text-muted)', marginTop: 2 }}>{subtitle}</div>}
+      </div>
+      <div style={{ textAlign: 'right', flexShrink: 0 }}>
+        <div style={{ fontSize: 14.5, fontWeight: 600, fontFamily: "'DM Mono'", color: 'var(--text-primary)' }}>{right}</div>
+        {rightSub && <div style={{ fontSize: 11, color: 'var(--text-dim)', marginTop: 2 }}>{rightSub}</div>}
+      </div>
+    </div>
+  )
+}
+
+function EmptyState({ icon, text, action, onAction }) {
+  return (
+    <div style={{ textAlign: 'center', padding: '30px 20px', border: '1px dashed var(--border)', borderRadius: 14 }}>
+      <div style={{ fontSize: 26, marginBottom: 8, opacity: 0.6 }}>{icon}</div>
+      <div style={{ fontSize: 13.5, color: 'var(--text-muted)', marginBottom: action ? 14 : 0, lineHeight: 1.5 }}>{text}</div>
+      {action && (
+        <div onClick={onAction} className="btn-primary" style={{ display: 'inline-block', padding: '9px 18px', borderRadius: 11, fontSize: 13.5, cursor: 'pointer' }}>{action}</div>
+      )}
+    </div>
+  )
+}
+
+// ── Main Finance ─────────────────────────────────────────────────────────────
 export default function Finance() {
   const [subs, setSubs] = useState([])
   const [bills, setBills] = useState([])
   const [income, setIncome] = useState([])
   const [savings, setSavings] = useState([])
-  const [tab, setTab] = useState('subscriptions')
-  const [modal, setModal] = useState(null)
+  const [accounts, setAccounts] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  const [tab, setTab] = useState('overview')
+  const [modal, setModal] = useState(null)        // { type, item }
   const [subModal, setSubModal] = useState(null)
-  const [subFilter, setSubFilter] = useState('All')
-  const [subView, setSubView] = useState('all') // 'all' | 'upcoming' | 'calendar'
-  const [catOrder, setCatOrder] = useState(() => { try { const s = localStorage.getItem('lifeos_cat_order'); return s ? JSON.parse(s) : [] } catch { return [] } })
-  const [draggingCat, setDraggingCat] = useState(null)
-  const [dragOverCat, setDragOverCat] = useState(null)
-  const [manageCats, setManageCats] = useState(false)
-  const [showNewCat, setShowNewCat] = useState(false)
-  const [newCatName, setNewCatName] = useState('')
-  const [newCatColor, setNewCatColor] = useState('var(--purple)')
-  const [editingCat, setEditingCat] = useState(null)
-  const [customCats, setCustomCats] = useState(() => {
-    try { const s = localStorage.getItem('lifeos_sub_cats'); return s ? JSON.parse(s) : [...SUB_CATEGORIES.map(n => ({ name: n, color: CAT_COLORS[n] || 'var(--text-dim)' }))] }
-    catch { return SUB_CATEGORIES.map(n => ({ name: n, color: CAT_COLORS[n] || 'var(--text-dim)' })) }
-  })
+  const [acctModal, setAcctModal] = useState(null)
+  const [recurView, setRecurView] = useState('list')  // list | calendar
+  const [showPaused, setShowPaused] = useState(false)
 
   useEffect(() => { load() }, [])
 
   const load = async () => {
-    const [s, b, inc, sav] = await Promise.all([
-      supabase.from('finance_subscriptions').select('*').order('name'),
-      supabase.from('finance_bills').select('*').order('due_date'),
-      supabase.from('finance_income').select('*').order('name'),
-      supabase.from('finance_savings').select('*').order('name'),
+    const [s, b, i, sv, a] = await Promise.all([
+      supabase.from('finance_subscriptions').select('*').order('amount', { ascending: false }),
+      supabase.from('finance_bills').select('*').order('amount', { ascending: false }),
+      supabase.from('finance_income').select('*'),
+      supabase.from('finance_savings').select('*'),
+      supabase.from('finance_accounts').select('*').order('sort_order').order('created_at'),
     ])
-    setSubs(s.data || [])
-    setBills(b.data || [])
-    setIncome(inc.data || [])
-    setSavings(sav.data || [])
+    setSubs(s.data || []); setBills(b.data || []); setIncome(i.data || [])
+    setSavings(sv.data || []); setAccounts(a.data || [])
+    setLoading(false)
   }
 
-  const saveCats = (cats) => {
-    setCustomCats(cats)
-    localStorage.setItem('lifeos_sub_cats', JSON.stringify(cats))
-  }
-  const addSubCategory = () => {
-    if (!newCatName.trim() || customCats.find(c => c.name === newCatName.trim())) return
-    saveCats([...customCats, { name: newCatName.trim(), color: newCatColor }])
-    setNewCatName(''); setShowNewCat(false)
-  }
-  const renameSubCat = (oldName, newName) => {
-    if (!newName.trim() || newName === oldName) { setEditingCat(null); return }
-    saveCats(customCats.map(c => c.name === oldName ? { ...c, name: newName.trim() } : c))
-    // Update subs with this category
-    subs.filter(s => s.category === oldName).forEach(s => supabase.from('finance_subscriptions').update({ category: newName.trim() }).eq('id', s.id))
-    setSubs(prev => prev.map(s => s.category === oldName ? { ...s, category: newName.trim() } : s))
-    setEditingCat(null)
-  }
-  const deleteSubCat = (name) => {
-    if (!window.confirm(`Delete "${name}"? Subs will move to Other.`)) return
-    saveCats(customCats.filter(c => c.name !== name))
-    subs.filter(s => s.category === name).forEach(s => supabase.from('finance_subscriptions').update({ category: 'Other' }).eq('id', s.id))
-    setSubs(prev => prev.map(s => s.category === name ? { ...s, category: 'Other' } : s))
-  }
+  // ── The money maths ────────────────────────────────────────────────────────
+  const activeSubs  = subs.filter(s => s.is_active !== false)
+  const pausedSubs  = subs.filter(s => s.is_active === false)
+  const activeBills = bills.filter(b => b.is_active !== false)
 
-  const activeSubs = subs.filter(s => s.is_active !== false)
-  const totalMonthly = activeSubs.reduce((sum, s) => sum + toMonthly(s.amount, s.frequency), 0)
-  const totalYearly = activeSubs.reduce((sum, s) => sum + toYearly(s.amount, s.frequency), 0)
-  const totalIncome = income.reduce((sum, i) => sum + toMonthly(i.amount, i.frequency), 0)
-  const totalBills = bills.filter(b => b.is_active !== false).reduce((sum, b) => sum + toMonthly(b.amount, b.frequency), 0)
+  const mIncome  = income.reduce((n, x) => n + toMonthly(x.amount, x.frequency), 0)
+  const mSubs    = activeSubs.reduce((n, x) => n + toMonthly(x.amount, x.frequency), 0)
+  const mBills   = activeBills.reduce((n, x) => n + toMonthly(x.amount, x.frequency), 0)
+  const mSavings = savings.reduce((n, x) => n + (parseFloat(x.monthly_target) || 0), 0)
 
-  // Group subs by category
-  // Categories present in subs, ordered by catOrder preference
-  const rawCats = Array.from(new Set([...subs.map(s => s.category || 'Other')]))
-  const orderedCats = [
-    ...catOrder.filter(c => rawCats.includes(c)),
-    ...rawCats.filter(c => !catOrder.includes(c))
-  ]
-  const saveCatOrder = (order) => { setCatOrder(order); localStorage.setItem('lifeos_cat_order', JSON.stringify(order)) }
-  // Today's day of month for upcoming
-  const todayDay = new Date().getDate()
-  const upcomingSubs = subs.filter(s => {
-    if (s.is_active === false) return false
-    if (!s.billing_day) return false
-    const daysUntil = s.billing_day >= todayDay ? s.billing_day - todayDay : (31 - todayDay + s.billing_day)
-    return daysUntil <= 14
-  }).sort((a,b) => {
-    const da = a.billing_day >= todayDay ? a.billing_day - todayDay : 31 - todayDay + a.billing_day
-    const db = b.billing_day >= todayDay ? b.billing_day - todayDay : 31 - todayDay + b.billing_day
-    return da - db
+  const committed = mBills + mSubs + mSavings
+  const free      = mIncome - committed
+  const burn      = mBills + mSubs                       // what you must pay to exist
+
+  const now = new Date()
+  const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()
+  const daysLeft = Math.max(1, daysInMonth - now.getDate() + 1)
+  const perDay = free / daysLeft
+
+  const assets = accounts.filter(a => kindDef(a.kind).asset).reduce((n, a) => n + (parseFloat(a.balance) || 0), 0)
+  const debts  = accounts.filter(a => !kindDef(a.kind).asset).reduce((n, a) => n + (parseFloat(a.balance) || 0), 0)
+  const netWorth = assets - debts
+  const liquid = accounts.filter(a => kindDef(a.kind).liquid).reduce((n, a) => n + (parseFloat(a.balance) || 0), 0)
+  const runway = burn > 0 ? liquid / burn : null
+
+  // Upcoming 30 days, merged and sorted
+  const upcoming = [
+    ...activeSubs.map(s => ({ ...s, _kind: 'sub',  _date: nextChargeDate(s, 'sub') })),
+    ...activeBills.map(b => ({ ...b, _kind: 'bill', _date: nextChargeDate(b, 'bill') })),
+  ].filter(x => x._date && daysUntil(x._date) <= 30)
+   .sort((a, b) => a._date - b._date)
+
+  const upcomingTotal = upcoming.reduce((n, x) => n + (parseFloat(x.amount) || 0), 0)
+
+  // Category spread across everything recurring
+  const catTotals = {}
+  activeSubs.forEach(s => {
+    const c = s.category || 'Other'
+    catTotals[c] = (catTotals[c] || 0) + toMonthly(s.amount, s.frequency)
   })
+  if (mBills > 0) catTotals['Bills & Utilities'] = mBills
+  const catList = Object.entries(catTotals).sort((a, b) => b[1] - a[1])
+  const catMax = catList.length ? catList[0][1] : 1
 
-  // Group all subs by category, sorted by billing_day within each category
-  const groupedSubs = orderedCats.reduce((acc, cat) => {
-    const items = subs.filter(s => (s.category || 'Other') === cat)
-      .sort((a,b) => (a.billing_day||99) - (b.billing_day||99))
-    if (items.length) acc[cat] = items
-    return acc
-  }, {})
+  const biggestSub = activeSubs.slice().sort((a, b) => toYearly(b.amount, b.frequency) - toYearly(a.amount, a.frequency))[0]
 
-  const todayStr = new Date().toISOString().split('T')[0]
-  const soonStr = new Date(Date.now() + 7*24*60*60*1000).toISOString().split('T')[0]
-  const dueSoon = bills.filter(b => b.due_date >= todayStr && b.due_date <= soonStr)
+  const hasAnyData = subs.length || bills.length || income.length || savings.length || accounts.length
+
+  // ── Where-it-goes bar ──────────────────────────────────────────────────────
+  const segments = [
+    { label: 'Bills',    value: mBills,   color: 'var(--danger)' },
+    { label: 'Subs',     value: mSubs,    color: 'var(--warn)' },
+    { label: 'Savings',  value: mSavings, color: 'var(--success)' },
+    { label: 'Free',     value: Math.max(0, free), color: 'var(--accent)' },
+  ].filter(s => s.value > 0)
+  const segTotal = segments.reduce((n, s) => n + s.value, 0) || 1
+
+  const TABS = [
+    ['overview',  'Overview'],
+    ['recurring', 'Recurring'],
+    ['income',    'Income'],
+    ['accounts',  'Accounts'],
+  ]
+
+  if (loading) return <div style={{ textAlign: 'center', padding: 50, color: 'var(--text-dim)' }}>Loading…</div>
 
   return (
     <div>
-      {/* Header */}
-      <div style={{ marginBottom: 20 }}>
-        <div style={{ fontSize: 20, fontWeight: 500, marginBottom: 4 }}>Finance</div>
-        <div style={{ fontSize: 12, color: 'var(--text-dim)' }}>Monthly snapshot</div>
-      </div>
+      <div style={{ fontSize: 22, fontWeight: 600, marginBottom: 16, letterSpacing: '-0.3px' }}>Finance</div>
 
-      {/* Top summary cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: 10, marginBottom: 20 }}>
-        <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 14, padding: 16 }}>
-          <div style={{ fontSize: 11, color: 'var(--text-dim)', marginBottom: 4 }}>Monthly income</div>
-          <div style={{ fontSize: 24, fontWeight: 600, color: 'var(--success)' }}>{fmt(totalIncome)}</div>
-        </div>
-        <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 14, padding: 16 }}>
-          <div style={{ fontSize: 11, color: 'var(--text-dim)', marginBottom: 4 }}>Total out</div>
-          <div style={{ fontSize: 24, fontWeight: 600, color: 'var(--danger)' }}>{fmt(totalMonthly + totalBills)}</div>
-        </div>
-        <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 14, padding: 16 }}>
-          <div style={{ fontSize: 11, color: 'var(--text-dim)', marginBottom: 4 }}>Subscriptions</div>
-          <div style={{ fontSize: 22, fontWeight: 600, color: 'var(--purple)' }}>{fmt(totalMonthly)}<span style={{ fontSize: 12, color: 'var(--text-dim)', fontWeight: 400 }}>/mo</span></div>
-          <div style={{ fontSize: 11, color: 'var(--text-dim)', marginTop: 3 }}>{fmt(totalYearly)}/yr · {activeSubs.length} active</div>
-        </div>
-        <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 14, padding: 16 }}>
-          <div style={{ fontSize: 11, color: 'var(--text-dim)', marginBottom: 4 }}>Left over</div>
-          {(() => { const left = totalIncome - totalMonthly - totalBills; return <div style={{ fontSize: 22, fontWeight: 600, color: left >= 0 ? 'var(--success)' : 'var(--danger)' }}>{fmt(left)}</div> })()}
-          {dueSoon.length > 0 && <div style={{ fontSize: 11, color: 'var(--danger)', marginTop: 3 }}>⚠ {dueSoon.length} bill{dueSoon.length>1?'s':''} due soon</div>}
-        </div>
-      </div>
-
-      {/* Tab bar */}
-      <div style={{ display: 'flex', background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 12, overflow: 'hidden', marginBottom: 20 }}>
-        {[['subscriptions','🔄 Subs'],['bills','📋 Bills'],['income','💰 Income'],['savings','🏦 Savings']].map(([key,label]) => (
-          <div key={key} onClick={() => setTab(key)} style={{ flex: 1, textAlign: 'center', padding: '10px 4px', fontSize: 12, fontWeight: 500, cursor: 'pointer', background: tab===key ? 'var(--accent-dim)' : 'transparent', color: tab===key ? 'var(--accent)' : 'var(--text-muted)', transition: 'all 0.15s' }}>
+      {/* Tabs */}
+      <div style={{ display: 'flex', gap: 6, marginBottom: 20, overflowX: 'auto', WebkitOverflowScrolling: 'touch', paddingBottom: 2 }}>
+        {TABS.map(([id, label]) => (
+          <div key={id} onClick={() => setTab(id)}
+            style={{ flexShrink: 0, padding: '8px 16px', borderRadius: 20, fontSize: 13.5, fontWeight: 500, cursor: 'pointer',
+              background: tab === id ? 'var(--accent-dim)' : 'var(--bg-card)',
+              border: `1px solid ${tab === id ? 'var(--accent-border)' : 'var(--border)'}`,
+              color: tab === id ? 'var(--accent)' : 'var(--text-muted)' }}>
             {label}
           </div>
         ))}
       </div>
 
-      {/* ── SUBSCRIPTIONS TAB ── */}
-      {tab === 'subscriptions' && (
+      {/* ══════════════════ OVERVIEW ══════════════════ */}
+      {tab === 'overview' && (
         <div>
-          {/* Hero card */}
-          <div style={{ background: 'linear-gradient(135deg, var(--purple-dim) 0%, var(--bg-input) 100%)', border: '1px solid var(--purple-dim)', borderRadius: 16, padding: 20, marginBottom: 18 }}>
-            <div style={{ fontSize: 13, color: 'var(--purple)', fontWeight: 500, marginBottom: 4 }}>Monthly subscriptions</div>
-            <div style={{ fontSize: 36, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 2 }}>{fmt(totalMonthly)}</div>
-            <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>{fmt(totalYearly)} per year · {activeSubs.length} active</div>
-            {totalMonthly > 0 && (
-              <div style={{ marginTop: 14 }}>
-                <div style={{ height: 8, borderRadius: 4, overflow: 'hidden', background: 'var(--border)', display: 'flex' }}>
-                  {orderedCats.map(cat => {
-                    const catTotal = (groupedSubs[cat]||[]).filter(s=>s.is_active!==false).reduce((sum,s)=>sum+toMonthly(s.amount,s.frequency),0)
-                    const pct = (catTotal/totalMonthly)*100
-                    const col = customCats.find(c=>c.name===cat)?.color || CAT_COLORS[cat] || 'var(--text-dim)'
-                    return pct > 0 ? <div key={cat} style={{ width: pct+'%', background: col }} /> : null
-                  })}
+          {!hasAnyData && (
+            <EmptyState icon="💰" text="Add your income and recurring costs and this page will tell you exactly what's left every month." action="Add income" onAction={() => setModal({ type: 'income' })} />
+          )}
+
+          {hasAnyData && (
+            <>
+              {/* Hero — free to spend */}
+              <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 18, padding: 20, marginBottom: 12 }}>
+                {mIncome === 0 ? (
+                  <>
+                    <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 6 }}>MONTHLY COMMITMENTS</div>
+                    <div style={{ fontSize: 38, fontWeight: 600, fontFamily: "'DM Mono'", letterSpacing: '-1.5px', color: 'var(--text-primary)' }}>{fmt(committed)}</div>
+                    <div style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 8, lineHeight: 1.5 }}>
+                      Add your income and I can show you what's actually left over each month.
+                    </div>
+                    <div onClick={() => setModal({ type: 'income' })} className="btn-primary" style={{ display: 'inline-block', marginTop: 12, padding: '9px 16px', borderRadius: 11, fontSize: 13.5, cursor: 'pointer' }}>Add income</div>
+                  </>
+                ) : (
+                  <>
+                    <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 6, letterSpacing: '0.03em' }}>FREE TO SPEND THIS MONTH</div>
+                    <div style={{ fontSize: 40, fontWeight: 600, fontFamily: "'DM Mono'", letterSpacing: '-1.5px', color: free < 0 ? 'var(--danger)' : 'var(--text-primary)' }}>
+                      {free < 0 ? '−' : ''}{fmt(free)}
+                    </div>
+                    <div style={{ fontSize: 13, color: free < 0 ? 'var(--danger)' : 'var(--text-muted)', marginTop: 6 }}>
+                      {free < 0
+                        ? `You're committed to ${fmt(Math.abs(free))} more than you earn`
+                        : `${fmt(perDay)} a day for the ${daysLeft} days left`}
+                    </div>
+
+                    {/* Where it goes */}
+                    <div style={{ display: 'flex', height: 10, borderRadius: 5, overflow: 'hidden', marginTop: 18, background: 'var(--bg-card2)' }}>
+                      {segments.map(s => (
+                        <div key={s.label} style={{ width: `${(s.value / segTotal) * 100}%`, background: s.color }} />
+                      ))}
+                    </div>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px 16px', marginTop: 12 }}>
+                      {segments.map(s => (
+                        <div key={s.label} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                          <div style={{ width: 8, height: 8, borderRadius: '50%', background: s.color }} />
+                          <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>{s.label}</span>
+                          <span style={{ fontSize: 12, fontFamily: "'DM Mono'", color: 'var(--text-secondary)' }}>{fmt(s.value)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </div>
+
+              {/* Key numbers */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 12 }}>
+                <StatTile label="Money in" value={fmt(mIncome)} sub="per month" color="var(--success)" onClick={() => setTab('income')} />
+                <StatTile label="Money out" value={fmt(burn)} sub="bills + subscriptions" color="var(--danger)" onClick={() => setTab('recurring')} />
+                <StatTile label="Net worth" value={(netWorth < 0 ? '−' : '') + fmt(netWorth)} sub={accounts.length ? `${accounts.length} account${accounts.length === 1 ? '' : 's'}` : 'Add accounts'} color={netWorth < 0 ? 'var(--danger)' : 'var(--text-primary)'} onClick={() => setTab('accounts')} />
+                <StatTile label="Runway"
+                  value={runway === null ? '—' : runway >= 24 ? '24+ mo' : `${runway.toFixed(1)} mo`}
+                  sub={runway === null ? 'Add costs' : 'if income stopped'}
+                  color={runway !== null && runway < 3 ? 'var(--warn)' : 'var(--text-primary)'}
+                  onClick={() => setTab('accounts')} />
+              </div>
+
+              {/* Upcoming */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 10, marginTop: 22 }}>
+                <div className="section-label" style={{ margin: 0 }}>Next 30 days</div>
+                {upcoming.length > 0 && <div style={{ fontSize: 12, color: 'var(--text-muted)', fontFamily: "'DM Mono'" }}>{fmt(upcomingTotal)}</div>}
+              </div>
+              {upcoming.length === 0 ? (
+                <EmptyState icon="🗓️" text="Nothing scheduled. Add billing dates to your subscriptions and bills to see them here." />
+              ) : upcoming.slice(0, 8).map(x => {
+                const n = daysUntil(x._date)
+                const icon = x.icon || getServiceIcon(x.name) || (x._kind === 'bill' ? '🧾' : CAT_ICONS[x.category || 'Other'] || '📦')
+                const color = x._kind === 'bill' ? 'var(--danger)' : (CAT_COLORS[x.category || 'Other'] || 'var(--text-dim)')
+                return (
+                  <Row key={x._kind + x.id}
+                    icon={icon} iconBg={color + '22'}
+                    title={x.name}
+                    subtitle={x._date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                    right={fmt(x.amount)}
+                    rightSub={<span style={{ color: n < 0 ? 'var(--danger)' : n <= 3 ? 'var(--warn)' : 'var(--text-dim)' }}>{dueLabel(n)}</span>}
+                    onClick={() => x._kind === 'sub' ? setSubModal(x) : setModal({ type: 'bill', item: x })}
+                  />
+                )
+              })}
+
+              {/* Where money goes by category */}
+              {catList.length > 0 && (
+                <>
+                  <div className="section-label" style={{ marginTop: 24 }}>Monthly spend by category</div>
+                  <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 14, padding: 16 }}>
+                    {catList.map(([cat, amt]) => {
+                      const color = cat === 'Bills & Utilities' ? 'var(--danger)' : (customCats.find(c => c.name === cat)?.color || CAT_COLORS[cat] || 'var(--text-dim)')
+                      return (
+                        <div key={cat} style={{ marginBottom: 12 }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 5 }}>
+                            <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{cat === 'Bills & Utilities' ? '🧾' : (CAT_ICONS[cat] || '📦')} {cat}</span>
+                            <span style={{ fontSize: 13, fontFamily: "'DM Mono'", color: 'var(--text-primary)' }}>{fmt(amt)}</span>
+                          </div>
+                          <div style={{ height: 6, borderRadius: 3, background: 'var(--bg-card2)', overflow: 'hidden' }}>
+                            <div style={{ width: `${(amt / catMax) * 100}%`, height: '100%', background: color, borderRadius: 3 }} />
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </>
+              )}
+
+              {/* The annual reframe — this is what drives cancellations */}
+              {activeSubs.length > 0 && (
+                <div style={{ background: 'var(--warn-dim)', border: '1px solid var(--warn-border)', borderRadius: 14, padding: 16, marginTop: 16 }}>
+                  <div style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.6 }}>
+                    Your {activeSubs.length} active subscription{activeSubs.length === 1 ? '' : 's'} cost{activeSubs.length === 1 ? 's' : ''}{' '}
+                    <strong style={{ color: 'var(--warn)', fontFamily: "'DM Mono'" }}>{fmt(mSubs * 12)}</strong> a year.
+                    {biggestSub && <> The biggest is <strong style={{ color: 'var(--text-primary)' }}>{biggestSub.name}</strong> at {fmt(toYearly(biggestSub.amount, biggestSub.frequency))}/yr.</>}
+                  </div>
                 </div>
-                <div style={{ display: 'flex', gap: 10, marginTop: 10, flexWrap: 'wrap' }}>
-                  {orderedCats.map(cat => {
-                    const catTotal = (groupedSubs[cat]||[]).filter(s=>s.is_active!==false).reduce((sum,s)=>sum+toMonthly(s.amount,s.frequency),0)
-                    const col = customCats.find(c=>c.name===cat)?.color || CAT_COLORS[cat] || 'var(--text-dim)'
-                    return catTotal > 0 ? (
-                      <div key={cat} style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11 }}>
-                        <div style={{ width: 8, height: 8, borderRadius: '50%', background: col, flexShrink: 0 }} />
-                        <span style={{ color: 'var(--text-muted)' }}>{cat}</span>
-                        <span style={{ color: 'var(--text-secondary)', fontFamily: "'DM Mono'" }}>{fmt(catTotal)}</span>
-                      </div>
-                    ) : null
+              )}
+            </>
+          )}
+        </div>
+      )}
+
+      {/* ══════════════════ RECURRING ══════════════════ */}
+      {tab === 'recurring' && (
+        <div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 16 }}>
+            <StatTile label="Every month" value={fmt(burn)} sub={`${activeSubs.length + activeBills.length} items`} />
+            <StatTile label="Every year" value={fmt(burn * 12)} sub="same commitments" color="var(--warn)" />
+          </div>
+
+          <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
+            <div onClick={() => setSubModal('new')} className="btn-primary" style={{ flex: 1, textAlign: 'center', padding: '11px', borderRadius: 12, fontSize: 14, cursor: 'pointer' }}>+ Subscription</div>
+            <div onClick={() => setModal({ type: 'bill' })} style={{ flex: 1, textAlign: 'center', padding: '11px', borderRadius: 12, fontSize: 14, fontWeight: 500, cursor: 'pointer', background: 'var(--bg-card)', border: '1px solid var(--border)', color: 'var(--text-secondary)' }}>+ Bill</div>
+          </div>
+
+          <div style={{ display: 'flex', gap: 6, marginBottom: 16 }}>
+            {[['list', 'List'], ['calendar', 'Calendar']].map(([v, l]) => (
+              <div key={v} onClick={() => setRecurView(v)}
+                style={{ padding: '6px 14px', borderRadius: 18, fontSize: 12.5, fontWeight: 500, cursor: 'pointer',
+                  background: recurView === v ? 'var(--accent-dim)' : 'var(--bg-card)',
+                  border: `1px solid ${recurView === v ? 'var(--accent-border)' : 'var(--border)'}`,
+                  color: recurView === v ? 'var(--accent)' : 'var(--text-muted)' }}>{l}</div>
+            ))}
+          </div>
+
+          {recurView === 'calendar' ? (
+            <SubCalendar subs={activeSubs} customCats={customCats} onEdit={setSubModal} />
+          ) : (
+            <>
+              {/* Bills */}
+              {activeBills.length > 0 && (
+                <>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 10 }}>
+                    <div className="section-label" style={{ margin: 0 }}>Bills & utilities</div>
+                    <div style={{ fontSize: 11.5, color: 'var(--text-dim)', fontFamily: "'DM Mono'" }}>{fmt(mBills)}/mo</div>
+                  </div>
+                  {activeBills.map(b => {
+                    const next = nextChargeDate(b, 'bill')
+                    return (
+                      <Row key={b.id} icon="🧾" iconBg="var(--danger-dim)"
+                        title={b.name}
+                        subtitle={next ? `${next.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} · ${b.frequency}` : b.frequency}
+                        right={fmt(b.amount)}
+                        rightSub={next ? dueLabel(daysUntil(next)) : null}
+                        onClick={() => setModal({ type: 'bill', item: b })} />
+                    )
                   })}
+                </>
+              )}
+
+              {/* Subscriptions */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 10, marginTop: activeBills.length ? 22 : 0 }}>
+                <div className="section-label" style={{ margin: 0 }}>Subscriptions</div>
+                <div style={{ fontSize: 11.5, color: 'var(--text-dim)', fontFamily: "'DM Mono'" }}>{fmt(mSubs)}/mo</div>
+              </div>
+
+              {activeSubs.length === 0 && activeBills.length === 0 ? (
+                <EmptyState icon="🔁" text="Nothing recurring yet. Add your subscriptions and bills to see the real monthly cost." action="Add subscription" onAction={() => setSubModal('new')} />
+              ) : activeSubs.map(s => (
+                <SubCard key={s.id} sub={s} customCats={customCats} onEdit={() => setSubModal(s)} />
+              ))}
+
+              {/* Paused */}
+              {pausedSubs.length > 0 && (
+                <div style={{ marginTop: 18 }}>
+                  <div onClick={() => setShowPaused(!showPaused)}
+                    style={{ textAlign: 'center', padding: '11px', borderRadius: 12, fontSize: 13, cursor: 'pointer', background: 'var(--bg-card)', border: '1px solid var(--border)', color: 'var(--text-muted)' }}>
+                    {showPaused ? 'Hide' : 'View'} {pausedSubs.length} paused
+                  </div>
+                  {showPaused && <div style={{ marginTop: 10 }}>
+                    {pausedSubs.map(s => <SubCard key={s.id} sub={s} customCats={customCats} onEdit={() => setSubModal(s)} />)}
+                  </div>}
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      )}
+
+      {/* ══════════════════ INCOME ══════════════════ */}
+      {tab === 'income' && (
+        <div>
+          <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 18, padding: 20, marginBottom: 16 }}>
+            <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 6 }}>MONTHLY INCOME</div>
+            <div style={{ fontSize: 34, fontWeight: 600, fontFamily: "'DM Mono'", letterSpacing: '-1px', color: 'var(--success)' }}>{fmt(mIncome)}</div>
+            <div style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 5 }}>{fmt(mIncome * 12)} a year across {income.length} source{income.length === 1 ? '' : 's'}</div>
+          </div>
+
+          <div onClick={() => setModal({ type: 'income' })} className="btn-primary" style={{ textAlign: 'center', padding: '11px', borderRadius: 12, fontSize: 14, cursor: 'pointer', marginBottom: 18 }}>+ Add income source</div>
+
+          {income.length === 0 ? (
+            <EmptyState icon="💵" text="Add every source — salary, commission, side work. Everything else on this page depends on it." />
+          ) : income.map(i => (
+            <Row key={i.id} icon="💵" iconBg="var(--success-dim)"
+              title={i.name}
+              subtitle={i.frequency}
+              right={fmt(i.amount)}
+              rightSub={i.frequency !== 'monthly' ? `${fmt(toMonthly(i.amount, i.frequency))}/mo` : null}
+              onClick={() => setModal({ type: 'income', item: i })} />
+          ))}
+
+          {/* Savings targets live here — they come out of income */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginTop: 26, marginBottom: 10 }}>
+            <div className="section-label" style={{ margin: 0 }}>Savings targets</div>
+            <div style={{ fontSize: 11.5, color: 'var(--text-dim)', fontFamily: "'DM Mono'" }}>{fmt(mSavings)}/mo</div>
+          </div>
+          <div onClick={() => setModal({ type: 'savings' })}
+            style={{ textAlign: 'center', padding: '10px', borderRadius: 12, fontSize: 13, cursor: 'pointer', background: 'var(--bg-card)', border: '1px dashed var(--border)', color: 'var(--text-muted)', marginBottom: 12 }}>+ Add savings target</div>
+          {savings.map(s => (
+            <Row key={s.id} icon="🎯" iconBg="var(--success-dim)"
+              title={s.name}
+              subtitle="monthly target"
+              right={fmt(s.monthly_target)}
+              onClick={() => setModal({ type: 'savings', item: s })} />
+          ))}
+        </div>
+      )}
+
+      {/* ══════════════════ ACCOUNTS ══════════════════ */}
+      {tab === 'accounts' && (
+        <div>
+          <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 18, padding: 20, marginBottom: 12 }}>
+            <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 6 }}>NET WORTH</div>
+            <div style={{ fontSize: 38, fontWeight: 600, fontFamily: "'DM Mono'", letterSpacing: '-1.5px', color: netWorth < 0 ? 'var(--danger)' : 'var(--text-primary)' }}>
+              {netWorth < 0 ? '−' : ''}{fmt(netWorth)}
+            </div>
+            {accounts.length > 0 && (
+              <div style={{ display: 'flex', gap: 20, marginTop: 14 }}>
+                <div>
+                  <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Assets</div>
+                  <div style={{ fontSize: 15, fontFamily: "'DM Mono'", color: 'var(--success)', marginTop: 2 }}>{fmt(assets)}</div>
+                </div>
+                <div>
+                  <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Debts</div>
+                  <div style={{ fontSize: 15, fontFamily: "'DM Mono'", color: 'var(--danger)', marginTop: 2 }}>{fmt(debts)}</div>
                 </div>
               </div>
             )}
           </div>
 
-          {/* All / Upcoming / Calendar toggle */}
-          <div style={{ display: 'flex', background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 12, overflow: 'hidden', marginBottom: 16 }}>
-            <div onClick={() => setSubView('all')} style={{ flex: 1, textAlign: 'center', padding: '10px', fontSize: 13, fontWeight: 500, cursor: 'pointer', background: subView==='all' ? 'var(--accent-dim)' : 'transparent', color: subView==='all' ? 'var(--accent)' : 'var(--text-muted)' }}>All</div>
-            <div onClick={() => setSubView('upcoming')} style={{ flex: 1, textAlign: 'center', padding: '10px', fontSize: 13, fontWeight: 500, cursor: 'pointer', background: subView==='upcoming' ? 'var(--accent-dim)' : 'transparent', color: subView==='upcoming' ? 'var(--accent)' : 'var(--text-muted)' }}>
-              Upcoming {upcomingSubs.length > 0 && <span style={{ marginLeft: 4, background: 'var(--danger)', color: '#fff', borderRadius: 20, padding: '1px 6px', fontSize: 10 }}>{upcomingSubs.length}</span>}
-            </div>
-            <div onClick={() => setSubView('calendar')} style={{ flex: 1, textAlign: 'center', padding: '10px', fontSize: 13, fontWeight: 500, cursor: 'pointer', background: subView==='calendar' ? 'var(--accent-dim)' : 'transparent', color: subView==='calendar' ? 'var(--accent)' : 'var(--text-muted)' }}>📅 Cal</div>
-          </div>
-
-          {/* Add + manage buttons */}
-          <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
-            <div className="action-btn btn-task" style={{ flex: 1, justifyContent: 'center' }} onClick={() => setSubModal('new')}>
-              <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><line x1="7" y1="1" x2="7" y2="13" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/><line x1="1" y1="7" x2="13" y2="7" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/></svg>
-              Add subscription
-            </div>
-            <div onClick={() => setManageCats(!manageCats)} style={{ padding: '10px 14px', borderRadius: 12, background: manageCats ? 'var(--accent-dim)' : 'var(--bg-card)', border: `1px solid ${manageCats ? 'var(--accent-border)' : 'var(--border)'}`, color: manageCats ? 'var(--accent)' : 'var(--text-muted)', fontSize: 13, fontWeight: 500, cursor: 'pointer', flexShrink: 0 }}>
-              ✏️ Categories
-            </div>
-          </div>
-
-          {/* Category manager */}
-          {manageCats && (
-            <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 14, padding: 16, marginBottom: 16 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                <div style={{ fontSize: 14, fontWeight: 500 }}>Categories <span style={{ fontSize: 11, color: 'var(--text-dim)' }}>drag to reorder</span></div>
-                <div onClick={() => setShowNewCat(!showNewCat)} style={{ fontSize: 12, color: 'var(--accent)', cursor: 'pointer', padding: '4px 10px', background: 'var(--accent-dim)', border: '1px solid var(--accent-border)', borderRadius: 8 }}>+ Add</div>
-              </div>
-              {showNewCat && (
-                <div style={{ display: 'flex', gap: 8, marginBottom: 12, alignItems: 'center' }}>
-                  <input type="text" placeholder="Category name…" value={newCatName} onChange={e => setNewCatName(e.target.value)} onKeyDown={e => e.key==='Enter' && addSubCategory()}
-                    style={{ flex: 1, background: 'var(--bg-input)', border: '1px solid var(--border)', borderRadius: 10, padding: '9px 12px', fontSize: 14, color: 'var(--text-primary)', fontFamily: "'DM Sans'", outline: 'none' }} />
-                  <div style={{ position: 'relative', width: 34, height: 34, flexShrink: 0 }}>
-                    <div style={{ width: 34, height: 34, borderRadius: 10, background: newCatColor, border: '2px solid var(--border-hover)' }} />
-                    <input type="color" value={newCatColor} onChange={e => setNewCatColor(e.target.value)} style={{ opacity: 0, position: 'absolute', inset: 0, cursor: 'pointer', border: 'none', padding: 0 }} />
-                  </div>
-                  <button onClick={addSubCategory} className="btn-primary" style={{ padding: '0 14px', height: 36, borderRadius: 10, fontSize: 13, cursor: 'pointer', border: 'none', fontFamily: "'DM Sans'" }}>Add</button>
-                  <button onClick={() => setShowNewCat(false)} style={{ padding: '0 12px', height: 36, borderRadius: 10, background: 'var(--bg-input)', border: '1px solid var(--border)', color: 'var(--text-muted)', fontSize: 18, cursor: 'pointer', fontFamily: "'DM Sans'" }}>×</button>
-                </div>
-              )}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                {customCats.map((cat, idx) => (
-                  <div key={cat.name}
-                    draggable
-                    onDragStart={() => setDraggingCat(idx)}
-                    onDragEnter={() => setDragOverCat(idx)}
-                    onDragEnd={() => {
-                      if (draggingCat === null || dragOverCat === null || draggingCat === dragOverCat) { setDraggingCat(null); setDragOverCat(null); return }
-                      const newOrder = [...customCats]
-                      const [moved] = newOrder.splice(draggingCat, 1)
-                      newOrder.splice(dragOverCat, 0, moved)
-                      saveCats(newOrder)
-                      saveCatOrder(newOrder.map(c => c.name))
-                      setDraggingCat(null); setDragOverCat(null)
-                    }}
-                    onDragOver={e => e.preventDefault()}
-                    style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', background: draggingCat === idx ? 'var(--accent-dim)' : 'var(--bg-input)', borderRadius: 10, border: `1px solid ${draggingCat === idx ? 'var(--accent-border)' : 'var(--border)'}`, cursor: 'grab' }}>
-                    <div style={{ fontSize: 14, color: 'var(--border-hover)', cursor: 'grab', padding: '0 4px' }}>⠿</div>
-                    <div style={{ width: 10, height: 10, borderRadius: '50%', background: cat.color, flexShrink: 0 }} />
-                    {editingCat?.name === cat.name ? (
-                      <>
-                        <input type="text" value={editingCat.newName} onChange={e => setEditingCat({...editingCat, newName: e.target.value})}
-                          onKeyDown={e => { if(e.key==='Enter') renameSubCat(cat.name, editingCat.newName); if(e.key==='Escape') setEditingCat(null) }}
-                          autoFocus style={{ flex: 1, background: 'var(--bg-card)', border: '1px solid var(--accent-border)', borderRadius: 8, padding: '5px 10px', fontSize: 14, color: 'var(--text-primary)', fontFamily: "'DM Sans'", outline: 'none' }} />
-                        <div onClick={() => renameSubCat(cat.name, editingCat.newName)} style={{ fontSize: 12, color: 'var(--success)', cursor: 'pointer', padding: '3px 8px', background: 'var(--success-dim)', border: '1px solid var(--success-border)', borderRadius: 7 }}>Save</div>
-                        <div onClick={() => setEditingCat(null)} style={{ fontSize: 16, color: 'var(--text-dim)', cursor: 'pointer' }}>×</div>
-                      </>
-                    ) : (
-                      <>
-                        <div style={{ flex: 1, fontSize: 14, color: 'var(--text-secondary)' }}>{cat.name}</div>
-                        <div style={{ fontSize: 11, color: 'var(--text-dim)', fontFamily: "'DM Mono'" }}>{subs.filter(s=>(s.category||'Other')===cat.name).length}</div>
-                        <select value={CAT_ICONS[cat.name]||'📦'} onChange={e => {
-                          CAT_ICONS[cat.name] = e.target.value
-                          saveCats([...customCats])
-                        }} style={{ fontSize: 18, background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 8, padding: '2px 4px', outline: 'none', cursor: 'pointer' }}>
-                          {['🎬','🎵','📺','🎮','📚','💪','☁️','🍔','💊','🎧','📰','⚡','🛍️','💳','🔑','🤖','🏠','✈️','🚗','🐶','🌿','🏋️','🎨','📱','📦','🔄','💡','🎯'].map(e => <option key={e} value={e}>{e}</option>)}
-                        </select>
-                        <div onClick={() => setEditingCat({ name: cat.name, newName: cat.name })} style={{ fontSize: 12, color: 'var(--text-muted)', cursor: 'pointer', padding: '3px 8px', borderRadius: 6, background: 'var(--bg-card)', border: '1px solid var(--border)' }}>✏️</div>
-                        <div onClick={() => deleteSubCat(cat.name)} style={{ fontSize: 12, color: 'var(--danger)', cursor: 'pointer', padding: '3px 8px', borderRadius: 6, background: 'var(--danger-dim)', border: '1px solid var(--danger-border)' }}>✕</div>
-                      </>
-                    )}
-                  </div>
-                ))}
+          {runway !== null && liquid > 0 && (
+            <div style={{ background: runway < 3 ? 'var(--warn-dim)' : 'var(--bg-card)', border: `1px solid ${runway < 3 ? 'var(--warn-border)' : 'var(--border)'}`, borderRadius: 14, padding: 16, marginBottom: 16 }}>
+              <div style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.6 }}>
+                If your income stopped today, your {fmt(liquid)} in cash covers{' '}
+                <strong style={{ color: runway < 3 ? 'var(--warn)' : 'var(--text-primary)', fontFamily: "'DM Mono'" }}>
+                  {runway >= 24 ? 'over 24' : runway.toFixed(1)} months
+                </strong> of bills and subscriptions.
               </div>
             </div>
           )}
 
-          {/* UPCOMING VIEW */}
-          {subView === 'upcoming' && (
-            <div>
-              {upcomingSubs.length === 0 ? (
-                <div style={{ textAlign: 'center', padding: '40px 20px', color: 'var(--text-dim)', fontSize: 14, border: '1px dashed var(--border)', borderRadius: 14 }}>
-                  No subscriptions with billing dates in the next 14 days.<br/>Add a billing day to your subscriptions to see them here.
-                </div>
-              ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                  {upcomingSubs.map(sub => {
-                    const daysUntil = sub.billing_day >= todayDay ? sub.billing_day - todayDay : 31 - todayDay + sub.billing_day
-                    return (
-                      <div key={sub.id} onClick={() => setSubModal(sub)} style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '14px 16px', background: 'var(--bg-card)', border: `1px solid ${daysUntil <= 3 ? 'var(--danger-dim)' : 'var(--border)'}`, borderRadius: 14, cursor: 'pointer' }}>
-                        {(() => {
-                          const icon = sub.icon || getServiceIcon(sub.name) || CAT_ICONS[sub.category||'Other'] || '📦'
-                          const isImg = typeof icon === 'string' && icon.startsWith('data:')
-                          const col = (customCats.find(c=>c.name===(sub.category||'Other'))?.color || CAT_COLORS[sub.category||'Other'] || 'var(--text-dim)') + '22'
-                          return (
-                            <div style={{ width: 44, height: 44, borderRadius: 12, background: col, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, flexShrink: 0, overflow: 'hidden' }}>
-                              {isImg ? <img src={icon} alt={sub.name} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 12 }} /> : icon}
-                            </div>
-                          )
-                        })()}
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ fontSize: 15, fontWeight: 500, color: 'var(--text-primary)' }}>{sub.name}</div>
-                          <div style={{ fontSize: 12, color: daysUntil <= 3 ? 'var(--danger)' : 'var(--text-dim)', marginTop: 2 }}>
-                            {daysUntil === 0 ? '🔴 Due today' : daysUntil === 1 ? '🟡 Due tomorrow' : `Due in ${daysUntil} days · ${sub.billing_day}${['st','nd','rd'][sub.billing_day-1]||'th'}`}
-                          </div>
-                        </div>
-                        <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                          <div style={{ fontSize: 16, fontWeight: 600, color: 'var(--text-primary)', fontFamily: "'DM Mono'" }}>{fmt(sub.amount)}</div>
-                          <div style={{ fontSize: 10, color: 'var(--text-dim)' }}>{sub.frequency}</div>
-                        </div>
-                      </div>
-                    )
-                  })}
-                </div>
-              )}
-            </div>
-          )}
+          <div onClick={() => setAcctModal('new')} className="btn-primary" style={{ textAlign: 'center', padding: '11px', borderRadius: 12, fontSize: 14, cursor: 'pointer', marginBottom: 18 }}>+ Add account</div>
 
-          {subView === 'calendar' && <SubCalendar subs={subs} customCats={customCats} onEdit={setSubModal} />}
-
-          {/* ALL VIEW - grouped by category */}
-          {subView === 'all' && (
-            <div>
-              {orderedCats.length === 0 && (
-                <div style={{ textAlign: 'center', padding: '40px 20px', color: 'var(--text-dim)', fontSize: 14, border: '1px dashed var(--border)', borderRadius: 14 }}>
-                  No subscriptions yet — add one above
-                </div>
-              )}
-              {orderedCats.filter(cat => groupedSubs[cat]).map(cat => {
-                const catDef = customCats.find(c => c.name === cat)
-                const col = catDef?.color || CAT_COLORS[cat] || 'var(--text-dim)'
-                const catItems = groupedSubs[cat] || []
-                const catMonthly = catItems.filter(s=>s.is_active!==false).reduce((sum,s)=>sum+toMonthly(s.amount,s.frequency),0)
+          {accounts.length === 0 ? (
+            <EmptyState icon="🏦" text="Add your accounts — checking, savings, credit cards, investments — to track net worth. Balances are manual, so update them whenever you like." />
+          ) : (
+            <>
+              {['asset', 'debt'].map(group => {
+                const list = accounts.filter(a => kindDef(a.kind).asset === (group === 'asset'))
+                if (!list.length) return null
+                const total = list.reduce((n, a) => n + (parseFloat(a.balance) || 0), 0)
                 return (
-                  <div key={cat} style={{ marginBottom: 24 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                        <div style={{ width: 10, height: 10, borderRadius: '50%', background: col, flexShrink: 0 }} />
-                        <div style={{ fontSize: 11, fontWeight: 700, color: col, textTransform: 'uppercase', letterSpacing: '0.08em' }}>{cat}</div>
-                      </div>
-                      <div style={{ fontSize: 12, color: 'var(--text-dim)', fontFamily: "'DM Mono'" }}>{fmt(catMonthly)}/mo</div>
+                  <div key={group} style={{ marginBottom: 20 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 10 }}>
+                      <div className="section-label" style={{ margin: 0 }}>{group === 'asset' ? 'What you have' : 'What you owe'}</div>
+                      <div style={{ fontSize: 11.5, fontFamily: "'DM Mono'", color: group === 'asset' ? 'var(--success)' : 'var(--danger)' }}>{fmt(total)}</div>
                     </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                      {catItems.map(sub => <SubCard key={sub.id} sub={sub} customCats={customCats} onEdit={() => setSubModal(sub)} />)}
-                    </div>
+                    {list.map(a => {
+                      const def = kindDef(a.kind)
+                      const stale = a.updated_at ? Math.round((Date.now() - new Date(a.updated_at)) / 86400000) : null
+                      return (
+                        <Row key={a.id} icon={def.icon} iconBg={group === 'asset' ? 'var(--success-dim)' : 'var(--danger-dim)'}
+                          title={a.name}
+                          subtitle={[a.institution, def.label].filter(Boolean).join(' · ')}
+                          right={(group === 'debt' ? '−' : '') + fmt(a.balance)}
+                          rightSub={stale !== null && stale > 7 ? `${stale}d ago` : null}
+                          onClick={() => setAcctModal(a)} />
+                      )
+                    })}
                   </div>
                 )
               })}
-            </div>
+            </>
           )}
-        </div>
-      )}
-      {/* ── BILLS TAB ── */}
-      {tab === 'bills' && (
-        <div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
-            <div>
-              <div style={{ fontSize: 16, fontWeight: 500 }}>Bills &amp; utilities</div>
-              <div style={{ fontSize: 12, color: 'var(--text-dim)', marginTop: 2 }}>{fmt(totalBills)}/mo total</div>
-            </div>
-            <div onClick={() => setModal({ type: 'bill', item: null })} className="action-btn btn-task" style={{ gap: 5 }}>+ Add bill</div>
-          </div>
-          {dueSoon.length > 0 && (
-            <div style={{ background: 'var(--danger-dim)', border: '1px solid var(--danger-border)', borderRadius: 12, padding: 14, marginBottom: 14 }}>
-              <div style={{ fontSize: 12, color: 'var(--danger)', fontWeight: 500, marginBottom: 8 }}>⚠ Due within 7 days</div>
-              {dueSoon.map(b => <div key={b.id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: 'var(--text-secondary)', marginBottom: 4 }}><span>{b.name}</span><span style={{ fontFamily:"'DM Mono'", color:'var(--danger)' }}>{b.due_date}</span></div>)}
-            </div>
-          )}
-          {bills.map(b => (
-            <div key={b.id} onClick={() => setModal({ type:'bill', item:b })} style={{ display:'flex', alignItems:'center', gap:12, padding:'14px 16px', background:'var(--bg-card)', border:'1px solid var(--border)', borderRadius:12, marginBottom:8, cursor:'pointer', opacity:b.is_active===false?0.5:1 }}>
-              <div style={{ flex:1 }}>
-                <div style={{ fontSize:15, color:'var(--text-primary)' }}>{b.name}</div>
-                <div style={{ fontSize:11, color:'var(--text-dim)', fontFamily:"'DM Mono'", marginTop:2 }}>{b.frequency}{b.due_date ? ` · due ${b.due_date}` : ''}</div>
-              </div>
-              <div style={{ textAlign:'right' }}>
-                <div style={{ fontSize:15, fontWeight:500, color:'var(--danger)', fontFamily:"'DM Mono'" }}>{fmt(b.amount)}</div>
-                <div style={{ fontSize:10, color:'var(--text-dim)' }}>{fmt(toMonthly(b.amount,b.frequency))}/mo</div>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* ── INCOME TAB ── */}
-      {tab === 'income' && (
-        <div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
-            <div>
-              <div style={{ fontSize: 16, fontWeight: 500 }}>Income</div>
-              <div style={{ fontSize: 12, color: 'var(--text-dim)', marginTop: 2 }}>{fmt(totalIncome)}/mo total</div>
-            </div>
-            <div onClick={() => setModal({ type:'income', item:null })} className="action-btn btn-task" style={{ gap: 5 }}>+ Add income</div>
-          </div>
-          {income.map(i => (
-            <div key={i.id} onClick={() => setModal({ type:'income', item:i })} style={{ display:'flex', alignItems:'center', gap:12, padding:'14px 16px', background:'var(--bg-card)', border:'1px solid var(--border)', borderRadius:12, marginBottom:8, cursor:'pointer' }}>
-              <div style={{ flex:1 }}>
-                <div style={{ fontSize:15, color:'var(--text-primary)' }}>{i.name}</div>
-                <div style={{ fontSize:11, color:'var(--text-dim)', fontFamily:"'DM Mono'", marginTop:2 }}>{i.frequency}</div>
-              </div>
-              <div style={{ textAlign:'right' }}>
-                <div style={{ fontSize:15, fontWeight:500, color:'var(--success)', fontFamily:"'DM Mono'" }}>{fmt(i.amount)}</div>
-                <div style={{ fontSize:10, color:'var(--text-dim)' }}>{fmt(toMonthly(i.amount,i.frequency))}/mo</div>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* ── SAVINGS TAB ── */}
-      {tab === 'savings' && (
-        <div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
-            <div style={{ fontSize: 16, fontWeight: 500 }}>Savings goals</div>
-            <div onClick={() => setModal({ type:'savings', item:null })} className="action-btn btn-task" style={{ gap: 5 }}>+ Add goal</div>
-          </div>
-          {savings.map(s => (
-            <div key={s.id} onClick={() => setModal({ type:'savings', item:s })} style={{ background:'var(--bg-card)', border:'1px solid var(--border)', borderRadius:12, padding:16, marginBottom:8, cursor:'pointer' }}>
-              <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:10 }}>
-                <div style={{ fontSize:15, color:'var(--text-primary)' }}>{s.name}</div>
-                <div style={{ fontSize:15, fontWeight:500, color:'var(--success)', fontFamily:"'DM Mono'" }}>{fmt(s.monthly_target)}/mo</div>
-              </div>
-              <div style={{ height:5, background:'var(--border)', borderRadius:3, overflow:'hidden' }}>
-                <div style={{ height:'100%', width:Math.min(100,(s.saved_this_month/s.monthly_target)*100||0)+'%', background:'var(--success)', borderRadius:3 }} />
-              </div>
-            </div>
-          ))}
         </div>
       )}
 
       {modal && <EntryModal type={modal.type} item={modal.item} onClose={() => setModal(null)} onSaved={() => { setModal(null); load() }} />}
       {subModal && <SubModal item={subModal === 'new' ? null : subModal} categories={customCats} onClose={() => setSubModal(null)} onSaved={() => { setSubModal(null); load() }} />}
+      {acctModal && <AccountModal item={acctModal === 'new' ? null : acctModal} onClose={() => setAcctModal(null)} onSaved={() => { setAcctModal(null); load() }} />}
     </div>
   )
 }
+
 
 
 // ── Sub Calendar ──────────────────────────────────────────────────────────────
