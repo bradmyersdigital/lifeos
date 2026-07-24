@@ -297,6 +297,18 @@ function SectorDetail({ sector, onEditTask, onAddTask, onBack }) {
         </div>
       </div>
 
+      {(sector.name === 'Finance / Wealth Management' || sector.name === 'Finance') && (
+        <div onClick={() => navigate('/finance')}
+          style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '14px 15px', marginBottom: 16, borderRadius: 14, cursor: 'pointer', background: 'var(--accent-dim)', border: '1px solid var(--accent-border)' }}>
+          <div style={{ fontSize: 22 }}>💰</div>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 14.5, fontWeight: 500, color: 'var(--accent)' }}>Finance dashboard</div>
+            <div style={{ fontSize: 11.5, color: 'var(--text-muted)', marginTop: 1 }}>Free to spend, bills, net worth, vehicles</div>
+          </div>
+          <div style={{ fontSize: 20, color: 'var(--accent)' }}>›</div>
+        </div>
+      )}
+
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 8, marginBottom: 18 }}>
         {[['Today', todayTasks.length,'var(--accent)'],['Upcoming',upcomingTasks.length,'var(--purple)'],['Overdue',overdueTasks.length,'var(--danger)'],['Done',doneTasks.length,'var(--success)']].map(([l,v,c]) => (
           <div key={l} style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 12, padding: '10px 8px' }}>

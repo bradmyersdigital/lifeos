@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 
 const FREQ_MULT = { weekly: 4, biweekly: 2, monthly: 1, yearly: 1/12 }
@@ -277,6 +278,259 @@ function EntryModal({ type, item, onClose, onSaved }) {
   )
 }
 
+// ── Vehicle running costs ────────────────────────────────────────────────────
+const WEEKS_PER_MONTH = 52 / 12
+
+/** Everything a vehicle costs per month, split into estimate vs commitment. */
+function vehicleCosts(v) {
+  const mpg     = parseFloat(v.mpg) || 0
+  const price   = parseFloat(v.gas_price) || 0
+  const miles   = parseFloat(v.weekly_miles) || 0
+  const tank    = parseFloat(v.tank_gallons) || 0
+  const payment = parseFloat(v.monthly_payment) || 0
+  const insure  = parseFloat(v.monthly_insurance) || 0
+
+  const monthlyMiles   = miles * WEEKS_PER_MONTH
+  const monthlyGallons = mpg > 0 ? monthlyMiles / mpg : 0
+  const gas            = monthlyGallons * price
+  const perFill        = tank * price
+  const fillsPerMonth  = tank > 0 ? monthlyGallons / tank : 0
+  const range          = mpg * tank
+
+  return { gas, payment, insure, fixed: payment + insure, total: gas + payment + insure,
+           monthlyMiles, monthlyGallons, perFill, fillsPerMonth, range }
+}
+
+function VehicleModal({ item, onClose, onSaved }) {
+  const isEdit = !!item
+  const [name, setName]         = useState(item?.name || '')
+  const [mpg, setMpg]           = useState(item?.mpg ?? '')
+  const [tank, setTank]         = useState(item?.tank_gallons ?? '')
+  const [price, setPrice]       = useState(item?.gas_price ?? '')
+  const [miles, setMiles]       = useState(item?.weekly_miles ?? '')
+  const [payment, setPayment]   = useState(item?.monthly_payment ?? '')
+  const [insurance, setInsure]  = useState(item?.monthly_insurance ?? '')
+  const [busy, setBusy] = useState(false)
+
+  const preview = vehicleCosts({ mpg, tank_gallons: tank, gas_price: price, weekly_miles: miles,
+                                 monthly_payment: payment, monthly_insurance: insurance })
+
+  const save = async () => {
+    if (!name.trim()) return
+    setBusy(true)
+    const payload = {
+      name: name.trim(),
+      mpg: parseFloat(mpg) || null,
+      tank_gallons: parseFloat(tank) || null,
+      gas_price: parseFloat(price) || null,
+      weekly_miles: parseFloat(miles) || null,
+      monthly_payment: parseFloat(payment) || 0,
+      monthly_insurance: parseFloat(insurance) || 0,
+    }
+    if (isEdit) await supabase.from('finance_vehicles').update(payload).eq('id', item.id)
+    else await supabase.from('finance_vehicles').insert(payload)
+    setBusy(false); onSaved(); onClose()
+  }
+
+  const remove = async () => {
+    if (!window.confirm(`Delete "${item.name}"?`)) return
+    await supabase.from('finance_vehicles').delete().eq('id', item.id)
+    onSaved(); onClose()
+  }
+
+  return (
+    <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
+      <div className="modal-sheet">
+        <div className="modal-handle" />
+        <div className="modal-title">{isEdit ? 'Edit vehicle' : 'Add vehicle'}<div className="modal-close" onClick={onClose}>×</div></div>
+
+        <div className="field"><div className="field-label">Vehicle</div>
+          <input type="text" placeholder="e.g. Silverado" value={name} onChange={e => setName(e.target.value)} />
+        </div>
+
+        <div className="field-label" style={{ marginTop: 4 }}>Fuel</div>
+        <div className="field-row">
+          <div className="field"><div className="field-label">MPG</div>
+            <input type="number" inputMode="decimal" placeholder="22" value={mpg} onChange={e => setMpg(e.target.value)} />
+          </div>
+          <div className="field"><div className="field-label">Tank (gal)</div>
+            <input type="number" inputMode="decimal" placeholder="24" value={tank} onChange={e => setTank(e.target.value)} />
+          </div>
+        </div>
+        <div className="field-row">
+          <div className="field"><div className="field-label">Gas price ($/gal)</div>
+            <input type="number" inputMode="decimal" placeholder="3.15" value={price} onChange={e => setPrice(e.target.value)} />
+          </div>
+          <div className="field"><div className="field-label">Miles / week</div>
+            <input type="number" inputMode="decimal" placeholder="250" value={miles} onChange={e => setMiles(e.target.value)} />
+          </div>
+        </div>
+
+        <div className="field-label" style={{ marginTop: 4 }}>Fixed costs</div>
+        <div className="field-row">
+          <div className="field"><div className="field-label">Payment / mo</div>
+            <input type="number" inputMode="decimal" placeholder="0" value={payment} onChange={e => setPayment(e.target.value)} />
+          </div>
+          <div className="field"><div className="field-label">Insurance / mo</div>
+            <input type="number" inputMode="decimal" placeholder="0" value={insurance} onChange={e => setInsure(e.target.value)} />
+          </div>
+        </div>
+
+        {preview.total > 0 && (
+          <div style={{ background: 'var(--accent-dim)', border: '1px solid var(--accent-border)', borderRadius: 12, padding: 14 }}>
+            <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 8 }}>THIS VEHICLE COSTS</div>
+            <div style={{ fontSize: 26, fontWeight: 600, fontFamily: "'DM Mono'", color: 'var(--accent)', letterSpacing: '-0.5px' }}>{fmt(preview.total)}<span style={{ fontSize: 14, color: 'var(--text-muted)' }}> /mo</span></div>
+            <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 8, lineHeight: 1.6 }}>
+              {preview.gas > 0 && <>Gas {fmt(preview.gas)} · {preview.fillsPerMonth.toFixed(1)} fill-ups at {fmt(preview.perFill)} each<br /></>}
+              {preview.fixed > 0 && <>Payment &amp; insurance {fmt(preview.fixed)}<br /></>}
+              {preview.range > 0 && <>About {Math.round(preview.range)} miles per tank</>}
+            </div>
+          </div>
+        )}
+
+        <div style={{ display: 'flex', gap: 10, marginTop: 18 }}>
+          {isEdit && <button onClick={remove} style={{ flex: 1, padding: 11, borderRadius: 10, background: 'var(--danger-dim)', border: '1px solid var(--danger-border)', color: 'var(--danger)', fontSize: 14, fontWeight: 500, cursor: 'pointer', fontFamily: "'DM Sans'" }}>Delete</button>}
+          <button className="btn-ghost" style={{ flex: 1 }} onClick={onClose}>Cancel</button>
+          <button className="btn-primary" style={{ flex: 2 }} onClick={save} disabled={busy || !name.trim()}>{busy ? 'Saving…' : 'Save'}</button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function VehicleCard({ v, onEdit }) {
+  const c = vehicleCosts(v)
+  return (
+    <div onClick={onEdit} style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 16, padding: 16, marginBottom: 10, cursor: 'pointer' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 11 }}>
+          <div style={{ width: 40, height: 40, borderRadius: 11, background: 'var(--blue-dim)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>🚗</div>
+          <div>
+            <div style={{ fontSize: 15.5, fontWeight: 500, color: 'var(--text-primary)' }}>{v.name}</div>
+            {c.monthlyMiles > 0 && <div style={{ fontSize: 11.5, color: 'var(--text-muted)', marginTop: 1 }}>{Math.round(c.monthlyMiles).toLocaleString()} mi/mo</div>}
+          </div>
+        </div>
+        <div style={{ textAlign: 'right' }}>
+          <div style={{ fontSize: 18, fontWeight: 600, fontFamily: "'DM Mono'", color: 'var(--text-primary)' }}>{fmt(c.total)}</div>
+          <div style={{ fontSize: 11, color: 'var(--text-dim)' }}>per month</div>
+        </div>
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 8 }}>
+        {[
+          ['Gas', c.gas, 'var(--warn)'],
+          ['Payment', c.payment, 'var(--danger)'],
+          ['Insurance', c.insure, 'var(--blue)'],
+        ].map(([label, val, color]) => (
+          <div key={label} style={{ background: 'var(--bg-card2)', borderRadius: 10, padding: '9px 10px' }}>
+            <div style={{ fontSize: 10, color: 'var(--text-dim)', marginBottom: 2 }}>{label}</div>
+            <div style={{ fontSize: 13.5, fontWeight: 600, fontFamily: "'DM Mono'", color: val > 0 ? color : 'var(--text-dim)' }}>{fmt(val)}</div>
+          </div>
+        ))}
+      </div>
+
+      {c.perFill > 0 && (
+        <div style={{ fontSize: 11.5, color: 'var(--text-muted)', marginTop: 11, paddingTop: 11, borderTop: '1px solid var(--border)', lineHeight: 1.5 }}>
+          {fmt(c.perFill)} to fill up · about {c.fillsPerMonth.toFixed(1)}× a month · {Math.round(c.range)} mi range
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ── Spending trend: this month vs last, cumulative by day ────────────────────
+function SpendTrend({ spending }) {
+  const now = new Date()
+  const thisY = now.getFullYear(), thisM = now.getMonth()
+  const lastDate = new Date(thisY, thisM - 1, 1)
+  const lastY = lastDate.getFullYear(), lastM = lastDate.getMonth()
+
+  const daysThis = new Date(thisY, thisM + 1, 0).getDate()
+  const daysLast = new Date(lastY, lastM + 1, 0).getDate()
+  const span = Math.max(daysThis, daysLast)
+
+  // cumulative totals indexed by day-of-month
+  const cume = (y, m, days) => {
+    const byDay = new Array(days + 1).fill(0)
+    spending.forEach(s => {
+      const d = new Date(s.spent_on + 'T00:00:00')
+      if (d.getFullYear() === y && d.getMonth() === m) byDay[d.getDate()] += parseFloat(s.amount) || 0
+    })
+    let run = 0
+    return byDay.map(v => (run += v))
+  }
+
+  const cThis = cume(thisY, thisM, daysThis)
+  const cLast = cume(lastY, lastM, daysLast)
+  const today = now.getDate()
+
+  const totalThis = cThis[daysThis]
+  const totalLast = cLast[daysLast]
+  const paceThis = cThis[Math.min(today, daysThis)]
+  const paceLast = cLast[Math.min(today, daysLast)]
+  const delta = paceThis - paceLast
+
+  const max = Math.max(totalThis, totalLast, 1)
+  const W = 300, H = 120, PAD = 4
+
+  const path = (arr, days) => arr.slice(1, days + 1).map((v, i) => {
+    const x = PAD + (i / (span - 1)) * (W - PAD * 2)
+    const y = H - PAD - (v / max) * (H - PAD * 2)
+    return `${i === 0 ? 'M' : 'L'}${x.toFixed(1)},${y.toFixed(1)}`
+  }).join(' ')
+
+  if (totalThis === 0 && totalLast === 0) {
+    return (
+      <EmptyState icon="📈" text="Log a few days of spending and this will show you whether you're ahead or behind last month's pace." />
+    )
+  }
+
+  return (
+    <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 16, padding: 16 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
+        <div>
+          <div style={{ fontSize: 24, fontWeight: 600, fontFamily: "'DM Mono'", color: 'var(--text-primary)', letterSpacing: '-0.5px' }}>{fmt(totalThis)}</div>
+          <div style={{ fontSize: 11.5, color: 'var(--text-muted)', marginTop: 2 }}>spent so far this month</div>
+        </div>
+        {totalLast > 0 && (
+          <div style={{ textAlign: 'right' }}>
+            <div style={{ fontSize: 14, fontWeight: 600, fontFamily: "'DM Mono'", color: delta > 0 ? 'var(--danger)' : 'var(--success)' }}>
+              {delta > 0 ? '+' : '−'}{fmt(Math.abs(delta))}
+            </div>
+            <div style={{ fontSize: 11, color: 'var(--text-dim)', marginTop: 2 }}>vs same point last month</div>
+          </div>
+        )}
+      </div>
+
+      <svg width="100%" height={H} viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" style={{ display: 'block' }}>
+        {[0.25, 0.5, 0.75].map(f => (
+          <line key={f} x1={PAD} x2={W - PAD} y1={H - PAD - f * (H - PAD * 2)} y2={H - PAD - f * (H - PAD * 2)}
+            stroke="var(--border)" strokeWidth="1" strokeDasharray="3 4" />
+        ))}
+        {totalLast > 0 && (
+          <path d={path(cLast, daysLast)} fill="none" stroke="var(--text-dim)" strokeWidth="2"
+            strokeLinejoin="round" strokeLinecap="round" />
+        )}
+        <path d={path(cThis, Math.min(today, daysThis))} fill="none" stroke="var(--accent)" strokeWidth="2.5"
+          strokeLinejoin="round" strokeLinecap="round" />
+      </svg>
+
+      <div style={{ display: 'flex', gap: 16, marginTop: 12, paddingTop: 12, borderTop: '1px solid var(--border)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <div style={{ width: 14, height: 2.5, borderRadius: 2, background: 'var(--accent)' }} />
+          <span style={{ fontSize: 11.5, color: 'var(--text-muted)' }}>This month</span>
+        </div>
+        {totalLast > 0 && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <div style={{ width: 14, height: 2.5, borderRadius: 2, background: 'var(--text-dim)' }} />
+            <span style={{ fontSize: 11.5, color: 'var(--text-muted)' }}>Last month · {fmt(totalLast)} total</span>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
 // ── Main Finance ─────────────────────────────────────────────────────────────
 // ── Account kinds ────────────────────────────────────────────────────────────
 const ACCOUNT_KINDS = [
@@ -451,12 +705,14 @@ function EmptyState({ icon, text, action, onAction }) {
 
 // ── Main Finance ─────────────────────────────────────────────────────────────
 export default function Finance() {
+  const navigate = useNavigate()
   const [subs, setSubs] = useState([])
   const [bills, setBills] = useState([])
   const [income, setIncome] = useState([])
   const [savings, setSavings] = useState([])
   const [accounts, setAccounts] = useState([])
   const [spending, setSpending] = useState([])
+  const [vehicles, setVehicles] = useState([])
   const [loading, setLoading] = useState(true)
 
   const [tab, setTab] = useState('overview')
@@ -465,23 +721,25 @@ export default function Finance() {
   const [acctModal, setAcctModal] = useState(null)
   const [spendModal, setSpendModal] = useState(null)
   const [goalModal, setGoalModal] = useState(null)
+  const [vehModal, setVehModal] = useState(null)
   const [recurView, setRecurView] = useState('list')  // list | calendar
   const [showPaused, setShowPaused] = useState(false)
 
   useEffect(() => { load() }, [])
 
   const load = async () => {
-    const monthStart = toStr(new Date(new Date().getFullYear(), new Date().getMonth(), 1))
-    const [s, b, i, sv, a, sp] = await Promise.all([
+    const monthStart2 = toStr(new Date(new Date().getFullYear(), new Date().getMonth() - 1, 1))
+    const [s, b, i, sv, a, sp, v] = await Promise.all([
       supabase.from('finance_subscriptions').select('*').order('amount', { ascending: false }),
       supabase.from('finance_bills').select('*').order('amount', { ascending: false }),
       supabase.from('finance_income').select('*'),
       supabase.from('finance_savings').select('*'),
       supabase.from('finance_accounts').select('*').order('sort_order').order('created_at'),
-      supabase.from('finance_spending').select('*').gte('spent_on', monthStart).order('spent_on', { ascending: false }),
+      supabase.from('finance_spending').select('*').gte('spent_on', monthStart2).order('spent_on', { ascending: false }),
+      supabase.from('finance_vehicles').select('*').order('created_at'),
     ])
     setSubs(s.data || []); setBills(b.data || []); setIncome(i.data || [])
-    setSavings(sv.data || []); setAccounts(a.data || []); setSpending(sp.data || [])
+    setSavings(sv.data || []); setAccounts(a.data || []); setSpending(sp.data || []); setVehicles(v.data || [])
     setLoading(false)
   }
 
@@ -494,10 +752,12 @@ export default function Finance() {
   const mSubs    = activeSubs.reduce((n, x) => n + toMonthly(x.amount, x.frequency), 0)
   const mBills   = activeBills.reduce((n, x) => n + toMonthly(x.amount, x.frequency), 0)
   const mSavings = savings.reduce((n, x) => n + (parseFloat(x.monthly_target) || 0), 0)
+  const vehicleTotal = vehicles.reduce((n, v) => n + vehicleCosts(v).total, 0)
+  const vehicleGas   = vehicles.reduce((n, v) => n + vehicleCosts(v).gas, 0)
 
-  const committed = mBills + mSubs + mSavings
+  const committed = mBills + mSubs + mSavings + vehicleTotal
   const free      = mIncome - committed
-  const burn      = mBills + mSubs                       // what you must pay to exist
+  const burn      = mBills + mSubs + vehicleTotal        // what you must pay to exist
 
   const now = new Date()
   const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()
@@ -528,22 +788,33 @@ export default function Finance() {
   if (mBills > 0) catTotals['Bills & Utilities'] = mBills
   const catList = Object.entries(catTotals).sort((a, b) => b[1] - a[1])
 
-  const spentThisMonth = spending.reduce((n, x) => n + (parseFloat(x.amount) || 0), 0)
-  const spendLeft = free - spentThisMonth
-  const spendPct = free > 0 ? Math.min(100, (spentThisMonth / free) * 100) : 0
+  // Optional: siphon a % of leftover money into savings before it's "spendable"
+  const allocPct = (() => { try { return parseInt(localStorage.getItem('lifeos_alloc_pct')) || 0 } catch { return 0 } })()
+  const [allocPctState, setAllocPctState] = useState(allocPct)
+  const setAlloc = (v) => { setAllocPctState(v); try { localStorage.setItem('lifeos_alloc_pct', String(v)) } catch {} }
+  const autoSave = free > 0 ? free * (allocPctState / 100) : 0
+  const freeAfterSave = free - autoSave
+
+  const spentThisMonth = spending.filter(s => {
+    const d = new Date(s.spent_on + 'T00:00:00')
+    return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth()
+  }).reduce((n, x) => n + (parseFloat(x.amount) || 0), 0)
+  const spendLeft = freeAfterSave - spentThisMonth
+  const spendPct = freeAfterSave > 0 ? Math.min(100, (spentThisMonth / freeAfterSave) * 100) : 0
 
   const biggestSub = activeSubs.slice().sort((a, b) => toYearly(b.amount, b.frequency) - toYearly(a.amount, a.frequency))[0]
 
   const hasAnyData = subs.length || bills.length || income.length || savings.length || accounts.length || spending.length
 
   // ── Where-it-goes bar ──────────────────────────────────────────────────────
-  const segments = [
-    { label: 'Bills',    value: mBills,   color: 'var(--danger)' },
-    { label: 'Subs',     value: mSubs,    color: 'var(--warn)' },
-    { label: 'Savings',  value: mSavings, color: 'var(--success)' },
-    { label: 'Free',     value: Math.max(0, free), color: 'var(--accent)' },
+  const heroSegs = [
+    { label: 'Bills',    value: mBills,        color: 'var(--danger)' },
+    { label: 'Subs',     value: mSubs,         color: 'var(--warn)' },
+    { label: 'Vehicles', value: vehicleTotal,  color: 'var(--blue)' },
+    { label: 'Savings',  value: mSavings + autoSave, color: 'var(--success)' },
+    { label: 'Free',     value: Math.max(0, freeAfterSave), color: 'var(--accent)' },
   ].filter(s => s.value > 0)
-  const segTotal = segments.reduce((n, s) => n + s.value, 0) || 1
+  const heroTotal = heroSegs.reduce((n, s) => n + s.value, 0) || 1
 
   const TABS = [
     ['overview',  'Overview'],
@@ -556,7 +827,13 @@ export default function Finance() {
 
   return (
     <div>
-      <div style={{ fontSize: 22, fontWeight: 600, marginBottom: 16, letterSpacing: '-0.3px' }}>Finance</div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+        <div style={{ fontSize: 22, fontWeight: 600, letterSpacing: '-0.3px' }}>Finance</div>
+        <div onClick={() => navigate('/sectors')}
+          style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12.5, color: 'var(--text-muted)', cursor: 'pointer', padding: '6px 11px', borderRadius: 10, background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
+          🗂️ Sector
+        </div>
+      </div>
 
       {/* Tabs */}
       <div style={{ display: 'flex', gap: 6, marginBottom: 20, overflowX: 'auto', WebkitOverflowScrolling: 'touch', paddingBottom: 2 }}>
@@ -600,17 +877,45 @@ export default function Finance() {
                     <div style={{ fontSize: 13, color: free < 0 ? 'var(--danger)' : 'var(--text-muted)', marginTop: 6 }}>
                       {free < 0
                         ? `You're committed to ${fmt(Math.abs(free))} more than you earn`
-                        : `${fmt(perDay)} a day for the ${daysLeft} days left`}
+                        : allocPctState > 0
+                          ? `${fmt(autoSave)} auto-saved · ${fmt(freeAfterSave / daysLeft)} a day to spend`
+                          : `${fmt(perDay)} a day for the ${daysLeft} days left`}
                     </div>
+
+                    {free > 0 && (
+                      <div style={{ marginTop: 16, background: 'var(--bg-card2)', borderRadius: 12, padding: '12px 14px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: allocPctState > 0 ? 10 : 0 }}>
+                          <div style={{ fontSize: 12.5, color: 'var(--text-secondary)' }}>
+                            Auto-save <strong style={{ color: 'var(--accent)' }}>{allocPctState}%</strong> of what's left
+                          </div>
+                          <div style={{ display: 'flex', gap: 6 }}>
+                            {[0, 10, 20, 30].map(pct => (
+                              <div key={pct} onClick={() => setAlloc(pct)}
+                                style={{ padding: '5px 11px', borderRadius: 14, fontSize: 12, fontWeight: 500, cursor: 'pointer',
+                                  background: allocPctState === pct ? 'var(--accent-dim)' : 'transparent',
+                                  border: `1px solid ${allocPctState === pct ? 'var(--accent-border)' : 'var(--border)'}`,
+                                  color: allocPctState === pct ? 'var(--accent)' : 'var(--text-muted)' }}>
+                                {pct}%
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                        {allocPctState > 0 && (
+                          <div style={{ fontSize: 11.5, color: 'var(--text-muted)', lineHeight: 1.5 }}>
+                            Move <strong style={{ color: 'var(--success)', fontFamily: "'DM Mono'" }}>{fmt(autoSave)}</strong> to savings this month and you'd still have {fmt(freeAfterSave)} to spend. The app won't move it for you — it just shows you the target.
+                          </div>
+                        )}
+                      </div>
+                    )}
 
                     {/* Where it goes */}
                     <div style={{ display: 'flex', height: 10, borderRadius: 5, overflow: 'hidden', marginTop: 18, background: 'var(--bg-card2)' }}>
-                      {segments.map(s => (
-                        <div key={s.label} style={{ width: `${(s.value / segTotal) * 100}%`, background: s.color }} />
+                      {heroSegs.map(s => (
+                        <div key={s.label} style={{ width: `${(s.value / heroTotal) * 100}%`, background: s.color }} />
                       ))}
                     </div>
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px 16px', marginTop: 12 }}>
-                      {segments.map(s => (
+                      {heroSegs.map(s => (
                         <div key={s.label} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                           <div style={{ width: 8, height: 8, borderRadius: '50%', background: s.color }} />
                           <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>{s.label}</span>
@@ -625,7 +930,7 @@ export default function Finance() {
               {/* Key numbers */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 12 }}>
                 <StatTile label="Money in" value={fmt(mIncome)} sub="per month" color="var(--success)" onClick={() => setTab('income')} />
-                <StatTile label="Money out" value={fmt(burn)} sub="bills + subscriptions" color="var(--danger)" onClick={() => setTab('recurring')} />
+                <StatTile label="Money out" value={fmt(burn)} sub={vehicleTotal > 0 ? 'bills, subs & vehicles' : 'bills + subscriptions'} color="var(--danger)" onClick={() => setTab('recurring')} />
                 <StatTile label="Net worth" value={(netWorth < 0 ? '−' : '') + fmt(netWorth)} sub={accounts.length ? `${accounts.length} account${accounts.length === 1 ? '' : 's'}` : 'Add accounts'} color={netWorth < 0 ? 'var(--danger)' : 'var(--text-primary)'} onClick={() => setTab('accounts')} />
                 <StatTile label="Runway"
                   value={runway === null ? '—' : runway >= 24 ? '24+ mo' : `${runway.toFixed(1)} mo`}
@@ -668,6 +973,31 @@ export default function Finance() {
               <div style={{ marginTop: 22 }}>
                 <AccountsSummary accounts={accounts} onAdd={() => setAcctModal('new')} onEdit={setAcctModal} />
               </div>
+
+              {/* Vehicles */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 10, marginTop: 24 }}>
+                <div className="section-label" style={{ margin: 0 }}>Vehicles</div>
+                <div onClick={() => setVehModal('new')} style={{ fontSize: 12.5, color: 'var(--accent)', cursor: 'pointer', fontWeight: 500 }}>Add vehicle</div>
+              </div>
+              {vehicles.length === 0 ? (
+                <div onClick={() => setVehModal('new')} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '14px 15px', background: 'var(--bg-card)', border: '1px dashed var(--border)', borderRadius: 14, cursor: 'pointer' }}>
+                  <div style={{ fontSize: 22 }}>🚗</div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: 14, color: 'var(--text-secondary)' }}>Add a vehicle</div>
+                    <div style={{ fontSize: 11.5, color: 'var(--text-dim)', marginTop: 1 }}>Gas, payment, insurance — the real monthly cost of driving</div>
+                  </div>
+                  <div style={{ fontSize: 20, color: 'var(--text-dim)' }}>›</div>
+                </div>
+              ) : (
+                <>
+                  {vehicles.map(v => <VehicleCard key={v.id} v={v} onEdit={() => setVehModal(v)} />)}
+                  {vehicles.length > 1 && (
+                    <div style={{ textAlign: 'right', fontSize: 12, color: 'var(--text-muted)', fontFamily: "'DM Mono'", marginTop: 2 }}>
+                      {fmt(vehicleTotal)}/mo across {vehicles.length} vehicles
+                    </div>
+                  )}
+                </>
+              )}
 
               {/* Upcoming — horizontal, next 14 days */}
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 10, marginTop: 24 }}>
@@ -734,10 +1064,14 @@ export default function Finance() {
                 </>
               )}
 
-              {/* 12-month forecast */}
+              {/* Spending trend — this month vs last */}
+              <div className="section-label" style={{ marginTop: 26 }}>Spending trend</div>
+              <SpendTrend spending={spending} />
+
+              {/* 12-month forecast of fixed costs */}
               {(activeSubs.length > 0 || activeBills.length > 0) && (
                 <>
-                  <div className="section-label" style={{ marginTop: 26 }}>The year ahead</div>
+                  <div className="section-label" style={{ marginTop: 26 }}>Fixed costs, year ahead</div>
                   <ForecastChart subs={activeSubs} bills={activeBills} />
                 </>
               )}
@@ -950,6 +1284,7 @@ export default function Finance() {
       {acctModal && <AccountModal item={acctModal === 'new' ? null : acctModal} onClose={() => setAcctModal(null)} onSaved={() => { setAcctModal(null); load() }} />}
       {spendModal && <SpendModal item={spendModal === 'new' ? null : spendModal} onClose={() => setSpendModal(null)} onSaved={() => { setSpendModal(null); load() }} />}
       {goalModal && <SavingsModal item={goalModal === 'new' ? null : goalModal} onClose={() => setGoalModal(null)} onSaved={() => { setGoalModal(null); load() }} />}
+      {vehModal && <VehicleModal item={vehModal === 'new' ? null : vehModal} onClose={() => setVehModal(null)} onSaved={() => { setVehModal(null); load() }} />}
     </div>
   )
 }
