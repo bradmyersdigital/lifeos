@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
+import { useSearchParams } from 'react-router-dom'
 import { fmtDate } from '../utils'
 import FolderList, { FolderHeader } from '../components/FolderList'
 
@@ -235,6 +236,15 @@ export default function Projects({ onAddTask, onEditTask }) {
   const [projects, setProjects] = useState([])
   const [sectors, setSectors] = useState([])
   const [selected, setSelected] = useState(null)
+  const [searchParams, setSearchParams] = useSearchParams()
+
+  useEffect(() => {
+    const openId = searchParams.get('open')
+    if (openId && projects.length) {
+      const match = projects.find(p => String(p.id) === String(openId))
+      if (match) { setSelected(match); setSearchParams({}, { replace: true }) }
+    }
+  }, [searchParams, projects])
   const [filter, setFilter] = useState('active')
   const [folder, setFolder] = useState(null) // null = folder index, else { id, label, icon }
   const [showModal, setShowModal] = useState(false)

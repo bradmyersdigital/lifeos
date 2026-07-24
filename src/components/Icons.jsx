@@ -138,3 +138,32 @@ export function SettingsIcon({ active, size = 20 }) {
       stroke={c} strokeWidth="1.5" opacity="0.8" />
   </>)
 }
+
+/* Sector name -> drawn icon. Falls back to null so a user's custom emoji wins. */
+export function SectorGlyph({ name, emoji, size = 24, active = true }) {
+  const key = (name || '').toLowerCase()
+  const map = {
+    'real estate': HomeIcon,
+    'app development': FocusIcon,
+    'personal growth': GoalsIcon,
+    'health': HabitsIcon,
+    'family': null,
+    'relationship': null,
+    'finance': FinanceIcon,
+    'finance / wealth management': FinanceIcon,
+    'hobbies': null,
+  }
+  const Icon = Object.prototype.hasOwnProperty.call(map, key) ? map[key] : undefined
+  // If the user set a custom emoji that isn't the sector's default, prefer it.
+  // We can't know the "default", so: show drawn icon only when emoji is empty
+  // or matches a known-default set; otherwise show their emoji.
+  if (emoji && !DEFAULT_EMOJIS.has(emoji)) {
+    return <span style={{ fontSize: size, lineHeight: 1 }}>{emoji}</span>
+  }
+  if (Icon) return <Icon active={active} size={size} />
+  return <span style={{ fontSize: size, lineHeight: 1 }}>{emoji || '📁'}</span>
+}
+
+// Emojis we shipped as sector defaults — if the stored emoji is one of these,
+// it's not a deliberate user choice, so the drawn icon can take over.
+const DEFAULT_EMOJIS = new Set(['🏠','📱','🎨','🏃','❤️','💗','💰','💵','📁','🗂️'])

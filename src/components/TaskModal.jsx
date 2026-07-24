@@ -77,6 +77,11 @@ export default function TaskModal({ mode, onClose, onSaved, task, defaultProject
   const [location, setLocation] = useState(task?.location || '')
   const [timeBlock, setTimeBlock] = useState(task?.time_block || '')
   const [projects, setProjects] = useState([])
+  useEffect(() => {
+    if (!projectId || sector) return
+    const proj = projects.find(p => String(p.id) === String(projectId))
+    if (proj?.sector) setSector(proj.sector)
+  }, [projects, projectId])
   const [notes, setNotes] = useState([])
   const [sectors, setSectors] = useState([])
   const [saving, setSaving] = useState(false)
@@ -87,7 +92,7 @@ export default function TaskModal({ mode, onClose, onSaved, task, defaultProject
   const [newProjectName, setNewProjectName] = useState('')
 
   useEffect(() => {
-    supabase.from('projects').select('id, name').eq('status', 'active').then(({ data }) => setProjects(data || []))
+    supabase.from('projects').select('id, name, sector').eq('status', 'active').then(({ data }) => setProjects(data || []))
     supabase.from('notes').select('id, text').order('created_at', { ascending: false }).limit(20).then(({ data }) => setNotes(data || []))
     supabase.from('sectors').select('*').order('sort_order').order('name').then(({ data }) => setSectors(data || []))
     supabase.from('goals').select('id, goal_text, timeframe').order('timeframe').then(({ data }) => setGoals(data || []))
@@ -179,7 +184,12 @@ export default function TaskModal({ mode, onClose, onSaved, task, defaultProject
             </div>
           ) : (
             <div style={{ display: 'flex', gap: 8 }}>
-              <select value={projectId} onChange={e => setProjectId(e.target.value)} style={{ flex: 1 }}>
+              <select value={projectId} onChange={e => {
+                  const id = e.target.value
+                  setProjectId(id)
+                  const proj = projects.find(p => String(p.id) === String(id))
+                  if (proj?.sector) setSector(proj.sector)   // inherit the project's sector
+                }} style={{ flex: 1 }}>
                 <option value="">No project linked</option>
                 {projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
               </select>

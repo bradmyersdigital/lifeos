@@ -240,8 +240,8 @@ function Shell() {
         order={order} setOrder={setOrder}
         nav={navPaths} setNav={setNavPaths} />
 
-      <div className="page-scroll">
-        <Routes>
+      <div className="page-scroll" key={location.pathname} style={{ animation: 'pageIn 0.26s cubic-bezier(0.22, 1, 0.36, 1)' }}>
+        <Routes location={location}>
           <Route path="/"         element={<Home key={refreshKey} onAddTask={openAdd} onEditTask={openEdit} onAddEvent={openAddEvent} />} />
           <Route path="/week"     element={<Week key={refreshKey} onAddTask={openAdd} onEditTask={openEdit} />} />
           <Route path="/tasks"    element={<Tasks key={refreshKey} onAddTask={openAdd} onEditTask={openEdit} />} />

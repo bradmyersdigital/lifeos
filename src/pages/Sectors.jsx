@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import SortableList from '../components/SortableList'
+import { SectorGlyph } from '../components/Icons'
 import { fmtDate } from '../utils'
 import TaskModal from '../components/TaskModal'
 
@@ -260,11 +261,11 @@ function SectorDetail({ sector, onEditTask, onAddTask, onBack }) {
         {taskModal && (
           <TaskModal mode={taskModal.mode} task={null}
             defaultSector={sector.name}
-            defaultProjectId={taskModal.forProject?.id}
+            defaultProjectId={selectedProject?.id}
             onClose={() => setTaskModal(null)}
             onSaved={() => {
               setTaskModal(null)
-              supabase.from('tasks').select('*').eq('project_id', selectedProject.id).order('start_date').order('time_block').then(({ data }) => setProjectTasks(data || []))
+              if (selectedProject) supabase.from('tasks').select('*').eq('project_id', selectedProject.id).order('start_date').order('time_block').then(({ data }) => setProjectTasks(data || []))
             }}
           />
         )}
@@ -274,9 +275,16 @@ function SectorDetail({ sector, onEditTask, onAddTask, onBack }) {
 
   return (
     <div>
+      {taskModal && (
+        <TaskModal mode={taskModal.mode} task={null}
+          defaultSector={sector.name}
+          onClose={() => setTaskModal(null)}
+          onSaved={() => { setTaskModal(null); reload() }}
+        />
+      )}
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
         <div onClick={() => onBack()} style={{ width: 34, height: 34, borderRadius: 10, background: 'var(--bg-card)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: 18, color: 'var(--text-muted)' }}>‹</div>
-        <div style={{ fontSize: 28 }}>{sector.icon}</div>
+        <div style={{ width: 32, display: 'flex', justifyContent: 'center' }}><SectorGlyph name={sector.name} emoji={sector.icon} size={26} /></div>
         <div><div style={{ fontSize: 20, fontWeight: 500 }}>{sector.name}</div><div style={{ fontSize: 12, color: 'var(--text-dim)', marginTop: 1 }}>{tasks.length} tasks · {notes.length} notes · {projects.length} projects</div></div>
       </div>
 
@@ -376,6 +384,15 @@ function SectorDetail({ sector, onEditTask, onAddTask, onBack }) {
 export default function Sectors({ onEditTask }) {
   const [sectors, setSectors] = useState([])
   const [selected, setSelected] = useState(null)
+  const [searchParams, setSearchParams] = useSearchParams()
+
+  useEffect(() => {
+    const openName = searchParams.get('open')
+    if (openName && sectors.length) {
+      const match = sectors.find(s => s.name === openName || s.name.startsWith(openName))
+      if (match) { setSelected(match); setSearchParams({}, { replace: true }) }
+    }
+  }, [searchParams, sectors])
   const [sectorModal, setSectorModal] = useState(null)
   const draggedRef = useRef(false)
 
@@ -425,7 +442,7 @@ export default function Sectors({ onEditTask }) {
         renderItem={(s, { dragging }) => (
           <div onClick={() => { if (!draggedRef.current) setSelected(s) }}
             style={{ background: dragging ? 'var(--bg-card2)' : 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 14, padding: '12px 14px', position: 'relative', display: 'flex', alignItems: 'center', gap: 13, borderLeft: `3px solid ${s.color || 'var(--accent)'}` }}>
-            <div style={{ fontSize: 26, flexShrink: 0, lineHeight: 1 }}>{s.icon}</div>
+            <div style={{ width: 30, flexShrink: 0, display: 'flex', justifyContent: 'center' }}><SectorGlyph name={s.name} emoji={s.icon} size={24} /></div>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontSize: 15, fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.name}</div>
               <div style={{ fontSize: 11.5, color: 'var(--text-muted)', marginTop: 2 }}>{s._taskCount || 0} tasks · {s._projCount || 0} projects</div>

@@ -536,7 +536,7 @@ export default function Home({ onAddTask, onEditTask, onAddEvent }) {
                 const tasksLeft = (p.tasks || []).filter(t => !t.completed).length
                 const isOverdue = p.due_date && p.due_date < todayStr
                 return (
-                  <div key={p.id} onClick={() => navigate('/projects')} style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 12, padding: 12, cursor: 'pointer' }}>
+                  <div key={p.id} onClick={() => navigate(`/projects?open=${p.id}`)} style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 12, padding: 12, cursor: 'pointer' }}>
                     <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-primary)', marginBottom: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.name}</div>
                     <div style={{ fontSize: 11, color: 'var(--text-dim)', marginBottom: 8 }}>{p.sector}</div>
                     <div style={{ height: 4, background: 'var(--border)', borderRadius: 2, overflow: 'hidden', marginBottom: 6 }}>

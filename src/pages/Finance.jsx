@@ -50,7 +50,29 @@ function getServiceIcon(name) {
 // ── Sub Modal ────────────────────────────────────────────────────────────────
 function SubModal({ item, onClose, onSaved, categories }) {
   const isEdit = !!item
-  const allCats = categories?.length ? categories : SUB_CATEGORIES.map(n => ({ name: n, color: CAT_COLORS[n]||'var(--text-dim)' }))
+  const [customList, setCustomList] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('lifeos_sub_cats')) || [] } catch { return [] }
+  })
+  const [newCat, setNewCat] = useState('')
+  const addCustomCat = () => {
+    const n = newCat.trim()
+    if (!n || SUB_CATEGORIES.includes(n) || customList.includes(n)) { setNewCat(''); return }
+    const next = [...customList, n]
+    setCustomList(next)
+    try { localStorage.setItem('lifeos_sub_cats', JSON.stringify(next)) } catch {}
+    setCategory(n); setNewCat('')
+  }
+  const removeCustomCat = (n) => {
+    const next = customList.filter(x => x !== n)
+    setCustomList(next)
+    try { localStorage.setItem('lifeos_sub_cats', JSON.stringify(next)) } catch {}
+    if (category === n) setCategory('Other')
+  }
+  const CUSTOM_COLORS = ['var(--blue)','var(--purple)','var(--success)','var(--warn)','var(--danger)','var(--accent)']
+  const allCats = [
+    ...SUB_CATEGORIES.map(n => ({ name: n, color: CAT_COLORS[n] || 'var(--text-dim)' })),
+    ...customList.map((n, i) => ({ name: n, color: CUSTOM_COLORS[i % CUSTOM_COLORS.length], custom: true })),
+  ]
   const [name, setName] = useState(item?.name || '')
   const [amount, setAmount] = useState(item?.amount || '')
   const [frequency, setFrequency] = useState(item?.frequency || 'monthly')
@@ -213,9 +235,17 @@ function SubModal({ item, onClose, onSaved, categories }) {
                     borderColor: isSelected ? col : 'var(--border)',
                     color: isSelected ? col : 'var(--text-dim)' }}>
                   {CAT_ICONS[catDef.name] || '📦'} {catDef.name}
+                  {catDef.custom && <span onClick={e => { e.stopPropagation(); removeCustomCat(catDef.name) }} style={{ marginLeft: 2, opacity: 0.6 }}>×</span>}
                 </div>
               )
             })}
+          </div>
+          <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
+            <input type="text" placeholder="Add your own category…" value={newCat}
+              onChange={e => setNewCat(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addCustomCat() } }}
+              style={{ flex: 1 }} />
+            <button onClick={addCustomCat} style={{ background: 'var(--accent-dim)', border: '1px solid var(--accent-border)', borderRadius: 10, padding: '0 14px', color: 'var(--accent)', fontSize: 13, fontWeight: 500, cursor: 'pointer', fontFamily: "'DM Sans'", whiteSpace: 'nowrap' }}>Add</button>
           </div>
         </div>
 
@@ -536,6 +566,7 @@ function SpendTrend({ spending }) {
 const ACCOUNT_KINDS = [
   { id: 'checking',   label: 'Checking',   icon: '🏦', asset: true,  liquid: true  },
   { id: 'savings',    label: 'Savings',    icon: '🐷', asset: true,  liquid: true  },
+  { id: 'emergency',  label: 'Emergency fund', icon: '🛟', asset: true,  liquid: true  },
   { id: 'cash',       label: 'Cash',       icon: '💵', asset: true,  liquid: true  },
   { id: 'investment', label: 'Investment', icon: '📈', asset: true,  liquid: false },
   { id: 'property',   label: 'Property',   icon: '🏠', asset: true,  liquid: false },
@@ -769,6 +800,7 @@ export default function Finance() {
   const netWorth = assets - debts
   const liquid = accounts.filter(a => kindDef(a.kind).liquid).reduce((n, a) => n + (parseFloat(a.balance) || 0), 0)
   const runway = burn > 0 ? liquid / burn : null
+  const emergencyFund = accounts.filter(a => a.kind === 'emergency').reduce((n, a) => n + (parseFloat(a.balance) || 0), 0)
 
   // Upcoming 30 days, merged and sorted
   const upcoming = [
@@ -829,9 +861,9 @@ export default function Finance() {
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
         <div style={{ fontSize: 22, fontWeight: 600, letterSpacing: '-0.3px' }}>Finance</div>
-        <div onClick={() => navigate('/sectors')}
+        <div onClick={() => navigate('/sectors?open=Finance')}
           style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12.5, color: 'var(--text-muted)', cursor: 'pointer', padding: '6px 11px', borderRadius: 10, background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
-          🗂️ Sector
+          Finance Sector
         </div>
       </div>
 
@@ -932,10 +964,10 @@ export default function Finance() {
                 <StatTile label="Money in" value={fmt(mIncome)} sub="per month" color="var(--success)" onClick={() => setTab('income')} />
                 <StatTile label="Money out" value={fmt(burn)} sub={vehicleTotal > 0 ? 'bills, subs & vehicles' : 'bills + subscriptions'} color="var(--danger)" onClick={() => setTab('recurring')} />
                 <StatTile label="Net worth" value={(netWorth < 0 ? '−' : '') + fmt(netWorth)} sub={accounts.length ? `${accounts.length} account${accounts.length === 1 ? '' : 's'}` : 'Add accounts'} color={netWorth < 0 ? 'var(--danger)' : 'var(--text-primary)'} onClick={() => setTab('accounts')} />
-                <StatTile label="Runway"
-                  value={runway === null ? '—' : runway >= 24 ? '24+ mo' : `${runway.toFixed(1)} mo`}
-                  sub={runway === null ? 'Add costs' : 'if income stopped'}
-                  color={runway !== null && runway < 3 ? 'var(--warn)' : 'var(--text-primary)'}
+                <StatTile label="Emergency fund"
+                  value={emergencyFund > 0 ? fmt(emergencyFund) : '—'}
+                  sub={emergencyFund > 0 ? (burn > 0 ? `${(emergencyFund / burn).toFixed(1)} mo of costs` : 'set aside') : 'Add one'}
+                  color={emergencyFund > 0 ? 'var(--success)' : 'var(--text-primary)'}
                   onClick={() => setTab('accounts')} />
               </div>
 
@@ -1103,8 +1135,8 @@ export default function Finance() {
       {tab === 'recurring' && (
         <div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 16 }}>
-            <StatTile label="Every month" value={fmt(burn)} sub={`${activeSubs.length + activeBills.length} items`} />
-            <StatTile label="Every year" value={fmt(burn * 12)} sub="same commitments" color="var(--warn)" />
+            <StatTile label="Every month" value={fmt(mBills + mSubs)} sub={`${activeSubs.length + activeBills.length} items`} />
+            <StatTile label="Every year" value={fmt((mBills + mSubs) * 12)} sub="same commitments" color="var(--warn)" />
           </div>
 
           <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
@@ -1583,6 +1615,7 @@ function AccountsSummary({ accounts, onAdd, onEdit }) {
     { key: 'cash',    label: 'Checking & cash', icon: '🏦', value: cash,       kinds: ['checking', 'cash'] },
     { key: 'credit',  label: 'Card balance',    icon: '💳', value: cardDebt,   kinds: ['credit'], negative: true },
     { key: 'net',     label: 'Net cash',        icon: '💵', value: netCash,    derived: true },
+    { key: 'emergency', label: 'Emergency fund', icon: '🛟', value: sumOf('emergency'), kinds: ['emergency'] },
     { key: 'savings', label: 'Savings',         icon: '🐷', value: savingsBal, kinds: ['savings'] },
     { key: 'invest',  label: 'Investments',     icon: '📈', value: investBal,  kinds: ['investment'] },
   ]
