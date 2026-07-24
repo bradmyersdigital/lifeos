@@ -25,7 +25,7 @@ export default function Grocery() {
   useEffect(() => { load() }, [])
 
   const load = async () => {
-    const { data } = await supabase.from('grocery_items').select('*').order('category').order('sort_order').order('created_at')
+    const { data } = await supabase.from('grocery_items').select('*').is('project_id', null).order('category').order('sort_order').order('created_at')
     setItems(data || []); setLoading(false)
   }
 
@@ -198,7 +198,7 @@ export default function Grocery() {
                 <div style={{ fontSize: 15, color: item.checked ? 'var(--text-dim)' : 'var(--text-primary)', textDecoration: item.checked ? 'line-through' : 'none' }}>{item.name}</div>
                 {item.quantity && <div style={{ fontSize: 11, color: 'var(--text-dim)', marginTop: 1, fontFamily: "'DM Mono'" }}>Qty: {item.quantity}</div>}
               </div>
-              <div style={{ fontSize: 11, color: 'var(--text-dim)', background: 'var(--bg-input)', border: '1px solid var(--border)', borderRadius: 6, padding: '2px 8px' }}>{item.category}</div>
+              <div style={{ fontSize: 11, color: item.project_id ? 'var(--accent)' : 'var(--text-dim)', background: item.project_id ? 'var(--accent-dim)' : 'var(--bg-input)', border: `1px solid ${item.project_id ? 'var(--accent-border)' : 'var(--border)'}`, borderRadius: 6, padding: '2px 8px' }}>{item.project_id ? '📁 ' : ''}{item.category}</div>
               <div onClick={() => deleteItem(item.id)} style={{ width: 28, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'var(--text-dim)', fontSize: 18, borderRadius: 8 }}>×</div>
             </div>
           ))}

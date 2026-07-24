@@ -20,6 +20,7 @@ function ProjectModal({ onClose, onSaved, project }) {
   const isEdit = !!project
   const [name, setName] = useState(project?.name || '')
   const [sector, setSector] = useState(project?.sector || '')
+  const [goal, setGoal] = useState(project?.goal || '')
   const [description, setDescription] = useState(project?.description || '')
   const [dueDate, setDueDate] = useState(project?.due_date || '')
   const [status, setStatus] = useState(project?.status || 'active')
@@ -33,7 +34,7 @@ function ProjectModal({ onClose, onSaved, project }) {
 
   const handleSave = async () => {
     if (!name.trim()) return; setSaving(true)
-    const payload = { name: name.trim(), sector, description, due_date: dueDate || null, status, importance }
+    const payload = { name: name.trim(), sector, goal: goal.trim() || null, description, due_date: dueDate || null, status, importance }
     if (isEdit) await supabase.from('projects').update(payload).eq('id', project.id)
     else await supabase.from('projects').insert(payload)
     setSaving(false); onSaved(); onClose()
@@ -59,7 +60,8 @@ function ProjectModal({ onClose, onSaved, project }) {
         <div className="modal-handle" />
         <div className="modal-title">{isEdit ? 'Edit project' : 'New project'}<div className="modal-close" onClick={onClose}>×</div></div>
         <div className="field"><div className="field-label">Project name</div><input type="text" placeholder="What are you working on?" value={name} onChange={e => setName(e.target.value)} /></div>
-        <div className="field"><div className="field-label">Description</div><textarea placeholder="What's the goal?" value={description} onChange={e => setDescription(e.target.value)} /></div>
+        <div className="field"><div className="field-label">Objective</div><textarea placeholder="What does 'done' look like for this project?" value={goal} onChange={e => setGoal(e.target.value)} style={{ minHeight: 60 }} /></div>
+        <div className="field"><div className="field-label">Description / notes</div><textarea placeholder="Context, details, anything worth remembering" value={description} onChange={e => setDescription(e.target.value)} /></div>
         <div className="field">
           <div className="field-label">Importance</div>
           <div style={{ display: 'flex', gap: 6 }}>
@@ -119,6 +121,8 @@ function NoteModal({ projectId, note, onClose, onSaved }) {
 function ProjectDetail({ project, onBack, onAddTask, onEditTask, onRefresh }) {
   const [tasks, setTasks] = useState([])
   const [notes, setNotes] = useState([])
+  const [shopping, setShopping] = useState([])
+  const [newShop, setNewShop] = useState('')
   const [editModal, setEditModal] = useState(false)
   const [noteModal, setNoteModal] = useState(null)
   const today = new Date().toISOString().split('T')[0]
@@ -127,17 +131,34 @@ function ProjectDetail({ project, onBack, onAddTask, onEditTask, onRefresh }) {
   useEffect(() => { loadDetail() }, [project.id])
 
   const loadDetail = async () => {
-    const [{ data: t }, { data: n }] = await Promise.all([
+    const [{ data: t }, { data: n }, { data: g }] = await Promise.all([
       supabase.from('tasks').select('*').eq('project_id', project.id).order('start_date').order('time_block'),
       supabase.from('notes').select('*').eq('project_id', project.id).order('created_at', { ascending: false }),
+      supabase.from('grocery_items').select('*').eq('project_id', project.id).order('checked').order('created_at'),
     ])
-    setTasks(t || []); setNotes(n || [])
+    setTasks(t || []); setNotes(n || []); setShopping(g || [])
   }
 
   const toggleTask = async (task) => {
     const updated = !task.completed
     await supabase.from('tasks').update({ completed: updated }).eq('id', task.id)
     setTasks(prev => prev.map(t => t.id === task.id ? { ...t, completed: updated } : t))
+  }
+
+  const addShop = async () => {
+    const name = newShop.trim()
+    if (!name) return
+    const { data } = await supabase.from('grocery_items').insert({ name, project_id: project.id, category: project.name, checked: false }).select().single()
+    if (data) setShopping(prev => [...prev, data])
+    setNewShop('')
+  }
+  const toggleShop = async (it) => {
+    await supabase.from('grocery_items').update({ checked: !it.checked }).eq('id', it.id)
+    setShopping(prev => prev.map(x => x.id === it.id ? { ...x, checked: !x.checked } : x))
+  }
+  const removeShop = async (id) => {
+    await supabase.from('grocery_items').delete().eq('id', id)
+    setShopping(prev => prev.filter(x => x.id !== id))
   }
 
   const done = tasks.filter(t => t.completed).length
@@ -166,6 +187,12 @@ function ProjectDetail({ project, onBack, onAddTask, onEditTask, onRefresh }) {
         </div>
       </div>
 
+      {project.goal && (
+        <div style={{ marginBottom: 12, padding: '13px 15px', background: 'var(--accent-dim)', borderRadius: 12, border: '1px solid var(--accent-border)' }}>
+          <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--accent)', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 5 }}>Objective</div>
+          <div style={{ fontSize: 14, color: 'var(--text-secondary)', lineHeight: 1.5 }}>{project.goal}</div>
+        </div>
+      )}
       {project.description && <div style={{ fontSize: 14, color: 'var(--text-muted)', marginBottom: 16, lineHeight: 1.5, padding: '12px 14px', background: 'var(--bg-card)', borderRadius: 12, border: '1px solid var(--border)' }}>{project.description}</div>}
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 8, marginBottom: 18 }}>
@@ -225,6 +252,36 @@ function ProjectDetail({ project, onBack, onAddTask, onEditTask, onRefresh }) {
           </div>
         ))}
       </div>
+
+      {/* Shopping list — items scoped to this project */}
+      <div style={{ display:'flex',justifyContent:'space-between',alignItems:'center',marginTop:22,marginBottom:10 }}>
+        <div className="section-label" style={{ margin:0 }}>Shopping list</div>
+        {shopping.length>0 && <div style={{ fontSize:11.5,color:'var(--text-dim)',fontFamily:"'DM Mono'" }}>{shopping.filter(s=>!s.checked).length} to buy</div>}
+      </div>
+      <div style={{ display:'flex',gap:8,marginBottom:10 }}>
+        <input type="text" placeholder="Add something to buy…" value={newShop}
+          onChange={e=>setNewShop(e.target.value)}
+          onKeyDown={e=>{ if(e.key==='Enter'){ e.preventDefault(); addShop() } }}
+          style={{ flex:1,background:'var(--bg-input)',border:'1px solid var(--border)',borderRadius:10,padding:'10px 12px',fontSize:16,color:'var(--text-primary)',fontFamily:"'DM Sans'",outline:'none' }} />
+        <button onClick={addShop} style={{ background:'var(--accent-dim)',border:'1px solid var(--accent-border)',borderRadius:10,padding:'0 16px',color:'var(--accent)',fontSize:14,fontWeight:500,cursor:'pointer',fontFamily:"'DM Sans'" }}>Add</button>
+      </div>
+      {shopping.length===0 ? (
+        <div style={{ textAlign:'center',padding:'16px',color:'var(--text-dim)',fontSize:13,border:'1px dashed var(--border)',borderRadius:12 }}>
+          Nothing to buy for this project yet — supplies, materials, whatever it needs.
+        </div>
+      ) : (
+        <div style={{ display:'flex',flexDirection:'column',gap:6 }}>
+          {shopping.map(it=>(
+            <div key={it.id} style={{ display:'flex',alignItems:'center',gap:11,padding:'11px 14px',background:'var(--bg-card)',border:'1px solid var(--border)',borderRadius:12,opacity:it.checked?0.5:1 }}>
+              <div onClick={()=>toggleShop(it)} style={{ width:20,height:20,borderRadius:6,border:`1.5px solid ${it.checked?'var(--success)':'var(--border-hover)'}`,background:it.checked?'var(--success)':'transparent',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,cursor:'pointer' }}>
+                {it.checked && <svg width="10" height="10" viewBox="0 0 10 10"><polyline points="1.5,5 4,7.5 8.5,2.5" stroke="white" strokeWidth="1.6" fill="none" strokeLinecap="round"/></svg>}
+              </div>
+              <div style={{ flex:1,fontSize:14,color:it.checked?'var(--text-dim)':'var(--text-secondary)',textDecoration:it.checked?'line-through':'none' }}>{it.name}</div>
+              <div onClick={()=>removeShop(it.id)} style={{ fontSize:16,color:'var(--text-dim)',cursor:'pointer',padding:'0 4px' }}>×</div>
+            </div>
+          ))}
+        </div>
+      )}
 
       {editModal&&<ProjectModal project={project} onClose={()=>setEditModal(false)} onSaved={()=>{onRefresh();onBack()}} />}
       {noteModal&&<NoteModal projectId={project.id} note={noteModal==='new'?null:noteModal} onClose={()=>setNoteModal(null)} onSaved={loadDetail} />}
