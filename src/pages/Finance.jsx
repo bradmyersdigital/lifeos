@@ -456,27 +456,32 @@ export default function Finance() {
   const [income, setIncome] = useState([])
   const [savings, setSavings] = useState([])
   const [accounts, setAccounts] = useState([])
+  const [spending, setSpending] = useState([])
   const [loading, setLoading] = useState(true)
 
   const [tab, setTab] = useState('overview')
   const [modal, setModal] = useState(null)        // { type, item }
   const [subModal, setSubModal] = useState(null)
   const [acctModal, setAcctModal] = useState(null)
+  const [spendModal, setSpendModal] = useState(null)
+  const [goalModal, setGoalModal] = useState(null)
   const [recurView, setRecurView] = useState('list')  // list | calendar
   const [showPaused, setShowPaused] = useState(false)
 
   useEffect(() => { load() }, [])
 
   const load = async () => {
-    const [s, b, i, sv, a] = await Promise.all([
+    const monthStart = toStr(new Date(new Date().getFullYear(), new Date().getMonth(), 1))
+    const [s, b, i, sv, a, sp] = await Promise.all([
       supabase.from('finance_subscriptions').select('*').order('amount', { ascending: false }),
       supabase.from('finance_bills').select('*').order('amount', { ascending: false }),
       supabase.from('finance_income').select('*'),
       supabase.from('finance_savings').select('*'),
       supabase.from('finance_accounts').select('*').order('sort_order').order('created_at'),
+      supabase.from('finance_spending').select('*').gte('spent_on', monthStart).order('spent_on', { ascending: false }),
     ])
     setSubs(s.data || []); setBills(b.data || []); setIncome(i.data || [])
-    setSavings(sv.data || []); setAccounts(a.data || [])
+    setSavings(sv.data || []); setAccounts(a.data || []); setSpending(sp.data || [])
     setLoading(false)
   }
 
@@ -509,7 +514,7 @@ export default function Finance() {
   const upcoming = [
     ...activeSubs.map(s => ({ ...s, _kind: 'sub',  _date: nextChargeDate(s, 'sub') })),
     ...activeBills.map(b => ({ ...b, _kind: 'bill', _date: nextChargeDate(b, 'bill') })),
-  ].filter(x => x._date && daysUntil(x._date) <= 30)
+  ].filter(x => x._date && daysUntil(x._date) <= 14)
    .sort((a, b) => a._date - b._date)
 
   const upcomingTotal = upcoming.reduce((n, x) => n + (parseFloat(x.amount) || 0), 0)
@@ -522,11 +527,14 @@ export default function Finance() {
   })
   if (mBills > 0) catTotals['Bills & Utilities'] = mBills
   const catList = Object.entries(catTotals).sort((a, b) => b[1] - a[1])
-  const catMax = catList.length ? catList[0][1] : 1
+
+  const spentThisMonth = spending.reduce((n, x) => n + (parseFloat(x.amount) || 0), 0)
+  const spendLeft = free - spentThisMonth
+  const spendPct = free > 0 ? Math.min(100, (spentThisMonth / free) * 100) : 0
 
   const biggestSub = activeSubs.slice().sort((a, b) => toYearly(b.amount, b.frequency) - toYearly(a.amount, a.frequency))[0]
 
-  const hasAnyData = subs.length || bills.length || income.length || savings.length || accounts.length
+  const hasAnyData = subs.length || bills.length || income.length || savings.length || accounts.length || spending.length
 
   // ── Where-it-goes bar ──────────────────────────────────────────────────────
   const segments = [
@@ -626,49 +634,119 @@ export default function Finance() {
                   onClick={() => setTab('accounts')} />
               </div>
 
-              {/* Upcoming */}
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 10, marginTop: 22 }}>
-                <div className="section-label" style={{ margin: 0 }}>Next 30 days</div>
+              {/* Spending money — budget vs what's actually gone out */}
+              {mIncome > 0 && free > 0 && (
+                <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 16, padding: 16, marginBottom: 12, display: 'flex', alignItems: 'center', gap: 18 }}>
+                  <DonutChart
+                    size={112} thickness={15}
+                    segments={[
+                      { value: spentThisMonth, color: spendLeft < 0 ? 'var(--danger)' : 'var(--accent)' },
+                      { value: Math.max(0, spendLeft), color: 'transparent' },
+                    ]}
+                    center={
+                      <>
+                        <div style={{ fontSize: 17, fontWeight: 600, fontFamily: "'DM Mono'", color: spendLeft < 0 ? 'var(--danger)' : 'var(--text-primary)' }}>
+                          {spendLeft < 0 ? '−' : ''}{fmt(Math.abs(spendLeft))}
+                        </div>
+                        <div style={{ fontSize: 9.5, color: 'var(--text-dim)', marginTop: 1 }}>left</div>
+                      </>
+                    }
+                  />
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 14.5, fontWeight: 600, color: 'var(--text-primary)', marginBottom: 3 }}>Spending money</div>
+                    <div style={{ fontSize: 12, color: 'var(--text-muted)', lineHeight: 1.5, marginBottom: 10 }}>
+                      {spentThisMonth === 0
+                        ? `${fmt(free)} of guilt-free spending this month.`
+                        : `${fmt(spentThisMonth)} spent of ${fmt(free)} · ${spendPct.toFixed(0)}%`}
+                    </div>
+                    <div onClick={() => setSpendModal('new')} className="btn-primary" style={{ display: 'inline-block', padding: '8px 14px', borderRadius: 10, fontSize: 13, cursor: 'pointer' }}>+ Log spending</div>
+                  </div>
+                </div>
+              )}
+
+              {/* Accounts */}
+              <div style={{ marginTop: 22 }}>
+                <AccountsSummary accounts={accounts} onAdd={() => setAcctModal('new')} onEdit={setAcctModal} />
+              </div>
+
+              {/* Upcoming — horizontal, next 14 days */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 10, marginTop: 24 }}>
+                <div className="section-label" style={{ margin: 0 }}>Next 14 days</div>
                 {upcoming.length > 0 && <div style={{ fontSize: 12, color: 'var(--text-muted)', fontFamily: "'DM Mono'" }}>{fmt(upcomingTotal)}</div>}
               </div>
               {upcoming.length === 0 ? (
-                <EmptyState icon="🗓️" text="Nothing scheduled. Add billing dates to your subscriptions and bills to see them here." />
-              ) : upcoming.slice(0, 8).map(x => {
-                const n = daysUntil(x._date)
-                const icon = x.icon || getServiceIcon(x.name) || (x._kind === 'bill' ? '🧾' : CAT_ICONS[x.category || 'Other'] || '📦')
-                const color = x._kind === 'bill' ? 'var(--danger)' : (CAT_COLORS[x.category || 'Other'] || 'var(--text-dim)')
-                return (
-                  <Row key={x._kind + x.id}
-                    icon={icon} iconBg={color + '22'}
-                    title={x.name}
-                    subtitle={x._date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                    right={fmt(x.amount)}
-                    rightSub={<span style={{ color: n < 0 ? 'var(--danger)' : n <= 3 ? 'var(--warn)' : 'var(--text-dim)' }}>{dueLabel(n)}</span>}
-                    onClick={() => x._kind === 'sub' ? setSubModal(x) : setModal({ type: 'bill', item: x })}
-                  />
-                )
-              })}
+                <EmptyState icon="🗓️" text="Nothing due in the next two weeks. Add billing dates to your subscriptions and bills to see them here." />
+              ) : (
+                <div style={{ display: 'flex', gap: 10, overflowX: 'auto', WebkitOverflowScrolling: 'touch', paddingBottom: 6, marginLeft: -20, marginRight: -20, paddingLeft: 20, paddingRight: 20 }}>
+                  {upcoming.map(x => {
+                    const n = daysUntil(x._date)
+                    const icon = x.icon || getServiceIcon(x.name) || (x._kind === 'bill' ? '🧾' : CAT_ICONS[x.category || 'Other'] || '📦')
+                    const color = x._kind === 'bill' ? 'var(--danger)' : (CAT_COLORS[x.category || 'Other'] || 'var(--accent)')
+                    const isImg = typeof icon === 'string' && icon.startsWith('data:')
+                    return (
+                      <div key={x._kind + x.id}
+                        onClick={() => x._kind === 'sub' ? setSubModal(x) : setModal({ type: 'bill', item: x })}
+                        style={{ flexShrink: 0, width: 128, background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 14, overflow: 'hidden', cursor: 'pointer' }}>
+                        <div style={{ height: 52, background: color + '22', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24, overflow: 'hidden' }}>
+                          {isImg ? <img src={icon} alt="" style={{ width: 34, height: 34, borderRadius: 9, objectFit: 'cover' }} /> : icon}
+                        </div>
+                        <div style={{ padding: '10px 11px' }}>
+                          <div style={{ fontSize: 12.5, color: 'var(--text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{x.name}</div>
+                          <div style={{ fontSize: 16, fontWeight: 600, fontFamily: "'DM Mono'", color: 'var(--text-primary)', marginTop: 3 }}>{fmt(x.amount)}</div>
+                        </div>
+                        <div style={{ padding: '6px 11px', borderTop: '1px solid var(--border)', fontSize: 10, fontWeight: 600, letterSpacing: '0.04em', textTransform: 'uppercase',
+                          color: n < 0 ? 'var(--danger)' : n <= 3 ? 'var(--warn)' : 'var(--text-dim)' }}>
+                          {dueLabel(n)}
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
 
-              {/* Where money goes by category */}
+              {/* Where money goes — donut */}
               {catList.length > 0 && (
                 <>
-                  <div className="section-label" style={{ marginTop: 24 }}>Monthly spend by category</div>
-                  <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 14, padding: 16 }}>
-                    {catList.map(([cat, amt]) => {
-                      const color = cat === 'Bills & Utilities' ? 'var(--danger)' : (customCats.find(c => c.name === cat)?.color || CAT_COLORS[cat] || 'var(--text-dim)')
-                      return (
-                        <div key={cat} style={{ marginBottom: 12 }}>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 5 }}>
-                            <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{cat === 'Bills & Utilities' ? '🧾' : (CAT_ICONS[cat] || '📦')} {cat}</span>
-                            <span style={{ fontSize: 13, fontFamily: "'DM Mono'", color: 'var(--text-primary)' }}>{fmt(amt)}</span>
-                          </div>
-                          <div style={{ height: 6, borderRadius: 3, background: 'var(--bg-card2)', overflow: 'hidden' }}>
-                            <div style={{ width: `${(amt / catMax) * 100}%`, height: '100%', background: color, borderRadius: 3 }} />
-                          </div>
+                  <div className="section-label" style={{ marginTop: 26 }}>Where it goes each month</div>
+                  <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 16, padding: 18, display: 'flex', alignItems: 'center', gap: 18, flexWrap: 'wrap' }}>
+                    <DonutChart size={132} thickness={19}
+                      segments={catList.map(([cat, amt]) => ({
+                        value: amt,
+                        color: cat === 'Bills & Utilities' ? 'var(--danger)' : (CAT_COLORS[cat] || 'var(--text-dim)'),
+                      }))}
+                      center={
+                        <>
+                          <div style={{ fontSize: 16, fontWeight: 600, fontFamily: "'DM Mono'", color: 'var(--text-primary)' }}>{fmt(burn)}</div>
+                          <div style={{ fontSize: 9.5, color: 'var(--text-dim)' }}>per month</div>
+                        </>
+                      } />
+                    <div style={{ flex: 1, minWidth: 140 }}>
+                      {catList.slice(0, 6).map(([cat, amt]) => (
+                        <div key={cat} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 7 }}>
+                          <div style={{ width: 9, height: 9, borderRadius: 3, flexShrink: 0, background: cat === 'Bills & Utilities' ? 'var(--danger)' : (CAT_COLORS[cat] || 'var(--text-dim)') }} />
+                          <div style={{ flex: 1, fontSize: 12.5, color: 'var(--text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{cat}</div>
+                          <div style={{ fontSize: 12.5, fontFamily: "'DM Mono'", color: 'var(--text-muted)' }}>{fmt(amt)}</div>
                         </div>
-                      )
-                    })}
+                      ))}
+                      {catList.length > 6 && <div style={{ fontSize: 11.5, color: 'var(--text-dim)' }}>+{catList.length - 6} more</div>}
+                    </div>
                   </div>
+                </>
+              )}
+
+              {/* 12-month forecast */}
+              {(activeSubs.length > 0 || activeBills.length > 0) && (
+                <>
+                  <div className="section-label" style={{ marginTop: 26 }}>The year ahead</div>
+                  <ForecastChart subs={activeSubs} bills={activeBills} />
+                </>
+              )}
+
+              {/* Savings goals */}
+              {savings.length > 0 && (
+                <>
+                  <div className="section-label" style={{ marginTop: 26 }}>Savings goals</div>
+                  {savings.map(s => <GoalCard key={s.id} goal={s} onEdit={() => setGoalModal(s)} />)}
                 </>
               )}
 
@@ -711,7 +789,8 @@ export default function Finance() {
           </div>
 
           {recurView === 'calendar' ? (
-            <SubCalendar subs={activeSubs} customCats={customCats} onEdit={setSubModal} />
+            <FinanceCalendar subs={activeSubs} bills={activeBills}
+              onEditSub={setSubModal} onEditBill={(b) => setModal({ type: 'bill', item: b })} />
           ) : (
             <>
               {/* Bills */}
@@ -791,15 +870,9 @@ export default function Finance() {
             <div className="section-label" style={{ margin: 0 }}>Savings targets</div>
             <div style={{ fontSize: 11.5, color: 'var(--text-dim)', fontFamily: "'DM Mono'" }}>{fmt(mSavings)}/mo</div>
           </div>
-          <div onClick={() => setModal({ type: 'savings' })}
-            style={{ textAlign: 'center', padding: '10px', borderRadius: 12, fontSize: 13, cursor: 'pointer', background: 'var(--bg-card)', border: '1px dashed var(--border)', color: 'var(--text-muted)', marginBottom: 12 }}>+ Add savings target</div>
-          {savings.map(s => (
-            <Row key={s.id} icon="🎯" iconBg="var(--success-dim)"
-              title={s.name}
-              subtitle="monthly target"
-              right={fmt(s.monthly_target)}
-              onClick={() => setModal({ type: 'savings', item: s })} />
-          ))}
+          <div onClick={() => setGoalModal('new')}
+            style={{ textAlign: 'center', padding: '10px', borderRadius: 12, fontSize: 13, cursor: 'pointer', background: 'var(--bg-card)', border: '1px dashed var(--border)', color: 'var(--text-muted)', marginBottom: 12 }}>+ Add savings goal</div>
+          {savings.map(s => <GoalCard key={s.id} goal={s} onEdit={() => setGoalModal(s)} />)}
         </div>
       )}
 
@@ -875,64 +948,356 @@ export default function Finance() {
       {modal && <EntryModal type={modal.type} item={modal.item} onClose={() => setModal(null)} onSaved={() => { setModal(null); load() }} />}
       {subModal && <SubModal item={subModal === 'new' ? null : subModal} categories={customCats} onClose={() => setSubModal(null)} onSaved={() => { setSubModal(null); load() }} />}
       {acctModal && <AccountModal item={acctModal === 'new' ? null : acctModal} onClose={() => setAcctModal(null)} onSaved={() => { setAcctModal(null); load() }} />}
+      {spendModal && <SpendModal item={spendModal === 'new' ? null : spendModal} onClose={() => setSpendModal(null)} onSaved={() => { setSpendModal(null); load() }} />}
+      {goalModal && <SavingsModal item={goalModal === 'new' ? null : goalModal} onClose={() => setGoalModal(null)} onSaved={() => { setGoalModal(null); load() }} />}
     </div>
   )
 }
 
 
 
-// ── Sub Calendar ──────────────────────────────────────────────────────────────
-function SubCalendar({ subs, customCats, onEdit }) {
-  const [calDay, setCalDay] = useState(null)
-  const now = new Date()
-  const year = now.getFullYear()
-  const month = now.getMonth()
-  const daysInMonth = new Date(year, month + 1, 0).getDate()
-  const firstDow = (new Date(year, month, 1).getDay() + 6) % 7
-  const MONTH_NAMES = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
+// ── Date helpers shared by the calendar and the forecast ─────────────────────
+function toStr(d) { return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}` }
 
-  const dayMap = {}
-  subs.forEach(s => {
-    if (!s.billing_day || s.is_active === false) return
-    const d = s.billing_day
-    if (!dayMap[d]) dayMap[d] = []
-    dayMap[d].push(s)
-  })
+const MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December']
+
+/** Does this recurring item charge on this exact date? */
+function occursOn(item, kind, d) {
+  if (kind === 'sub') {
+    if (!item.billing_day) return false
+    const dim = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate()
+    if (d.getDate() !== Math.min(item.billing_day, dim)) return false
+    if (item.frequency === 'yearly') return (item.billing_month || 1) - 1 === d.getMonth()
+    return true
+  }
+  if (!item.due_date) return false
+  const start = new Date(item.due_date + 'T00:00:00')
+  if (d < start) return false
+  const diff = Math.round((d - start) / 86400000)
+  if (item.frequency === 'weekly')   return diff % 7 === 0
+  if (item.frequency === 'biweekly') return diff % 14 === 0
+  if (item.frequency === 'monthly') {
+    const dim = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate()
+    return d.getDate() === Math.min(start.getDate(), dim)
+  }
+  if (item.frequency === 'yearly')   return d.getMonth() === start.getMonth() && d.getDate() === start.getDate()
+  return diff === 0
+}
+
+/** Everything charging on a given date, subs and bills merged. */
+function chargesOn(subs, bills, d) {
+  return [
+    ...subs.filter(s => occursOn(s, 'sub', d)).map(s => ({ ...s, _kind: 'sub' })),
+    ...bills.filter(b => occursOn(b, 'bill', d)).map(b => ({ ...b, _kind: 'bill' })),
+  ]
+}
+
+/** What a whole calendar month actually costs — annual renewals land in one month. */
+function monthTotal(subs, bills, year, month) {
+  const dim = new Date(year, month + 1, 0).getDate()
+  let total = 0
+  for (let day = 1; day <= dim; day++) {
+    chargesOn(subs, bills, new Date(year, month, day)).forEach(x => { total += parseFloat(x.amount) || 0 })
+  }
+  return total
+}
+
+// ── Finance calendar — same visual language as the Week page month view ──────
+function FinanceCalendar({ subs, bills, onEditSub, onEditBill }) {
+  const [monthOffset, setMonthOffset] = useState(0)
+  const [selectedDay, setSelectedDay] = useState(null)
+  const touchStartX = useRef(null)
+  const touchStartY = useRef(null)
+  const selectedChipRef = useRef(null)
+
+  const today = new Date(); today.setHours(0, 0, 0, 0)
+  const todayStr = toStr(today)
+  const anchor = new Date(today.getFullYear(), today.getMonth() + monthOffset, 1)
+  const year = anchor.getFullYear(), month = anchor.getMonth()
+
+  const MONTH_STRIP = Array.from({ length: 36 }, (_, i) => i - 12)
+
+  useEffect(() => {
+    selectedChipRef.current?.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' })
+  }, [monthOffset])
+
+  // swipe, scoped to the grid only
+  const onTouchStart = (e) => { touchStartX.current = e.touches[0].clientX; touchStartY.current = e.touches[0].clientY }
+  const onTouchEnd = (e) => {
+    if (touchStartX.current === null) return
+    const dx = e.changedTouches[0].clientX - touchStartX.current
+    const dy = e.changedTouches[0].clientY - touchStartY.current
+    if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 1.6) {
+      setMonthOffset(o => o + (dx < 0 ? 1 : -1)); setSelectedDay(null)
+    }
+    touchStartX.current = null; touchStartY.current = null
+  }
+
+  const dim = new Date(year, month + 1, 0).getDate()
+  const fdow = (new Date(year, month, 1).getDay() + 6) % 7
+  const cells = [...Array(fdow).fill(null), ...Array.from({ length: dim }, (_, i) => i + 1)]
+  while (cells.length % 7 !== 0) cells.push(null)
+  const rows = cells.length / 7
+  const cellHeight = `calc((100dvh - 430px) / ${rows})`
+
+  const total = monthTotal(subs, bills, year, month)
+  const selectedCharges = selectedDay ? chargesOn(subs, bills, new Date(year, month, selectedDay)) : []
 
   return (
     <div>
-      <div style={{ fontSize: 14, fontWeight: 500, color: 'var(--text-muted)', marginBottom: 14 }}>{MONTH_NAMES[month]} {year}</div>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', gap: 2, marginBottom: 4 }}>
-        {['M','T','W','T','F','S','S'].map((d,i) => (
-          <div key={i} style={{ textAlign:'center', fontSize:10, color:'var(--text-dim)', padding:'3px 0', fontWeight:600 }}>{d}</div>
-        ))}
+      {/* Month label + total */}
+      <div style={{ textAlign: 'center', marginBottom: 12 }}>
+        <div style={{ fontSize: 17, fontWeight: 600, color: 'var(--text-primary)', letterSpacing: '-0.2px' }}>
+          {MONTH_NAMES[month]} {year}
+        </div>
+        <div style={{ fontSize: 12.5, color: 'var(--text-muted)', fontFamily: "'DM Mono'", marginTop: 3 }}>
+          {fmt(total)} charging this month
+        </div>
       </div>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', gap: 3, marginBottom: 20 }}>
-        {Array.from({length: firstDow}).map((_,i) => <div key={'e'+i} />)}
-        {Array.from({length: daysInMonth}, (_, i) => {
-          const day = i + 1
-          const daySubs = dayMap[day] || []
-          const isToday = day === now.getDate()
-          const isSelected = calDay === day
+
+      {/* Month strip */}
+      <div style={{ display: 'flex', gap: 7, overflowX: 'auto', WebkitOverflowScrolling: 'touch', paddingBottom: 8, marginBottom: 10, alignItems: 'center' }}>
+        {MONTH_STRIP.map(off => {
+          const d = new Date(today.getFullYear(), today.getMonth() + off, 1)
+          const m = d.getMonth(), y = d.getFullYear()
+          const sel = off === monthOffset
           return (
-            <div key={day} onClick={() => daySubs.length && setCalDay(isSelected ? null : day)}
-              style={{ borderRadius: 8, padding: '5px 2px', minHeight: 54, background: isToday ? 'var(--accent-dim)' : isSelected ? 'var(--bg-card2)' : 'var(--bg-card)', border: `1px solid ${isToday ? 'var(--accent-border)' : isSelected ? 'var(--blue-border)' : 'var(--border)'}`, cursor: daySubs.length ? 'pointer' : 'default', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-              <div style={{ fontSize: 11, color: isToday ? 'var(--accent)' : 'var(--text-muted)', marginBottom: 3 }}>{day}</div>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 1, justifyContent: 'center' }}>
-                {daySubs.slice(0, 4).map(s => {
-                  const isImg = s.icon?.startsWith('data:')
-                  const icon = isImg ? null : (s.icon || getServiceIcon(s.name) || '📦')
+            <React.Fragment key={off}>
+              {m === 0 && <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-muted)', padding: '0 4px', flexShrink: 0, fontFamily: "'DM Mono'" }}>{y}</div>}
+              <div ref={sel ? selectedChipRef : null} onClick={() => { setMonthOffset(off); setSelectedDay(null) }}
+                style={{ flexShrink: 0, padding: '7px 15px', borderRadius: 20, fontSize: 13.5, fontWeight: 500, cursor: 'pointer',
+                  background: sel ? 'var(--accent-dim)' : 'transparent',
+                  border: `1px solid ${sel ? 'var(--accent-border)' : 'var(--border)'}`,
+                  color: sel ? 'var(--accent)' : 'var(--text-muted)' }}>
+                {MONTH_NAMES[m].slice(0, 3)}
+              </div>
+            </React.Fragment>
+          )
+        })}
+      </div>
+
+      {/* Grid */}
+      <div onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', marginBottom: 4 }}>
+          {['M','T','W','T','F','S','S'].map((d, i) => (
+            <div key={i} style={{ textAlign: 'center', fontSize: 11, fontWeight: 600, color: 'var(--text-dim)', padding: '2px 0' }}>{d}</div>
+          ))}
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', borderTop: '1px solid var(--border)', borderLeft: '1px solid var(--border)' }}>
+          {cells.map((day, idx) => {
+            const base = { borderRight: '1px solid var(--border)', borderBottom: '1px solid var(--border)', minHeight: 74, height: cellHeight }
+            if (!day) return <div key={idx} style={{ ...base, background: 'var(--bg-card2)', opacity: 0.35 }} />
+
+            const d = new Date(year, month, day)
+            const ds = toStr(d)
+            const isToday = ds === todayStr
+            const isSel = selectedDay === day
+            const charges = chargesOn(subs, bills, d)
+            const dayTotal = charges.reduce((n, x) => n + (parseFloat(x.amount) || 0), 0)
+            const shown = charges.slice(0, 3)
+
+            return (
+              <div key={idx} onClick={() => setSelectedDay(isSel ? null : day)}
+                style={{ ...base, padding: '3px 3px 4px', cursor: charges.length ? 'pointer' : 'default', overflow: 'hidden',
+                  background: isToday ? 'var(--accent-dim)' : isSel ? 'var(--bg-card2)' : 'transparent' }}>
+                <div style={{
+                  width: 21, height: 21, borderRadius: '50%', margin: '1px auto 3px',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: 11.5, fontWeight: isToday ? 700 : 500,
+                  background: isToday ? 'var(--accent)' : 'transparent',
+                  color: isToday ? 'var(--on-accent)' : ds < todayStr ? 'var(--text-dim)' : 'var(--text-secondary)',
+                }}>{day}</div>
+
+                {shown.map(ch => {
+                  const color = ch._kind === 'bill' ? 'var(--danger)' : (CAT_COLORS[ch.category || 'Other'] || 'var(--accent)')
                   return (
-                    <div key={s.id} style={{ width: 18, height: 18, borderRadius: 5, background: 'var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, overflow: 'hidden' }}>
-                      {isImg ? <img src={s.icon} alt="" style={{ width:'100%', height:'100%', objectFit:'cover' }} /> : icon}
-                    </div>
+                    <div key={ch._kind + ch.id} style={{
+                      fontSize: 9, lineHeight: '13px', height: 13, marginBottom: 2, padding: '0 3px', borderRadius: 3,
+                      background: 'transparent', color, borderLeft: `2px solid ${color}`,
+                      overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                    }}>{ch.name}</div>
                   )
                 })}
-                {daySubs.length > 4 && <div style={{ fontSize: 8, color: 'var(--text-dim)' }}>+{daySubs.length - 4}</div>}
+                {charges.length > 3 && <div style={{ fontSize: 8.5, color: 'var(--text-muted)', paddingLeft: 3 }}>+{charges.length - 3}</div>}
+                {charges.length > 0 && shown.length <= 2 && (
+                  <div style={{ fontSize: 8.5, color: 'var(--text-dim)', fontFamily: "'DM Mono'", textAlign: 'center', marginTop: 1 }}>
+                    ${dayTotal.toFixed(0)}
+                  </div>
+                )}
               </div>
-              {daySubs.length > 0 && (
-                <div style={{ fontSize: 8, color: 'var(--danger)', fontFamily:"'DM Mono'", marginTop: 2 }}>
-                  ${daySubs.reduce((s, x) => s + (parseFloat(x.amount) || 0), 0).toFixed(0)}
+            )
+          })}
+        </div>
+      </div>
+
+      <div style={{ textAlign: 'center', fontSize: 11, color: 'var(--text-dim)', marginTop: 10 }}>
+        Swipe left or right to change month
+      </div>
+
+      {/* Selected day detail */}
+      {selectedDay && selectedCharges.length > 0 && (
+        <div style={{ marginTop: 16 }}>
+          <div className="section-label">
+            {MONTH_NAMES[month]} {selectedDay} · {fmt(selectedCharges.reduce((n, x) => n + (parseFloat(x.amount) || 0), 0))}
+          </div>
+          {selectedCharges.map(ch => {
+            const icon = ch.icon || getServiceIcon(ch.name) || (ch._kind === 'bill' ? '🧾' : CAT_ICONS[ch.category || 'Other'] || '📦')
+            const color = ch._kind === 'bill' ? 'var(--danger)' : (CAT_COLORS[ch.category || 'Other'] || 'var(--text-dim)')
+            return (
+              <Row key={ch._kind + ch.id} icon={icon} iconBg={color + '22'}
+                title={ch.name} subtitle={ch._kind === 'bill' ? 'Bill' : (ch.category || 'Subscription')}
+                right={fmt(ch.amount)}
+                onClick={() => ch._kind === 'sub' ? onEditSub(ch) : onEditBill(ch)} />
+            )
+          })}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ── Donut chart (no library — plain SVG arcs) ────────────────────────────────
+function DonutChart({ segments, size = 150, thickness = 20, center }) {
+  const total = segments.reduce((n, s) => n + s.value, 0) || 1
+  const r = (size - thickness) / 2
+  const circ = 2 * Math.PI * r
+  let offset = 0
+  return (
+    <div style={{ position: 'relative', width: size, height: size, flexShrink: 0 }}>
+      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+        <g transform={`rotate(-90 ${size / 2} ${size / 2})`}>
+          <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="var(--bg-card2)" strokeWidth={thickness} />
+          {segments.map((s, i) => {
+            const len = (s.value / total) * circ
+            const el = (
+              <circle key={i} cx={size / 2} cy={size / 2} r={r} fill="none"
+                stroke={s.color} strokeWidth={thickness}
+                strokeDasharray={`${len} ${circ - len}`} strokeDashoffset={-offset} />
+            )
+            offset += len
+            return el
+          })}
+        </g>
+      </svg>
+      {center && (
+        <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none' }}>
+          {center}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ── 12-month cost forecast ───────────────────────────────────────────────────
+function ForecastChart({ subs, bills }) {
+  const today = new Date()
+  const months = Array.from({ length: 12 }, (_, i) => {
+    const d = new Date(today.getFullYear(), today.getMonth() + i, 1)
+    return { d, label: MONTH_NAMES[d.getMonth()].slice(0, 1), full: MONTH_NAMES[d.getMonth()].slice(0, 3),
+             total: monthTotal(subs, bills, d.getFullYear(), d.getMonth()) }
+  })
+  const max = Math.max(...months.map(m => m.total), 1)
+  const avg = months.reduce((n, m) => n + m.total, 0) / 12
+  const peak = months.reduce((a, b) => b.total > a.total ? b : a, months[0])
+
+  return (
+    <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 14, padding: 16 }}>
+      <div style={{ display: 'flex', alignItems: 'flex-end', gap: 4, height: 110, marginBottom: 8 }}>
+        {months.map((m, i) => {
+          const h = Math.max(3, (m.total / max) * 100)
+          const isPeak = m.total === max && max > 0
+          return (
+            <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-end', height: '100%' }}>
+              <div style={{ fontSize: 8, color: 'var(--text-dim)', fontFamily: "'DM Mono'", marginBottom: 3 }}>
+                {m.total >= 1000 ? (m.total / 1000).toFixed(1) + 'k' : Math.round(m.total)}
+              </div>
+              <div style={{ width: '100%', height: `${h}%`, borderRadius: '4px 4px 0 0',
+                background: isPeak ? 'var(--warn)' : i === 0 ? 'var(--accent)' : 'var(--accent-border)' }} />
+            </div>
+          )
+        })}
+      </div>
+      <div style={{ display: 'flex', gap: 4 }}>
+        {months.map((m, i) => (
+          <div key={i} style={{ flex: 1, textAlign: 'center', fontSize: 9, color: i === 0 ? 'var(--accent)' : 'var(--text-dim)' }}>{m.label}</div>
+        ))}
+      </div>
+      <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 12, lineHeight: 1.6, borderTop: '1px solid var(--border)', paddingTop: 12 }}>
+        Averages <strong style={{ color: 'var(--text-primary)', fontFamily: "'DM Mono'" }}>{fmt(avg)}</strong> a month.
+        {peak.total > avg * 1.25 && <> <strong style={{ color: 'var(--warn)' }}>{peak.full}</strong> is your most expensive at {fmt(peak.total)} — annual renewals land there.</>}
+      </div>
+    </div>
+  )
+}
+
+// ── Accounts summary (grouped balances + derived net cash) ───────────────────
+function AccountsSummary({ accounts, onAdd, onEdit }) {
+  const [expanded, setExpanded] = useState(null)
+
+  const sumOf = (...kinds) => accounts.filter(a => kinds.includes(a.kind)).reduce((n, a) => n + (parseFloat(a.balance) || 0), 0)
+  const listOf = (...kinds) => accounts.filter(a => kinds.includes(a.kind))
+
+  const cash        = sumOf('checking', 'cash')
+  const cardDebt    = sumOf('credit')
+  const netCash     = cash - cardDebt
+  const savingsBal  = sumOf('savings')
+  const investBal   = sumOf('investment')
+
+  const groups = [
+    { key: 'cash',    label: 'Checking & cash', icon: '🏦', value: cash,       kinds: ['checking', 'cash'] },
+    { key: 'credit',  label: 'Card balance',    icon: '💳', value: cardDebt,   kinds: ['credit'], negative: true },
+    { key: 'net',     label: 'Net cash',        icon: '💵', value: netCash,    derived: true },
+    { key: 'savings', label: 'Savings',         icon: '🐷', value: savingsBal, kinds: ['savings'] },
+    { key: 'invest',  label: 'Investments',     icon: '📈', value: investBal,  kinds: ['investment'] },
+  ]
+
+  return (
+    <div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 10 }}>
+        <div className="section-label" style={{ margin: 0 }}>Accounts</div>
+        <div onClick={onAdd} style={{ fontSize: 12.5, color: 'var(--accent)', cursor: 'pointer', fontWeight: 500 }}>Add account</div>
+      </div>
+
+      <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 16, overflow: 'hidden' }}>
+        {groups.map((g, i) => {
+          const items = g.derived ? [] : listOf(...g.kinds)
+          const isOpen = expanded === g.key
+          const empty = !g.derived && items.length === 0
+          const shown = g.negative ? g.value : g.value
+          const color = g.derived
+            ? (g.value < 0 ? 'var(--danger)' : 'var(--success)')
+            : g.negative ? 'var(--danger)' : 'var(--text-primary)'
+
+          return (
+            <div key={g.key} style={{ borderTop: i === 0 ? 'none' : '1px solid var(--border)', background: g.derived ? 'var(--bg-card2)' : 'transparent' }}>
+              <div onClick={() => empty ? onAdd() : (!g.derived && setExpanded(isOpen ? null : g.key))}
+                style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '14px 16px', cursor: g.derived ? 'default' : 'pointer' }}>
+                <div style={{ fontSize: 19, width: 26, textAlign: 'center', flexShrink: 0 }}>{g.icon}</div>
+                <div style={{ flex: 1, fontSize: 15, fontWeight: 500, color: 'var(--text-primary)' }}>{g.label}</div>
+                {empty ? (
+                  <div style={{ fontSize: 13.5, color: 'var(--accent)', fontWeight: 500 }}>Add +</div>
+                ) : (
+                  <>
+                    <div style={{ fontSize: 15.5, fontWeight: 600, fontFamily: "'DM Mono'", color }}>
+                      {(g.negative && shown > 0) || (g.derived && g.value < 0) ? '−' : ''}{fmt(shown)}
+                    </div>
+                    {!g.derived && (
+                      <div style={{ fontSize: 12, color: 'var(--text-dim)', width: 12, textAlign: 'center', transform: isOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.15s' }}>⌄</div>
+                    )}
+                  </>
+                )}
+              </div>
+
+              {isOpen && items.length > 0 && (
+                <div style={{ padding: '0 16px 12px 55px' }}>
+                  {items.map(a => (
+                    <div key={a.id} onClick={() => onEdit(a)}
+                      style={{ display: 'flex', justifyContent: 'space-between', padding: '9px 0', cursor: 'pointer', borderTop: '1px solid var(--border)' }}>
+                      <div style={{ fontSize: 13.5, color: 'var(--text-secondary)' }}>{a.name}</div>
+                      <div style={{ fontSize: 13.5, fontFamily: "'DM Mono'", color: 'var(--text-muted)' }}>{fmt(a.balance)}</div>
+                    </div>
+                  ))}
                 </div>
               )}
             </div>
@@ -940,32 +1305,178 @@ function SubCalendar({ subs, customCats, onEdit }) {
         })}
       </div>
 
-      {calDay && dayMap[calDay] && (
-        <div style={{ marginBottom: 16 }}>
-          <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 10 }}>
-            {MONTH_NAMES[month]} {calDay} — {dayMap[calDay].length} subscription{dayMap[calDay].length > 1 ? 's' : ''}
-            <span style={{ fontFamily:"'DM Mono'", color:'var(--danger)', marginLeft: 10 }}>
-              ${dayMap[calDay].reduce((s,x)=>s+(parseFloat(x.amount)||0),0).toFixed(2)} due
+      <div style={{ fontSize: 11, color: 'var(--text-dim)', marginTop: 8, paddingLeft: 2, lineHeight: 1.5 }}>
+        Net cash is your checking and cash minus what's sitting on cards.
+      </div>
+    </div>
+  )
+}
+
+// ── Quick spend log ──────────────────────────────────────────────────────────
+function SpendModal({ item, onClose, onSaved }) {
+  const isEdit = !!item
+  const [amount, setAmount] = useState(item?.amount ?? '')
+  const [note, setNote] = useState(item?.note || '')
+  const [date, setDate] = useState(item?.spent_on || toStr(new Date()))
+  const [saving, setSaving] = useState(false)
+
+  const save = async () => {
+    const val = parseFloat(amount)
+    if (!val || val <= 0) return
+    setSaving(true)
+    const payload = { amount: val, note: note.trim() || null, spent_on: date }
+    if (isEdit) await supabase.from('finance_spending').update(payload).eq('id', item.id)
+    else await supabase.from('finance_spending').insert(payload)
+    setSaving(false); onSaved(); onClose()
+  }
+
+  const remove = async () => {
+    if (!window.confirm('Delete this entry?')) return
+    await supabase.from('finance_spending').delete().eq('id', item.id)
+    onSaved(); onClose()
+  }
+
+  return (
+    <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
+      <div className="modal-sheet">
+        <div className="modal-handle" />
+        <div className="modal-title">{isEdit ? 'Edit spending' : 'Log spending'}<div className="modal-close" onClick={onClose}>×</div></div>
+        <div className="field"><div className="field-label">Amount ($)</div>
+          <input type="number" inputMode="decimal" autoFocus placeholder="0.00" value={amount} onChange={e => setAmount(e.target.value)} />
+        </div>
+        <div className="field"><div className="field-label">What was it? (optional)</div>
+          <input type="text" placeholder="e.g. dinner out" value={note} onChange={e => setNote(e.target.value)} />
+        </div>
+        <div className="field"><div className="field-label">Date</div>
+          <input type="date" value={date} onChange={e => setDate(e.target.value)} />
+        </div>
+        <div style={{ fontSize: 11.5, color: 'var(--text-dim)', lineHeight: 1.5, marginBottom: 4 }}>
+          Only day-to-day spending goes here. Bills and subscriptions are already counted.
+        </div>
+        <div style={{ display: 'flex', gap: 10, marginTop: 18 }}>
+          {isEdit && <button onClick={remove} style={{ flex: 1, padding: 11, borderRadius: 10, background: 'var(--danger-dim)', border: '1px solid var(--danger-border)', color: 'var(--danger)', fontSize: 14, fontWeight: 500, cursor: 'pointer', fontFamily: "'DM Sans'" }}>Delete</button>}
+          <button className="btn-ghost" style={{ flex: 1 }} onClick={onClose}>Cancel</button>
+          <button className="btn-primary" style={{ flex: 2 }} onClick={save} disabled={saving || !amount}>{saving ? 'Saving…' : 'Log it'}</button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ── Savings goal modal (target + progress, not just a monthly number) ────────
+function SavingsModal({ item, onClose, onSaved }) {
+  const isEdit = !!item
+  const [name, setName] = useState(item?.name || '')
+  const [monthly, setMonthly] = useState(item?.monthly_target ?? '')
+  const [target, setTarget] = useState(item?.target_amount ?? '')
+  const [saved, setSaved] = useState(item?.saved_amount ?? '')
+  const [busy, setBusy] = useState(false)
+
+  const t = parseFloat(target) || 0
+  const s = parseFloat(saved) || 0
+  const m = parseFloat(monthly) || 0
+  const monthsLeft = t > s && m > 0 ? Math.ceil((t - s) / m) : null
+
+  const save = async () => {
+    if (!name.trim()) return
+    setBusy(true)
+    const payload = {
+      name: name.trim(),
+      monthly_target: m,
+      target_amount: t || null,
+      saved_amount: s || 0,
+    }
+    if (isEdit) await supabase.from('finance_savings').update(payload).eq('id', item.id)
+    else await supabase.from('finance_savings').insert(payload)
+    setBusy(false); onSaved(); onClose()
+  }
+
+  const remove = async () => {
+    if (!window.confirm(`Delete "${item.name}"?`)) return
+    await supabase.from('finance_savings').delete().eq('id', item.id)
+    onSaved(); onClose()
+  }
+
+  return (
+    <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
+      <div className="modal-sheet">
+        <div className="modal-handle" />
+        <div className="modal-title">{isEdit ? 'Edit goal' : 'New savings goal'}<div className="modal-close" onClick={onClose}>×</div></div>
+
+        <div className="field"><div className="field-label">Goal name</div>
+          <input type="text" placeholder="e.g. Emergency fund" value={name} onChange={e => setName(e.target.value)} />
+        </div>
+        <div className="field-row">
+          <div className="field"><div className="field-label">Target ($)</div>
+            <input type="number" inputMode="decimal" placeholder="25000" value={target} onChange={e => setTarget(e.target.value)} />
+          </div>
+          <div className="field"><div className="field-label">Saved so far ($)</div>
+            <input type="number" inputMode="decimal" placeholder="0" value={saved} onChange={e => setSaved(e.target.value)} />
+          </div>
+        </div>
+        <div className="field"><div className="field-label">Putting away each month ($)</div>
+          <input type="number" inputMode="decimal" placeholder="500" value={monthly} onChange={e => setMonthly(e.target.value)} />
+        </div>
+
+        {monthsLeft !== null && (
+          <div style={{ background: 'var(--success-dim)', border: '1px solid var(--success-border)', borderRadius: 12, padding: 13, fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.55 }}>
+            At {fmt(m)} a month you'll hit {fmt(t)} in{' '}
+            <strong style={{ color: 'var(--success)', fontFamily: "'DM Mono'" }}>{monthsLeft} month{monthsLeft === 1 ? '' : 's'}</strong>
+            {' '}— around {new Date(new Date().setMonth(new Date().getMonth() + monthsLeft)).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}.
+          </div>
+        )}
+
+        <div style={{ display: 'flex', gap: 10, marginTop: 18 }}>
+          {isEdit && <button onClick={remove} style={{ flex: 1, padding: 11, borderRadius: 10, background: 'var(--danger-dim)', border: '1px solid var(--danger-border)', color: 'var(--danger)', fontSize: 14, fontWeight: 500, cursor: 'pointer', fontFamily: "'DM Sans'" }}>Delete</button>}
+          <button className="btn-ghost" style={{ flex: 1 }} onClick={onClose}>Cancel</button>
+          <button className="btn-primary" style={{ flex: 2 }} onClick={save} disabled={busy || !name.trim()}>{busy ? 'Saving…' : 'Save goal'}</button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ── Savings goal card with progress ──────────────────────────────────────────
+function GoalCard({ goal, onEdit }) {
+  const target = parseFloat(goal.target_amount) || 0
+  const saved = parseFloat(goal.saved_amount) || 0
+  const monthly = parseFloat(goal.monthly_target) || 0
+  const pct = target > 0 ? Math.min(100, (saved / target) * 100) : 0
+  const done = target > 0 && saved >= target
+
+  return (
+    <div onClick={onEdit} style={{ background: 'var(--bg-card)', border: `1px solid ${done ? 'var(--success-border)' : 'var(--border)'}`, borderRadius: 14, padding: 16, marginBottom: 8, cursor: 'pointer' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: target ? 10 : 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{ fontSize: 19 }}>{done ? '🏆' : '🎯'}</div>
+          <div>
+            <div style={{ fontSize: 15, fontWeight: 500, color: 'var(--text-primary)' }}>{goal.name}</div>
+            {monthly > 0 && <div style={{ fontSize: 11.5, color: 'var(--text-muted)', marginTop: 1 }}>{fmt(monthly)}/mo</div>}
+          </div>
+        </div>
+        <div style={{ textAlign: 'right' }}>
+          <div style={{ fontSize: 15, fontWeight: 600, fontFamily: "'DM Mono'", color: done ? 'var(--success)' : 'var(--text-primary)' }}>{fmt(saved)}</div>
+          {target > 0 && <div style={{ fontSize: 11, color: 'var(--text-dim)', marginTop: 1 }}>of {fmt(target)}</div>}
+        </div>
+      </div>
+
+      {target > 0 && (
+        <>
+          <div style={{ height: 7, borderRadius: 4, background: 'var(--bg-card2)', overflow: 'hidden' }}>
+            <div style={{ width: `${pct}%`, height: '100%', background: done ? 'var(--success)' : 'var(--accent)', borderRadius: 4, transition: 'width 0.4s' }} />
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 6 }}>
+            <span style={{ fontSize: 11, color: 'var(--text-dim)', fontFamily: "'DM Mono'" }}>{pct.toFixed(0)}%</span>
+            <span style={{ fontSize: 11, color: 'var(--text-dim)' }}>
+              {done ? 'Funded' : monthly > 0 ? `${Math.ceil((target - saved) / monthly)} months to go` : `${fmt(target - saved)} to go`}
             </span>
           </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {dayMap[calDay].map(sub => (
-              <SubCard key={sub.id} sub={sub} customCats={customCats} onEdit={() => onEdit(sub)} />
-            ))}
-          </div>
-        </div>
-      )}
-
-      {Object.keys(dayMap).length === 0 && (
-        <div style={{ textAlign: 'center', padding: '30px 20px', color: 'var(--text-dim)', fontSize: 13, border: '1px dashed var(--border)', borderRadius: 12 }}>
-          Add billing days to your subscriptions to see them on the calendar
-        </div>
+        </>
       )}
     </div>
   )
 }
 
-// ── Sub Card ──────────────────────────────────────────────────────────────────
 function SubCard({ sub, customCats, onEdit }) {
   const monthly = toMonthly(sub.amount, sub.frequency)
   const yearly = toYearly(sub.amount, sub.frequency)
