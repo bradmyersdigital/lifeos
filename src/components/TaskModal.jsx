@@ -62,7 +62,7 @@ function TimeInput({ value, onChange }) {
   )
 }
 
-export default function TaskModal({ mode, onClose, onSaved, task, defaultProjectId, defaultSector, defaultGoalId }) {
+export default function TaskModal({ mode, onClose, onSaved, task, defaultProjectId, defaultSector, defaultGoalId, asPage }) {
   const isEdit = !!task
   const today = (() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}` })()
 
@@ -127,14 +127,8 @@ export default function TaskModal({ mode, onClose, onSaved, task, defaultProject
 
   const sectorList = sectors.length > 0 ? sectors.map(s => s.name) : SECTORS
 
-  return (
-    <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className="modal-sheet">
-        <div className="modal-handle" />
-        <div className="modal-title">
-          {isEdit ? 'Edit task' : 'Add task'}
-          <div className="modal-close" onClick={onClose}>×</div>
-        </div>
+  const body = (
+    <>
 
         <div className="field">
           <div className="field-label">Task name</div>
@@ -227,6 +221,32 @@ export default function TaskModal({ mode, onClose, onSaved, task, defaultProject
             {saving ? 'Saving…' : isEdit ? 'Save changes' : 'Save task'}
           </button>
         </div>
+    </>
+  )
+
+  // ── Full-page shell (routed Notion-style page) ──
+  if (asPage) {
+    return (
+      <div style={{ minHeight: '100%', paddingBottom: 40 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 22 }}>
+          <div onClick={onClose} style={{ width: 34, height: 34, borderRadius: 10, background: 'var(--bg-card)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: 18, color: 'var(--text-muted)', flexShrink: 0 }}>‹</div>
+          <div style={{ fontSize: 20, fontWeight: 600, letterSpacing: '-0.3px' }}>{isEdit ? 'Edit task' : 'New task'}</div>
+        </div>
+        {body}
+      </div>
+    )
+  }
+
+  // ── Overlay sheet shell (unchanged) ──
+  return (
+    <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
+      <div className="modal-sheet">
+        <div className="modal-handle" />
+        <div className="modal-title">
+          {isEdit ? 'Edit task' : 'Add task'}
+          <div className="modal-close" onClick={onClose}>×</div>
+        </div>
+        {body}
       </div>
     </div>
   )

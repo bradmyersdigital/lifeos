@@ -4,7 +4,7 @@ import { supabase } from '../lib/supabase'
 const DAY_LABELS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat']
 const DAY_SHORT = ['S','M','T','W','T','F','S']
 
-export default function EventModal({ event, date, onClose, onSaved, sectors = [] }) {
+export default function EventModal({ event, date, onClose, onSaved, sectors = [], asPage }) {
   const isEdit = !!event
   const [title, setTitle] = useState(event?.title || '')
   const [eventDate, setEventDate] = useState(event?.start_date || date || '')
@@ -56,14 +56,8 @@ export default function EventModal({ event, date, onClose, onSaved, sectors = []
 
   const ordinal = (n) => { const s = ['th','st','nd','rd']; const v = n%100; return n + (s[(v-20)%10]||s[v]||s[0]) }
 
-  return (
-    <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className="modal-sheet">
-        <div className="modal-handle" />
-        <div className="modal-title">
-          {isEdit ? 'Edit event' : 'Add event'}
-          <div className="modal-close" onClick={onClose}>×</div>
-        </div>
+  const body = (
+    <>
 
         <div className="field"><div className="field-label">Event title</div>
           <input type="text" placeholder="What's happening?" value={title} onChange={e => setTitle(e.target.value)} />
@@ -181,6 +175,30 @@ export default function EventModal({ event, date, onClose, onSaved, sectors = []
           <button className="btn-ghost" style={{ flex: 1 }} onClick={onClose}>Cancel</button>
           <button className="btn-primary" style={{ flex: 2 }} onClick={handleSave} disabled={saving}>{saving ? 'Saving…' : isEdit ? 'Save changes' : 'Add event'}</button>
         </div>
+    </>
+  )
+
+  if (asPage) {
+    return (
+      <div style={{ minHeight: '100%', paddingBottom: 40 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 22 }}>
+          <div onClick={onClose} style={{ width: 34, height: 34, borderRadius: 10, background: 'var(--bg-card)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: 18, color: 'var(--text-muted)', flexShrink: 0 }}>‹</div>
+          <div style={{ fontSize: 20, fontWeight: 600, letterSpacing: '-0.3px' }}>{isEdit ? 'Edit event' : 'New event'}</div>
+        </div>
+        {body}
+      </div>
+    )
+  }
+
+  return (
+    <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
+      <div className="modal-sheet">
+        <div className="modal-handle" />
+        <div className="modal-title">
+          {isEdit ? 'Edit event' : 'Add event'}
+          <div className="modal-close" onClick={onClose}>×</div>
+        </div>
+        {body}
       </div>
     </div>
   )

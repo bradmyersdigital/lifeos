@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { ThemeProvider } from './ThemeContext.jsx'
-import { BrowserRouter, Routes, Route, useNavigate, useLocation } from 'react-router-dom'
+import { supabase as supabaseClient } from './lib/supabase'
+import { BrowserRouter, Routes, Route, useNavigate, useLocation, useParams } from 'react-router-dom'
 import Home from './pages/Home'
 import Week from './pages/Week'
 import Tasks from './pages/Tasks'
@@ -203,8 +204,6 @@ function Drawer({ open, onClose, navigate, location, order, setOrder, nav, setNa
 function Shell() {
   const navigate = useNavigate()
   const location = useLocation()
-  const [taskModal, setTaskModal] = useState(null)
-  const [eventModal, setEventModal] = useState(null)
   const [refreshKey, setRefreshKey] = useState(0)
   const [drawerOpen, setDrawerOpen] = useState(false)
 
@@ -212,16 +211,18 @@ function Shell() {
   const [order, setOrder] = usePersistedPaths('lifeos_menu_order', DEFAULT_ORDER, { fill: true })
 
   useEffect(() => {
-    if (taskModal || drawerOpen) document.documentElement.style.overflow = 'hidden'
+    if (drawerOpen) document.documentElement.style.overflow = 'hidden'
     else document.documentElement.style.overflow = ''
     return () => { document.documentElement.style.overflow = '' }
-  }, [taskModal, drawerOpen])
+  }, [drawerOpen])
 
-  const openAdd = (mode, ctx = {}) => setTaskModal({ mode, task: null, ...ctx })
-  const openAddEvent = () => setEventModal({ event: null, date: new Date().toISOString().split('T')[0] })
-  const openEdit = (task) => setTaskModal({ mode: 'scheduled', task })
-  const closeModal = () => setTaskModal(null)
-  const onSaved = () => { setRefreshKey(k => k + 1); closeModal() }
+  // Task/event creation & editing are now routed pages. We pass context
+  // (which project/sector to prefill, or the task being edited) through
+  // router location.state, and return the user to where they came from.
+  const openAdd = (mode, ctx = {}) => navigate('/task/new', { state: { mode: mode || 'today', ...ctx, from: location.pathname + location.search } })
+  const openEdit = (task) => navigate(`/task/${task.id}`, { state: { task, from: location.pathname + location.search } })
+  const openAddEvent = () => navigate('/event/new', { state: { from: location.pathname + location.search } })
+  const onSaved = () => setRefreshKey(k => k + 1)
 
   const navItems = [HOME, ...navPaths.map(byPath).filter(Boolean).slice(0, NAV_SLOTS)]
   const activeNav = navItems.some(n => n.path === location.pathname) ? location.pathname : null
@@ -255,6 +256,9 @@ function Shell() {
           <Route path="/focus"    element={<FocusTimer key={refreshKey} />} />
           <Route path="/journal"  element={<Journal key={refreshKey} />} />
           <Route path="/settings" element={<Settings />} />
+          <Route path="/task/new"  element={<TaskPage onSaved={onSaved} />} />
+          <Route path="/task/:id"  element={<TaskPage onSaved={onSaved} edit />} />
+          <Route path="/event/new" element={<EventPage onSaved={onSaved} />} />
         </Routes>
       </div>
 
@@ -270,9 +274,63 @@ function Shell() {
         })}
       </nav>
 
-      {taskModal && <TaskModal mode={taskModal.mode} task={taskModal.task} defaultProjectId={taskModal.defaultProjectId} defaultSector={taskModal.defaultSector} onClose={closeModal} onSaved={onSaved} />}
-      {eventModal && <EventModal event={eventModal.event} date={eventModal.date} onClose={() => setEventModal(null)} onSaved={() => { setRefreshKey(k=>k+1); setEventModal(null) }} />}
+
     </div>
+  )
+}
+
+
+/* ── Routed task page ────────────────────────────────────────────────────── */
+function TaskPage({ onSaved, edit }) {
+  const navigate = useNavigate()
+  const location = useLocation()
+  const { id } = useParams()
+  const st = location.state || {}
+  const back = st.from || '/tasks'
+  const goBack = () => navigate(back)
+
+  // If we arrived by refresh/deep-link, state is gone — fetch the task by id.
+  const [fetched, setFetched] = useState(st.task || null)
+  const [loading, setLoading] = useState(edit && !st.task)
+  useEffect(() => {
+    if (edit && !st.task && id) {
+      supabaseClient.from('tasks').select('*').eq('id', id).single()
+        .then(({ data }) => { setFetched(data); setLoading(false) })
+    }
+  }, [edit, id])
+
+  if (loading) return <div style={{ textAlign: 'center', padding: 50, color: 'var(--text-dim)' }}>Loading…</div>
+
+  return (
+    <TaskModal
+      asPage
+      mode={st.mode || 'scheduled'}
+      task={edit ? fetched : null}
+      defaultProjectId={st.defaultProjectId}
+      defaultSector={st.defaultSector}
+      defaultGoalId={st.defaultGoalId}
+      onClose={goBack}
+      onSaved={() => { onSaved?.(); goBack() }}
+    />
+  )
+}
+
+/* ── Routed event page ───────────────────────────────────────────────────── */
+function EventPage({ onSaved }) {
+  const navigate = useNavigate()
+  const location = useLocation()
+  const st = location.state || {}
+  const back = st.from || '/week'
+  const goBack = () => navigate(back)
+
+  return (
+    <EventModal
+      asPage
+      event={null}
+      date={new Date().toISOString().split('T')[0]}
+      onClose={goBack}
+      onSaved={() => { onSaved?.(); goBack() }}
+    />
   )
 }
 
