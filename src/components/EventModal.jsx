@@ -180,7 +180,7 @@ export default function EventModal({ event, date, onClose, onSaved, sectors = []
 
   if (asPage) {
     return (
-      <div style={{ minHeight: '100%', paddingBottom: 40 }}>
+      <div className="doc-page" style={{ minHeight: '100%', paddingBottom: 40 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 22 }}>
           <div onClick={onClose} style={{ width: 34, height: 34, borderRadius: 10, background: 'var(--bg-card)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: 18, color: 'var(--text-muted)', flexShrink: 0 }}>‹</div>
           <div style={{ fontSize: 20, fontWeight: 600, letterSpacing: '-0.3px' }}>{isEdit ? 'Edit event' : 'New event'}</div>

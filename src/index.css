@@ -309,3 +309,36 @@ input[type="date"], input[type="time"] { color-scheme: light dark; }
 @media (prefers-reduced-motion: reduce) {
   .page-scroll { animation: none !important; }
 }
+
+
+/* ── Notion-style page fields (task/event/project as pages) ─────────────── */
+.doc-page .field { margin-bottom: 4px; }
+.doc-page .field-label {
+  font-size: 12px; font-weight: 500; color: var(--text-muted);
+  text-transform: none; letter-spacing: 0; margin-bottom: 4px;
+}
+.doc-page .field input,
+.doc-page .field select,
+.doc-page .field textarea {
+  border: 1px solid transparent;
+  background: transparent;
+  border-radius: 8px;
+  padding: 7px 8px;
+  font-size: 15px;
+  margin-left: -8px;
+  transition: background 0.12s, border-color 0.12s;
+}
+.doc-page .field input:hover,
+.doc-page .field select:hover,
+.doc-page .field textarea:hover { background: var(--bg-card); }
+.doc-page .field input:focus,
+.doc-page .field select:focus,
+.doc-page .field textarea:focus {
+  background: var(--bg-card);
+  border-color: var(--accent-border);
+}
+.doc-page .field textarea { min-height: 60px; }
+/* group fields into a light property list, like Notion's top block */
+.doc-page .field + .field { border-top: 1px solid var(--border); padding-top: 4px; }
+.doc-page .field-row { gap: 4px; }
+.doc-page .field-row .field + .field { border-top: none; padding-top: 0; }

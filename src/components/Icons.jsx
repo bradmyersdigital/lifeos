@@ -139,6 +139,30 @@ export function SettingsIcon({ active, size = 20 }) {
   </>)
 }
 
+
+export function HeartIcon({ active, size = 20 }) {
+  const c = col(active)
+  return wrap(size, <path d="M10 16.5S3 12 3 7.3a3.3 3.3 0 0 1 6.2-1.6L10 7l0.8-1.3A3.3 3.3 0 0 1 17 7.3C17 12 10 16.5 10 16.5Z" stroke={c} strokeWidth="1.5" />)
+}
+export function PeopleIcon({ active, size = 20 }) {
+  const c = col(active)
+  return wrap(size, <>
+    <circle cx="7" cy="6.5" r="2.6" stroke={c} strokeWidth="1.5" />
+    <circle cx="13.5" cy="7.5" r="2.1" stroke={c} strokeWidth="1.5" opacity="0.7" />
+    <path d="M2.5 16c0-2.5 2-4 4.5-4s4.5 1.5 4.5 4" stroke={c} strokeWidth="1.5" />
+    <path d="M12.5 12.2c2.2 0.1 4 1.4 4 3.8" stroke={c} strokeWidth="1.5" opacity="0.7" />
+  </>)
+}
+export function PaletteIcon({ active, size = 20 }) {
+  const c = col(active)
+  return wrap(size, <>
+    <path d="M10 2.5c-4.2 0-7.5 3-7.5 7 0 2.4 1.9 3.6 3.6 3.6 1 0 1.7 0.7 1.7 1.6 0 0.5-.2.8-.2 1.3 0 0.8 0.6 1.5 1.6 1.5 4 0 7.8-3.2 7.8-7.4 0-4.3-3.4-7.6-7-7.6Z" stroke={c} strokeWidth="1.5" />
+    <circle cx="6.5" cy="8" r="1" fill={c} />
+    <circle cx="10" cy="6" r="1" fill={c} />
+    <circle cx="13.5" cy="8" r="1" fill={c} />
+  </>)
+}
+
 /* Sector name -> drawn icon. Falls back to null so a user's custom emoji wins. */
 export function SectorGlyph({ name, emoji, size = 24, active = true }) {
   const key = (name || '').toLowerCase()
@@ -147,23 +171,22 @@ export function SectorGlyph({ name, emoji, size = 24, active = true }) {
     'app development': FocusIcon,
     'personal growth': GoalsIcon,
     'health': HabitsIcon,
-    'family': null,
-    'relationship': null,
+    'family': HeartIcon,
+    'relationship': PeopleIcon,
     'finance': FinanceIcon,
     'finance / wealth management': FinanceIcon,
-    'hobbies': null,
+    'hobbies': PaletteIcon,
   }
-  const Icon = Object.prototype.hasOwnProperty.call(map, key) ? map[key] : undefined
-  // If the user set a custom emoji that isn't the sector's default, prefer it.
-  // We can't know the "default", so: show drawn icon only when emoji is empty
-  // or matches a known-default set; otherwise show their emoji.
-  if (emoji && !DEFAULT_EMOJIS.has(emoji)) {
-    return <span style={{ fontSize: size, lineHeight: 1 }}>{emoji}</span>
-  }
+  const Icon = map[key]
+  // A known sector shows its drawn icon, UNLESS the user deliberately set a
+  // non-default emoji (then their choice wins). Unknown/custom sectors show
+  // whatever emoji they carry, falling back to a folder.
+  const userPickedEmoji = emoji && !DEFAULT_EMOJIS.has(emoji)
+  if (userPickedEmoji) return <span style={{ fontSize: size, lineHeight: 1 }}>{emoji}</span>
   if (Icon) return <Icon active={active} size={size} />
   return <span style={{ fontSize: size, lineHeight: 1 }}>{emoji || '📁'}</span>
 }
 
 // Emojis we shipped as sector defaults — if the stored emoji is one of these,
 // it's not a deliberate user choice, so the drawn icon can take over.
-const DEFAULT_EMOJIS = new Set(['🏠','📱','🎨','🏃','❤️','💗','💰','💵','📁','🗂️'])
+const DEFAULT_EMOJIS = new Set(['🏠','📱','🎨','🏃','🏃\u200d♂️','❤️','❤','💗','💰','💵','📁','🗂️','💪','🎯','🔁'])

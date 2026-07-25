@@ -394,6 +394,7 @@ export default function Sectors({ onEditTask }) {
     }
   }, [searchParams, sectors])
   const [sectorModal, setSectorModal] = useState(null)
+  const [modifyMode, setModifyMode] = useState(false)
   const draggedRef = useRef(false)
 
   useEffect(() => { loadSectors() }, [])
@@ -423,12 +424,17 @@ export default function Sectors({ onEditTask }) {
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
         <div style={{ fontSize: 20, fontWeight: 500 }}>Sectors</div>
-        <div onClick={() => setSectorModal('new')} style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'var(--accent-dim)', border: '1px solid var(--accent-border)', borderRadius: 10, padding: '7px 14px', cursor: 'pointer', fontSize: 13, color: 'var(--accent)', fontWeight: 500 }}>
-          <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><line x1="6.5" y1="1" x2="6.5" y2="12" stroke="var(--accent)" strokeWidth="1.8" strokeLinecap="round"/><line x1="1" y1="6.5" x2="12" y2="6.5" stroke="var(--accent)" strokeWidth="1.8" strokeLinecap="round"/></svg>
-          New sector
+        <div style={{ display: 'flex', gap: 8 }}>
+          <div onClick={() => setModifyMode(m => !m)} style={{ display: 'flex', alignItems: 'center', gap: 5, background: modifyMode ? 'var(--accent-dim)' : 'var(--bg-card)', border: `1px solid ${modifyMode ? 'var(--accent-border)' : 'var(--border)'}`, borderRadius: 10, padding: '7px 13px', cursor: 'pointer', fontSize: 13, color: modifyMode ? 'var(--accent)' : 'var(--text-muted)', fontWeight: 500 }}>
+            {modifyMode ? 'Done' : 'Modify'}
+          </div>
+          <div onClick={() => setSectorModal('new')} style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'var(--accent-dim)', border: '1px solid var(--accent-border)', borderRadius: 10, padding: '7px 14px', cursor: 'pointer', fontSize: 13, color: 'var(--accent)', fontWeight: 500 }}>
+            <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><line x1="6.5" y1="1" x2="6.5" y2="12" stroke="var(--accent)" strokeWidth="1.8" strokeLinecap="round"/><line x1="1" y1="6.5" x2="12" y2="6.5" stroke="var(--accent)" strokeWidth="1.8" strokeLinecap="round"/></svg>
+            New
+          </div>
         </div>
       </div>
-      <div style={{ fontSize: 12, color: 'var(--text-dim)', marginBottom: 16 }}>Hold and drag to reorder</div>
+      <div style={{ fontSize: 12, color: 'var(--text-dim)', marginBottom: 16 }}>{modifyMode ? 'Tap Edit to change a sector · hold and drag to reorder' : 'Hold and drag to reorder'}</div>
 
       <SortableList
         items={sectors}
@@ -447,10 +453,9 @@ export default function Sectors({ onEditTask }) {
               <div style={{ fontSize: 15, fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.name}</div>
               <div style={{ fontSize: 11.5, color: 'var(--text-muted)', marginTop: 2 }}>{s._taskCount || 0} tasks · {s._projCount || 0} projects</div>
             </div>
-            <div onClick={e => { e.stopPropagation(); setSectorModal(s) }} style={{ width: 28, height: 28, borderRadius: 8, background: 'var(--bg-card2)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}>
-              <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M9 1.5L10.5 3L4.5 9H3V7.5L9 1.5Z" stroke="var(--text-muted)" strokeWidth="1.3" fill="none" strokeLinecap="round" strokeLinejoin="round"/></svg>
-            </div>
-            <div style={{ fontSize: 17, color: 'var(--text-dim)', flexShrink: 0, lineHeight: 1 }}>›</div>
+            {modifyMode
+              ? <div onClick={e => { e.stopPropagation(); setSectorModal(s) }} style={{ fontSize: 12.5, color: 'var(--accent)', fontWeight: 500, flexShrink: 0, padding: '4px 10px', borderRadius: 8, background: 'var(--accent-dim)', border: '1px solid var(--accent-border)' }}>Edit</div>
+              : <div style={{ fontSize: 17, color: 'var(--text-dim)', flexShrink: 0, lineHeight: 1 }}>›</div>}
           </div>
         )}
       />
