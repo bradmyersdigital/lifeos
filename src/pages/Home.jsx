@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
+import { IconOrEmoji } from '../components/Icons'
 import { fmtDate } from '../utils'
 
 const SECTOR_COLORS = {
@@ -586,7 +587,7 @@ export default function Home({ onAddTask, onEditTask, onAddEvent }) {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 8 }}>
           {sectors.map(s => (
             <div key={s.id} onClick={() => navigate('/sectors')} style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 14, padding: '14px 8px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, cursor: 'pointer', transition: 'border-color 0.15s' }}>
-              <div style={{ fontSize: 30 }}>{s.icon}</div>
+              <div style={{ height: 30, display: "flex", alignItems: "center" }}><IconOrEmoji value={s.icon} size={28} /></div>
               <div style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 500, textAlign: 'center' }}>{s.name}</div>
             </div>
           ))}

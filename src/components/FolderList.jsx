@@ -1,5 +1,5 @@
 import React from 'react'
-import { ICON_REGISTRY } from './Icons'
+import { ICON_REGISTRY, IconOrEmoji } from './Icons'
 
 /**
  * Grouped folder list — the inset-rounded list pattern (Apple Journal / Settings style).
@@ -73,7 +73,7 @@ export function FolderHeader({ icon, title, subtitle, onBack, right }) {
     <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 18 }}>
       <div onClick={onBack}
         style={{ width: 34, height: 34, borderRadius: 11, background: 'var(--bg-card)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: 18, color: 'var(--text-muted)', flexShrink: 0 }}>‹</div>
-      {icon && <div style={{ fontSize: 22, flexShrink: 0 }}>{icon}</div>}
+      {icon && <div style={{ width: 26, flexShrink: 0, display: "flex", justifyContent: "center" }}><IconOrEmoji value={icon} size={22} /></div>}
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ fontSize: 18, fontWeight: 500, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{title}</div>
         {subtitle && <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 1 }}>{subtitle}</div>}

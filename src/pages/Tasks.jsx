@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { supabase } from '../lib/supabase'
+import { IconOrEmoji } from '../components/Icons'
 import { fmtDate } from '../utils'
 
 const URG_STYLE = {
@@ -120,7 +121,7 @@ export default function Tasks({ onAddTask, onEditTask }) {
 
       <div style={{ display: 'flex', gap: 6, marginBottom: 16, flexWrap: 'wrap' }}>
         {['all','today','upcoming','overdue','done'].map(f => (
-          <div key={f} onClick={() => setFilter(f)} style={{ padding: '5px 13px', borderRadius: 20, fontSize: 12, fontWeight: 500, cursor: 'pointer', border: '1px solid', transition: 'all 0.15s', background: filter === f ? 'var(--accent-dim)' : 'var(--bg-card)', borderColor: filter === f ? 'var(--accent-border)' : 'var(--border)', color: filter === f ? 'var(--accent)' : 'var(--text-muted)' }}>
+          <div key={f} onClick={() => setFilter(f)} style={{ padding: '9px 18px', borderRadius: 12, fontSize: 13, fontWeight: 500, cursor: 'pointer', border: '1px solid', transition: 'all 0.15s', background: filter === f ? 'var(--accent-dim)' : 'var(--bg-card)', borderColor: filter === f ? 'var(--accent-border)' : 'var(--border)', color: filter === f ? 'var(--accent)' : 'var(--text-muted)' }}>
             {f.charAt(0).toUpperCase() + f.slice(1)}
           </div>
         ))}
@@ -148,7 +149,7 @@ export default function Tasks({ onAddTask, onEditTask }) {
               style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8, cursor: 'grab', userSelect: 'none' }}
               onClick={() => toggleCollapse(key)}
             >
-              <div style={{ fontSize: 16 }}>{icon}</div>
+              <div style={{ width: 20, display: "flex", justifyContent: "center" }}><IconOrEmoji value={icon} size={18} /></div>
               <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)', flex: 1 }}>{label}</div>
               <div style={{ fontFamily: "'DM Mono'", fontSize: 11, color: 'var(--text-dim)' }}>{st.length} tasks</div>
               <div style={{ color: 'var(--text-dim)', fontSize: 13, transform: collapsed[key] ? 'rotate(-90deg)' : 'none', transition: 'transform 0.2s' }}>›</div>

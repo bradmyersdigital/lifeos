@@ -353,3 +353,13 @@ export const ICON_LABELS = {
   clock: 'Time', pin: 'Location', cart: 'Shopping', leaf: 'Nature',
   fire: 'Streak', trophy: 'Win', rocket: 'Launch', brain: 'Mind',
 }
+
+
+/* Render any stored icon value: "icon:key" -> drawn icon, else emoji/text. */
+export function IconOrEmoji({ value, size = 20, active = true }) {
+  if (value && typeof value === 'string' && value.startsWith('icon:')) {
+    const Ico = ICON_REGISTRY[value.slice(5)]
+    if (Ico) return <Ico active={active} size={size} />
+  }
+  return <span style={{ fontSize: size, lineHeight: 1 }}>{value || '\u{1F4C1}'}</span>
+}
