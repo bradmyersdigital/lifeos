@@ -342,3 +342,10 @@ input[type="date"], input[type="time"] { color-scheme: light dark; }
 .doc-page .field + .field { border-top: 1px solid var(--border); padding-top: 4px; }
 .doc-page .field-row { gap: 4px; }
 .doc-page .field-row .field + .field { border-top: none; padding-top: 0; }
+
+
+/* NeverDrift header logo — show the right variant per theme */
+[data-theme="dark"]  .brand-light { display: none !important; }
+[data-theme="dark"]  .brand-dark  { display: block !important; }
+[data-theme="light"] .brand-dark  { display: none !important; }
+[data-theme="light"] .brand-light { display: block !important; }

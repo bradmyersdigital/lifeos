@@ -162,14 +162,14 @@ export default function Settings() {
       </Section>
 
       <Section title="About">
-        <Row title="App" right={<div style={{ fontSize: 14.5, color: 'var(--text-muted)' }}>LifeOS</div>} />
+        <Row title="App" right={<div style={{ fontSize: 14.5, color: 'var(--text-muted)' }}>NeverDrift OS</div>} />
         <Row title="Version" right={<div style={{ fontSize: 14.5, color: 'var(--text-muted)', fontFamily: "'DM Mono'" }}>1.0.0</div>} />
         <Row title="Built by" right={<div style={{ fontSize: 14.5, color: 'var(--accent)', fontWeight: 500 }}>Brad Myers</div>} last />
       </Section>
 
       <div style={{ padding: '15px 18px', background: 'var(--accent-dim)', border: '1px solid var(--accent-border)', borderRadius: 16, marginBottom: 20 }}>
         <div style={{ fontSize: 12.5, color: 'var(--accent-text)', lineHeight: 1.65 }}>
-          LifeOS is your personal operating system — one place for tasks, habits, goals, notes, finance, and more.
+          NeverDrift OS is your personal operating system — one place for tasks, habits, goals, notes, finance, and more.
           Built for people who want to live intentionally.
         </div>
       </div>

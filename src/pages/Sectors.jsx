@@ -83,8 +83,10 @@ function SectorModal({ sector, onClose, onSaved }) {
   )
 }
 
-function SectorDetail({ sector, onEditTask, onAddTask, onBack }) {
+function SectorDetail({ sector, onEditTask: onEditTaskRaw, onAddTask, onBack }) {
   const navigate = useNavigate()
+  // open a task but tell it to return to THIS sector (via ?open=<name>)
+  const onEditTask = (task) => navigate(`/task/${task.id}`, { state: { task, from: `/sectors?open=${encodeURIComponent(sector.name)}` } })
   const [tasks, setTasks] = useState([])
   const [notes, setNotes] = useState([])
   const [projects, setProjects] = useState([])
@@ -390,7 +392,7 @@ export default function Sectors({ onEditTask }) {
     const openName = searchParams.get('open')
     if (openName && sectors.length) {
       const match = sectors.find(s => s.name === openName || s.name.startsWith(openName))
-      if (match) { setSelected(match); setSearchParams({}, { replace: true }) }
+      if (match) setSelected(match)
     }
   }, [searchParams, sectors])
   const [sectorModal, setSectorModal] = useState(null)

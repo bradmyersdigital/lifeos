@@ -10,11 +10,10 @@ const URG_STYLES = {
   Urgent: { bg: 'var(--danger-dim)', border: 'var(--danger-border)', color: 'var(--danger)' },
 }
 
-// Simple time input — iOS shows native wheel picker, no extra AM/PM toggle needed
-function TimeInput({ value, onChange }) {
-  const [noTime, setNoTime] = useState(false)
+// Time block — optional start and end. Reset clears both.
+function TimeInput({ start, end, onChange }) {
+  const [noTime, setNoTime] = useState(!start && !end)
 
-  // Convert stored "HH:MM AM/PM" to input type=time "HH:MM"
   const toInputVal = (v) => {
     if (!v) return ''
     const m = v.match(/(\d{1,2}):(\d{2})\s*(AM|PM)/i)
@@ -24,8 +23,6 @@ function TimeInput({ value, onChange }) {
     if (m[3].toUpperCase() === 'AM' && h === 12) h = 0
     return `${String(h).padStart(2,'0')}:${min}`
   }
-
-  // Convert "HH:MM" (24h) back to "H:MM AM/PM"
   const fromInputVal = (v) => {
     if (!v) return ''
     const [hStr, mStr] = v.split(':')
@@ -36,13 +33,17 @@ function TimeInput({ value, onChange }) {
     return `${h}:${m} ${ap}`
   }
 
-  const [inputVal, setInputVal] = useState(toInputVal(value))
+  const toggleNoTime = () => {
+    const next = !noTime
+    setNoTime(next)
+    if (next) onChange('', '')   // clearing both
+  }
 
   return (
     <div className="field">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
         <div className="field-label" style={{ margin: 0 }}>Time block</div>
-        <div onClick={() => { setNoTime(!noTime); if (!noTime) onChange('') }} style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: 12, color: noTime ? 'var(--accent)' : 'var(--text-dim)' }}>
+        <div onClick={toggleNoTime} style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: 12, color: noTime ? 'var(--accent)' : 'var(--text-dim)' }}>
           <div style={{ width: 28, height: 16, borderRadius: 8, background: noTime ? 'var(--accent-dim)' : 'var(--border)', border: `1px solid ${noTime ? 'var(--accent-border)' : 'var(--border-hover)'}`, position: 'relative', transition: 'all 0.2s' }}>
             <div style={{ width: 12, height: 12, borderRadius: '50%', background: noTime ? 'var(--accent)' : 'var(--text-dim)', position: 'absolute', top: 1, left: noTime ? 13 : 1, transition: 'left 0.2s' }} />
           </div>
@@ -50,12 +51,21 @@ function TimeInput({ value, onChange }) {
         </div>
       </div>
       {!noTime && (
-        <input
-          type="time"
-          value={inputVal}
-          onChange={e => { setInputVal(e.target.value); onChange(fromInputVal(e.target.value)) }}
-          style={{ width: '100%' }}
-        />
+        <div style={{ display: 'flex', gap: 10, alignItems: 'flex-end' }}>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 11, color: 'var(--text-dim)', marginBottom: 4 }}>Start</div>
+            <input type="time" value={toInputVal(start)}
+              onChange={e => onChange(fromInputVal(e.target.value), end)} style={{ width: '100%' }} />
+          </div>
+          <div style={{ flex: 1 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+              <span style={{ fontSize: 11, color: 'var(--text-dim)' }}>End</span>
+              {end && <span onClick={() => onChange(start, '')} style={{ fontSize: 10.5, color: 'var(--accent)', cursor: 'pointer' }}>clear</span>}
+            </div>
+            <input type="time" value={toInputVal(end)}
+              onChange={e => onChange(start, fromInputVal(e.target.value))} style={{ width: '100%' }} />
+          </div>
+        </div>
       )}
       {noTime && <div style={{ textAlign: 'center', fontSize: 12, color: 'var(--text-dim)', padding: '6px 0' }}>Will appear after timed items</div>}
     </div>
@@ -64,6 +74,14 @@ function TimeInput({ value, onChange }) {
 
 export default function TaskModal({ mode, onClose, onSaved, task, defaultProjectId, defaultSector, defaultGoalId, asPage }) {
   const isEdit = !!task
+  const [isComplete, setIsComplete] = useState(task?.completed || false)
+  const toggleComplete = async () => {
+    if (!isEdit) return
+    const next = !isComplete
+    setIsComplete(next)
+    await supabase.from('tasks').update({ completed: next }).eq('id', task.id)
+    onSaved?.()
+  }
   const today = (() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}` })()
 
   const [name, setName] = useState(task?.name || '')
@@ -71,11 +89,13 @@ export default function TaskModal({ mode, onClose, onSaved, task, defaultProject
   const [sector, setSector] = useState(task?.sector || defaultSector || '')
   const [dueDate, setDueDate] = useState(task?.due_date || today)
   const [startDate, setStartDate] = useState(task?.start_date || today)
+  const [deadlineTouched, setDeadlineTouched] = useState(!!task)  // existing tasks: never auto-cascade
   const [projectId, setProjectId] = useState(task?.project_id || defaultProjectId || '')
   const [noteId, setNoteId] = useState(task?.note_id || '')
   const [notesText, setNotesText] = useState(task?.notes_text || '')
   const [location, setLocation] = useState(task?.location || '')
   const [timeBlock, setTimeBlock] = useState(task?.time_block || '')
+  const [timeEnd, setTimeEnd] = useState(task?.end_time || '')
   const [projects, setProjects] = useState([])
   useEffect(() => {
     if (!projectId || sector) return
@@ -109,7 +129,7 @@ export default function TaskModal({ mode, onClose, onSaved, task, defaultProject
     setSaving(true)
     const payload = {
       name: name.trim(), urgency: urgency.toLowerCase(), sector,
-      time_block: timeBlock || null, due_date: dueDate, start_date: startDate,
+      time_block: timeBlock || null, end_time: timeEnd || null, due_date: dueDate, start_date: startDate,
       project_id: projectId || null, note_id: noteId || null, goal_id: goalId || null,
       notes_text: notesText, location: location || null,
     }
@@ -145,27 +165,23 @@ export default function TaskModal({ mode, onClose, onSaved, task, defaultProject
           </div>
         </div>
 
-        <TimeInput value={timeBlock} onChange={setTimeBlock} />
+        <TimeInput start={timeBlock} end={timeEnd} onChange={(s, e) => { setTimeBlock(s); setTimeEnd(e) }} />
 
         {/* Do on + Deadline on same row — item 11 */}
         <div className="field-row">
           <div className="field">
             <div className="field-label">Do on</div>
-            <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} />
+            <input type="date" value={startDate} onChange={e => {
+              const v = e.target.value
+              setStartDate(v)
+              // new task, untouched deadline -> keep deadline in sync with do-on
+              if (!isEdit && !deadlineTouched) setDueDate(v)
+            }} />
           </div>
           <div className="field">
             <div className="field-label">Deadline</div>
-            <input type="date" value={dueDate} onChange={e => setDueDate(e.target.value)} />
+            <input type="date" value={dueDate} onChange={e => { setDeadlineTouched(true); setDueDate(e.target.value) }} />
           </div>
-        </div>
-
-        {/* Sector below — item 11 */}
-        <div className="field">
-          <div className="field-label">Sector</div>
-          <select value={sector} onChange={e => setSector(e.target.value)}>
-            <option value="">Select...</option>
-            {sectorList.map(s => <option key={s}>{s}</option>)}
-          </select>
         </div>
 
         <div className="field">
@@ -190,6 +206,15 @@ export default function TaskModal({ mode, onClose, onSaved, task, defaultProject
               <button onClick={() => setShowNewProject(true)} style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 10, padding: '0 12px', color: 'var(--text-muted)', fontSize: 12, cursor: 'pointer', fontFamily: "'DM Sans'", whiteSpace: 'nowrap' }}>+ New</button>
             </div>
           )}
+        </div>
+
+        {/* Sector below — item 11 */}
+        <div className="field">
+          <div className="field-label">Sector</div>
+          <select value={sector} onChange={e => setSector(e.target.value)}>
+            <option value="">Select...</option>
+            {sectorList.map(s => <option key={s}>{s}</option>)}
+          </select>
         </div>
 
         <div className="field">
@@ -230,7 +255,19 @@ export default function TaskModal({ mode, onClose, onSaved, task, defaultProject
       <div className="doc-page" style={{ minHeight: '100%', paddingBottom: 40 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 22 }}>
           <div onClick={onClose} style={{ width: 34, height: 34, borderRadius: 10, background: 'var(--bg-card)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: 18, color: 'var(--text-muted)', flexShrink: 0 }}>‹</div>
-          <div style={{ fontSize: 20, fontWeight: 600, letterSpacing: '-0.3px' }}>{isEdit ? 'Edit task' : 'New task'}</div>
+          <div style={{ flex: 1, fontSize: 20, fontWeight: 600, letterSpacing: '-0.3px' }}>{isEdit ? 'Edit task' : 'New task'}</div>
+          {isEdit && (
+            <div onClick={toggleComplete}
+              style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '8px 14px', borderRadius: 11, cursor: 'pointer', flexShrink: 0,
+                background: isComplete ? 'var(--success-dim)' : 'var(--bg-card)',
+                border: `1px solid ${isComplete ? 'var(--success-border)' : 'var(--border)'}`,
+                color: isComplete ? 'var(--success)' : 'var(--text-muted)' }}>
+              <div style={{ width: 18, height: 18, borderRadius: '50%', border: `1.5px solid ${isComplete ? 'var(--success)' : 'var(--border-hover)'}`, background: isComplete ? 'var(--success)' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                {isComplete && <svg width="10" height="10" viewBox="0 0 10 10"><polyline points="1.5,5 4,7.5 8.5,2.5" stroke="white" strokeWidth="1.8" fill="none" strokeLinecap="round"/></svg>}
+              </div>
+              <span style={{ fontSize: 13, fontWeight: 500 }}>{isComplete ? 'Completed' : 'Complete'}</span>
+            </div>
+          )}
         </div>
         {body}
       </div>

@@ -56,9 +56,12 @@ function ProjectModal({ onClose, onSaved, project }) {
 
   return (
     <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className="modal-sheet">
+      <div className="modal-sheet doc-page">
         <div className="modal-handle" />
-        <div className="modal-title">{isEdit ? 'Edit project' : 'New project'}<div className="modal-close" onClick={onClose}>×</div></div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 22, position: 'sticky', top: 14, background: 'var(--bg)', zIndex: 5, paddingBottom: 8 }}>
+          <div onClick={onClose} style={{ width: 34, height: 34, borderRadius: 10, background: 'var(--bg-card)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: 18, color: 'var(--text-muted)', flexShrink: 0 }}>‹</div>
+          <div style={{ fontSize: 20, fontWeight: 600, letterSpacing: '-0.3px' }}>{isEdit ? 'Edit project' : 'New project'}</div>
+        </div>
         <div className="field"><div className="field-label">Project name</div><input type="text" placeholder="What are you working on?" value={name} onChange={e => setName(e.target.value)} /></div>
         <div className="field"><div className="field-label">Objective</div><textarea placeholder="What does 'done' look like for this project?" value={goal} onChange={e => setGoal(e.target.value)} style={{ minHeight: 60 }} /></div>
         <div className="field"><div className="field-label">Description / notes</div><textarea placeholder="Context, details, anything worth remembering" value={description} onChange={e => setDescription(e.target.value)} /></div>
@@ -104,9 +107,12 @@ function NoteModal({ projectId, note, onClose, onSaved }) {
   }
   return (
     <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className="modal-sheet">
+      <div className="modal-sheet doc-page">
         <div className="modal-handle" />
-        <div className="modal-title">{note ? 'Edit note' : 'Add note'}<div className="modal-close" onClick={onClose}>×</div></div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 22, position: 'sticky', top: 14, background: 'var(--bg)', zIndex: 5, paddingBottom: 8 }}>
+          <div onClick={onClose} style={{ width: 34, height: 34, borderRadius: 10, background: 'var(--bg-card)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: 18, color: 'var(--text-muted)', flexShrink: 0 }}>‹</div>
+          <div style={{ fontSize: 20, fontWeight: 600, letterSpacing: '-0.3px' }}>{note ? 'Edit note' : 'New note'}</div>
+        </div>
         <div className="field"><div className="field-label">Note</div><textarea placeholder="Add a note..." value={text} onChange={e => setText(e.target.value)} style={{ height: 120 }} /></div>
         <div style={{ display: 'flex', gap: 10, marginTop: 18 }}>
           {note && <button onClick={async () => { await supabase.from('notes').delete().eq('id', note.id); onSaved(); onClose() }} style={{ flex: 1, padding: 11, borderRadius: 10, background: 'var(--danger-dim)', border: '1px solid var(--danger-border)', color: 'var(--danger)', fontSize: 14, fontWeight: 500, cursor: 'pointer', fontFamily: "'DM Sans'" }}>Delete</button>}
@@ -304,6 +310,19 @@ export default function Projects({ onAddTask, onEditTask }) {
   }, [searchParams, projects])
   const [filter, setFilter] = useState('active')
   const [folder, setFolder] = useState(null) // null = folder index, else { id, label, icon }
+  const [customFolders, setCustomFolders] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('nd_project_folders')) || [] } catch { return [] }
+  })
+  const [showFolderModal, setShowFolderModal] = useState(false)
+  const [newFolderName, setNewFolderName] = useState('')
+  const addFolder = () => {
+    const n = newFolderName.trim()
+    if (!n) return
+    const next = [...customFolders, n]
+    setCustomFolders(next)
+    try { localStorage.setItem('nd_project_folders', JSON.stringify(next)) } catch {}
+    setNewFolderName(''); setShowFolderModal(false)
+  }
   const [showModal, setShowModal] = useState(false)
 
   useEffect(() => {
@@ -340,16 +359,25 @@ export default function Projects({ onAddTask, onEditTask }) {
         count: projects.filter(p => p.sector === s.name).length,
       })),
     ]
-    const noSector = projects.filter(p => !p.sector).length
+    // custom (non-sector) folders
+    customFolders.forEach(f => {
+      folders.push({ id: f, icon: '\u{1F4C1}', label: f, count: projects.filter(p => p.sector === f).length })
+    })
+    const noSector = projects.filter(p => !p.sector || (!sectors.some(s=>s.name===p.sector) && !customFolders.includes(p.sector))).length
     if (noSector > 0) folders.push({ id: '__none__', icon: '\u{1F4C4}', label: 'Unsorted', count: noSector })
 
     return (
       <div>
         <div style={{ display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:18 }}>
           <div style={{ fontSize:20,fontWeight:500 }}>Projects</div>
-          <div onClick={()=>setShowModal(true)} style={{ display:'flex',alignItems:'center',gap:6,background:'var(--accent-dim)',border:'1px solid var(--accent-border)',borderRadius:10,padding:'7px 14px',cursor:'pointer',fontSize:13,color:'var(--accent)',fontWeight:500 }}>
-            <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><line x1="6.5" y1="1" x2="6.5" y2="12" stroke="var(--accent)" strokeWidth="1.8" strokeLinecap="round"/><line x1="1" y1="6.5" x2="12" y2="6.5" stroke="var(--accent)" strokeWidth="1.8" strokeLinecap="round"/></svg>
-            New project
+          <div style={{ display:'flex',gap:8 }}>
+            <div onClick={()=>setShowFolderModal(true)} style={{ display:'flex',alignItems:'center',gap:5,background:'var(--bg-card)',border:'1px solid var(--border)',borderRadius:10,padding:'7px 12px',cursor:'pointer',fontSize:12.5,color:'var(--text-muted)',fontWeight:500 }}>
+              + Folder
+            </div>
+            <div onClick={()=>setShowModal(true)} style={{ display:'flex',alignItems:'center',gap:6,background:'var(--accent-dim)',border:'1px solid var(--accent-border)',borderRadius:10,padding:'7px 14px',cursor:'pointer',fontSize:13,color:'var(--accent)',fontWeight:500 }}>
+              <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><line x1="6.5" y1="1" x2="6.5" y2="12" stroke="var(--accent)" strokeWidth="1.8" strokeLinecap="round"/><line x1="1" y1="6.5" x2="12" y2="6.5" stroke="var(--accent)" strokeWidth="1.8" strokeLinecap="round"/></svg>
+              New
+            </div>
           </div>
         </div>
 
@@ -365,6 +393,25 @@ export default function Projects({ onAddTask, onEditTask }) {
         <FolderList folders={folders} onOpen={setFolder} emptyText="No projects yet" />
 
         {showModal&&<ProjectModal onClose={()=>setShowModal(false)} onSaved={loadProjects} />}
+        {showFolderModal&&(
+          <div className="modal-overlay" onClick={e=>e.target===e.currentTarget&&setShowFolderModal(false)}>
+            <div className="modal-sheet doc-page">
+              <div className="modal-handle" />
+              <div style={{ display:'flex',alignItems:'center',gap:12,marginBottom:22 }}>
+                <div onClick={()=>setShowFolderModal(false)} style={{ width:34,height:34,borderRadius:10,background:'var(--bg-card)',border:'1px solid var(--border)',display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',fontSize:18,color:'var(--text-muted)' }}>‹</div>
+                <div style={{ fontSize:20,fontWeight:600 }}>New folder</div>
+              </div>
+              <div className="field"><div className="field-label">Folder name</div>
+                <input type="text" placeholder="e.g. Side hustles" value={newFolderName} onChange={e=>setNewFolderName(e.target.value)} onKeyDown={e=>{if(e.key==='Enter')addFolder()}} autoFocus />
+              </div>
+              <div style={{ fontSize:11.5,color:'var(--text-dim)',lineHeight:1.5,marginBottom:16 }}>A folder that isn't tied to a life sector — for grouping projects your own way.</div>
+              <div style={{ display:'flex',gap:10 }}>
+                <button className="btn-ghost" style={{ flex:1 }} onClick={()=>setShowFolderModal(false)}>Cancel</button>
+                <button className="btn-primary" style={{ flex:2 }} onClick={addFolder} disabled={!newFolderName.trim()}>Create folder</button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     )
   }

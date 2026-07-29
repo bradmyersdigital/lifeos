@@ -351,16 +351,13 @@ export default function Home({ onAddTask, onEditTask, onAddEvent }) {
         const quote = QUOTES[dayIdx]
         return (
           <div style={{ textAlign: 'center', marginBottom: 26 }}>
-            {/* masked so the mark takes the theme's text colour in every palette / mode */}
-            <div aria-label="LifeOS" role="img" style={{
-              width: 54, height: 54, margin: '0 auto 14px',
-              background: 'var(--text-primary)',
-              WebkitMaskImage: 'url(/logo.png)', maskImage: 'url(/logo.png)',
-              WebkitMaskSize: 'contain', maskSize: 'contain',
-              WebkitMaskRepeat: 'no-repeat', maskRepeat: 'no-repeat',
-              WebkitMaskPosition: 'center', maskPosition: 'center',
-              opacity: 0.9,
-            }} />
+            {/* NeverDrift banner — light/dark variants swapped by data-theme */}
+            <img src="/neverdrift-dark.png" alt="NeverDrift OS"
+              className="brand-dark"
+              style={{ height: 46, width: 'auto', maxWidth: '78%', margin: '0 auto 16px', display: 'block' }} />
+            <img src="/neverdrift-light.png" alt="NeverDrift OS"
+              className="brand-light"
+              style={{ height: 46, width: 'auto', maxWidth: '78%', margin: '0 auto 16px', display: 'none' }} />
             <div style={{ fontSize: 12, color: 'var(--text-dim)', marginBottom: 14, fontFamily: "'DM Mono'", letterSpacing: '0.04em' }}>{dateStr}</div>
             <div style={{ fontSize: 23, fontWeight: 700, color: 'var(--text-primary)', lineHeight: 1.28, letterSpacing: '-0.4px', maxWidth: 440, margin: '0 auto 10px' }}>
               {quote.text}

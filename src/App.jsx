@@ -102,7 +102,7 @@ function Drawer({ open, onClose, navigate, location, order, setOrder, nav, setNa
         <div style={{ padding: '56px 20px 18px', borderBottom: '1px solid var(--border)' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div>
-              <div style={{ fontSize: 20, fontWeight: 600, color: 'var(--text-primary)', letterSpacing: '-0.3px' }}>LifeOS</div>
+              <div style={{ fontSize: 20, fontWeight: 600, color: 'var(--text-primary)', letterSpacing: '-0.3px' }}>NeverDrift OS</div>
               <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>Your personal operating system</div>
             </div>
             <div onClick={onClose} style={{ width: 32, height: 32, borderRadius: 10, background: 'var(--bg-card)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'var(--text-muted)', fontSize: 16 }}>✕</div>
