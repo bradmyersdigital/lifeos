@@ -93,6 +93,12 @@ export default function TaskModal({ mode, onClose, onSaved, task, defaultProject
   const [projectId, setProjectId] = useState(task?.project_id || defaultProjectId || '')
   const [noteId, setNoteId] = useState(task?.note_id || '')
   const [notesText, setNotesText] = useState(task?.notes_text || '')
+  const [subtasks, setSubtasks] = useState(() => {
+    try { return task?.subtasks ? (typeof task.subtasks === 'string' ? JSON.parse(task.subtasks) : task.subtasks) : [] } catch { return [] }
+  })
+  const addSubtask = () => setSubtasks(prev => [...prev, { text: '', done: false }])
+  const updateSubtask = (i, patch) => setSubtasks(prev => prev.map((s, idx) => idx === i ? { ...s, ...patch } : s))
+  const removeSubtask = (i) => setSubtasks(prev => prev.filter((_, idx) => idx !== i))
   const [location, setLocation] = useState(task?.location || '')
   const [timeBlock, setTimeBlock] = useState(task?.time_block || '')
   const [timeEnd, setTimeEnd] = useState(task?.end_time || '')
@@ -132,6 +138,7 @@ export default function TaskModal({ mode, onClose, onSaved, task, defaultProject
       time_block: timeBlock || null, end_time: timeEnd || null, due_date: dueDate, start_date: startDate,
       project_id: projectId || null, note_id: noteId || null, goal_id: goalId || null,
       notes_text: notesText, location: location || null,
+      subtasks: subtasks.filter(s => s.text.trim()),
     }
     if (isEdit) await supabase.from('tasks').update(payload).eq('id', task.id)
     else await supabase.from('tasks').insert({ ...payload, completed: false })
@@ -162,6 +169,43 @@ export default function TaskModal({ mode, onClose, onSaved, task, defaultProject
             onInput={e => { e.target.style.height = 'auto'; e.target.style.height = e.target.scrollHeight + 'px' }}
             onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) e.preventDefault() }}
           />
+        </div>
+
+        {/* Subtasks — a mini checklist */}
+        <div className="field">
+          <div className="field-label">Subtasks</div>
+          {subtasks.length > 0 && (
+            <div style={{ marginBottom: 8 }}>
+              {subtasks.map((st, i) => (
+                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 9, marginBottom: 6 }}>
+                  <div onClick={() => updateSubtask(i, { done: !st.done })}
+                    style={{ width: 20, height: 20, borderRadius: 6, flexShrink: 0, cursor: 'pointer',
+                      border: `1.5px solid ${st.done ? 'var(--success)' : 'var(--border-hover)'}`,
+                      background: st.done ? 'var(--success)' : 'transparent',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    {st.done && <svg width="10" height="10" viewBox="0 0 10 10"><polyline points="1.5,5 4,7.5 8.5,2.5" stroke="white" strokeWidth="1.8" fill="none" strokeLinecap="round"/></svg>}
+                  </div>
+                  <input type="text" value={st.text}
+                    placeholder="Subtask…"
+                    onChange={e => updateSubtask(i, { text: e.target.value })}
+                    onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addSubtask() } }}
+                    style={{ flex: 1, textDecoration: st.done ? 'line-through' : 'none', opacity: st.done ? 0.55 : 1 }} />
+                  <div onClick={() => removeSubtask(i)} style={{ fontSize: 17, color: 'var(--text-dim)', cursor: 'pointer', padding: '0 4px', flexShrink: 0 }}>×</div>
+                </div>
+              ))}
+            </div>
+          )}
+          <div onClick={addSubtask}
+            style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '9px 8px', marginLeft: -8, borderRadius: 8, cursor: 'pointer', color: 'var(--text-dim)', fontSize: 14 }}>
+            <div style={{ width: 20, height: 20, borderRadius: 6, border: '1.5px dashed var(--border-hover)', flexShrink: 0 }} />
+            {subtasks.length === 0 ? 'Click to add a checklist item' : 'Add another'}
+          </div>
+        </div>
+
+        {/* Notes — moved to sit under subtasks */}
+        <div className="field">
+          <div className="field-label">Notes (optional)</div>
+          <textarea placeholder="Any extra context..." value={notesText} onChange={e => setNotesText(e.target.value)} />
         </div>
 
         <div className="field">
@@ -237,11 +281,6 @@ export default function TaskModal({ mode, onClose, onSaved, task, defaultProject
         <div className="field">
           <div className="field-label">Location (optional)</div>
           <input type="text" placeholder="Where?" value={location} onChange={e => setLocation(e.target.value)} />
-        </div>
-
-        <div className="field">
-          <div className="field-label">Notes (optional)</div>
-          <textarea placeholder="Any extra context..." value={notesText} onChange={e => setNotesText(e.target.value)} />
         </div>
 
         <div style={{ display: 'flex', gap: 10, marginTop: 18 }}>

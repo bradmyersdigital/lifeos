@@ -145,35 +145,33 @@ function UpcomingSubsSection({ onNavigate }) {
         <div className="section-label" style={{ margin: 0 }}>Upcoming subscriptions</div>
         <div onClick={() => onNavigate('/finance')} style={{ fontSize: 12, color: 'var(--text-dim)', cursor: 'pointer' }}>See all →</div>
       </div>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+      <div style={{ display: 'flex', gap: 10, overflowX: 'auto', WebkitOverflowScrolling: 'touch', paddingBottom: 6, marginLeft: -20, marginRight: -20, paddingLeft: 20, paddingRight: 20 }}>
         {subs.map(sub => {
           const daysUntil = sub.billing_day >= todayDay ? sub.billing_day - todayDay : 31 - todayDay + sub.billing_day
           const icon = sub.icon?.startsWith('data:') ? null : getSubIcon(sub)
           const isUrgent = daysUntil <= 2
+          const isImg = sub.icon?.startsWith('data:')
           return (
-            <div key={sub.id} onClick={() => onNavigate('/finance')} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', background: 'var(--bg-card)', border: `1px solid ${isUrgent ? 'var(--danger-dim)' : 'var(--border)'}`, borderRadius: 13, cursor: 'pointer' }}>
-              <div style={{ width: 40, height: 40, borderRadius: 11, background: 'var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, flexShrink: 0, overflow: 'hidden' }}>
-                {sub.icon?.startsWith('data:')
-                  ? <img src={sub.icon} alt={sub.name} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 11 }} />
-                  : icon}
+            <div key={sub.id} onClick={() => onNavigate('/finance')}
+              style={{ flexShrink: 0, width: 128, background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 14, overflow: 'hidden', cursor: 'pointer' }}>
+              <div style={{ height: 52, background: 'var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24, overflow: 'hidden' }}>
+                {isImg ? <img src={sub.icon} alt={sub.name} style={{ width: 34, height: 34, borderRadius: 9, objectFit: 'cover' }} /> : icon}
               </div>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 14, fontWeight: 500, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{sub.name}</div>
-                <div style={{ fontSize: 11, color: isUrgent ? 'var(--danger)' : 'var(--text-dim)', fontFamily: "'DM Mono'", marginTop: 2 }}>
-                  {daysUntil === 0 ? '🔴 Due today' : daysUntil === 1 ? '🟡 Tomorrow' : `In ${daysUntil} days · ${sub.billing_day}${['st','nd','rd'][sub.billing_day-1]||'th'}`}
-                </div>
+              <div style={{ padding: '10px 11px' }}>
+                <div style={{ fontSize: 12.5, color: 'var(--text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{sub.name}</div>
+                <div style={{ fontSize: 16, fontWeight: 600, fontFamily: "'DM Mono'", color: 'var(--text-primary)', marginTop: 3 }}>${parseFloat(sub.amount).toFixed(2)}</div>
               </div>
-              <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-primary)', fontFamily: "'DM Mono'" }}>${parseFloat(sub.amount).toFixed(2)}</div>
-                <div style={{ fontSize: 10, color: 'var(--text-dim)', marginTop: 2 }}>{sub.frequency}</div>
+              <div style={{ padding: '6px 11px', borderTop: '1px solid var(--border)', fontSize: 10, fontWeight: 600, letterSpacing: '0.04em', textTransform: 'uppercase',
+                color: daysUntil === 0 ? 'var(--danger)' : daysUntil <= 2 ? 'var(--warn)' : 'var(--text-dim)' }}>
+                {daysUntil === 0 ? 'Due today' : daysUntil === 1 ? 'Tomorrow' : `In ${daysUntil} days`}
               </div>
             </div>
           )
         })}
-        <div style={{ padding: '8px 14px', background: 'var(--bg-input)', border: '1px solid var(--border)', borderRadius: 10, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div style={{ fontSize: 12, color: 'var(--text-dim)' }}>Total due this week</div>
-          <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--danger)', fontFamily: "'DM Mono'" }}>${totalDue.toFixed(2)}</div>
-        </div>
+      </div>
+      <div style={{ padding: '8px 14px', marginTop: 8, background: 'var(--bg-input)', border: '1px solid var(--border)', borderRadius: 10, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div style={{ fontSize: 12, color: 'var(--text-dim)' }}>Total due this week</div>
+        <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--danger)', fontFamily: "'DM Mono'" }}>${totalDue.toFixed(2)}</div>
       </div>
     </div>
   )
@@ -586,7 +584,7 @@ export default function Home({ onAddTask, onEditTask, onAddEvent }) {
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 8 }}>
           {sectors.map(s => (
-            <div key={s.id} onClick={() => navigate('/sectors')} style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 14, padding: '14px 8px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, cursor: 'pointer', transition: 'border-color 0.15s' }}>
+            <div key={s.id} onClick={() => navigate(`/sectors?open=${encodeURIComponent(s.name)}`)} style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 14, padding: '14px 8px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, cursor: 'pointer', transition: 'border-color 0.15s' }}>
               <div style={{ height: 30, display: "flex", alignItems: "center" }}><IconOrEmoji value={s.icon} size={28} /></div>
               <div style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 500, textAlign: 'center' }}>{s.name}</div>
             </div>
