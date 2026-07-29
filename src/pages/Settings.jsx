@@ -176,7 +176,7 @@ export default function Settings() {
 
       {/* NeverDrift logo — dark mode only */}
       <img src="/neverdrift-dark.png" alt="NeverDrift OS" className="brand-dark"
-        style={{ display: 'none', height: 40, width: 'auto', maxWidth: '60%', margin: '10px auto 30px' }} />
+        style={{ display: 'none', height: 56, width: 'auto', maxWidth: '75%', margin: '10px auto 30px' }} />
 
       {sheet && (
         <PaletteSheet
