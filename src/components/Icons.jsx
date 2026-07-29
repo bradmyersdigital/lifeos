@@ -1,5 +1,4 @@
 import React from 'react'
-import { SvgIcon } from './IconPicker'
 
 /**
  * One icon per destination. All 20×20, 1.5 stroke, drawn to sit together.
@@ -166,9 +165,10 @@ export function PaletteIcon({ active, size = 20 }) {
 
 /* Sector name -> drawn icon. Falls back to null so a user's custom emoji wins. */
 export function SectorGlyph({ name, emoji, size = 24, active = true }) {
-  // New: a chosen SVG icon from the pack (stored as "Outline/Cat/Name")
-  if (emoji && typeof emoji === 'string' && emoji.includes('/')) {
-    return <SvgIcon iconRef={emoji} size={size} />
+  // A user-chosen icon from our set, stored as "icon:<key>"
+  if (emoji && typeof emoji === 'string' && emoji.startsWith('icon:')) {
+    const Chosen = ICON_REGISTRY[emoji.slice(5)]
+    if (Chosen) return <Chosen active={active} size={size} />
   }
   const key = (name || '').toLowerCase()
   const map = {
@@ -195,3 +195,33 @@ export function SectorGlyph({ name, emoji, size = 24, active = true }) {
 // Emojis we shipped as sector defaults — if the stored emoji is one of these,
 // it's not a deliberate user choice, so the drawn icon can take over.
 const DEFAULT_EMOJIS = new Set(['🏠','📱','🎨','🏃','🏃\u200d♂️','❤️','❤','💗','💰','💵','📁','🗂️','💪','🎯','🔁'])
+
+
+/* ── Named registry: lets icons be chosen by the user and stored by key ────── */
+export const ICON_REGISTRY = {
+  home: HomeIcon,
+  week: WeekIcon,
+  tasks: TasksIcon,
+  sectors: SectorsIcon,
+  habits: HabitsIcon,
+  projects: ProjectsIcon,
+  notes: NotesIcon,
+  journal: JournalIcon,
+  goals: GoalsIcon,
+  focus: FocusIcon,
+  finance: FinanceIcon,
+  grocery: GroceryIcon,
+  settings: SettingsIcon,
+  heart: HeartIcon,
+  people: PeopleIcon,
+  palette: PaletteIcon,
+}
+
+// friendly labels for the picker (search/tooltip)
+export const ICON_LABELS = {
+  home: 'Home', week: 'Calendar', tasks: 'Tasks', sectors: 'Grid',
+  habits: 'Habits', projects: 'Projects', notes: 'Notes', journal: 'Journal',
+  goals: 'Goals / Target', focus: 'Focus / Timer', finance: 'Finance',
+  grocery: 'Grocery / Cart', settings: 'Settings', heart: 'Heart',
+  people: 'People', palette: 'Creative',
+}

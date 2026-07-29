@@ -2,8 +2,8 @@ import React, { useState, useEffect, useRef } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import SortableList from '../components/SortableList'
-import { SectorGlyph } from '../components/Icons'
-import IconPicker, { SvgIcon } from '../components/IconPicker'
+import { SectorGlyph, ICON_REGISTRY } from '../components/Icons'
+import IconPicker from '../components/IconPicker'
 import { fmtDate } from '../utils'
 import TaskModal from '../components/TaskModal'
 
@@ -59,10 +59,14 @@ function SectorModal({ sector, onClose, onSaved }) {
       <div className="modal-sheet">
         <div className="modal-handle" />
         <div className="modal-title">{isEdit ? `Edit ${sector.name}` : 'New sector'}<div className="modal-close" onClick={onClose}>×</div></div>
-        <div style={{ textAlign: 'center', marginBottom: 14, color: color }}>
-          {icon && icon.includes('/')
-            ? <SvgIcon iconRef={icon} size={52} color={color} />
-            : <span style={{ fontSize: 52 }}>{icon || '📁'}</span>}
+        <div style={{ textAlign: 'center', marginBottom: 14 }}>
+          {(() => {
+            if (icon && icon.startsWith('icon:')) {
+              const Chosen = ICON_REGISTRY[icon.slice(5)]
+              if (Chosen) return <div style={{ display: 'inline-flex' }}><Chosen active size={52} /></div>
+            }
+            return <span style={{ fontSize: 52 }}>{icon || '📁'}</span>
+          })()}
         </div>
         <div className="field"><div className="field-label">Name</div><input type="text" placeholder="e.g. Business..." value={name} onChange={e => setName(e.target.value)} /></div>
         <div className="field">
