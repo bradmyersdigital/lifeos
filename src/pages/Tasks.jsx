@@ -119,9 +119,9 @@ export default function Tasks({ onAddTask, onEditTask }) {
 
       </div>
 
-      <div style={{ display: 'flex', gap: 6, marginBottom: 16, flexWrap: 'wrap' }}>
+      <div style={{ display: 'flex', background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 12, overflow: 'hidden', marginBottom: 16 }}>
         {['all','today','upcoming','overdue','done'].map(f => (
-          <div key={f} onClick={() => setFilter(f)} style={{ padding: '9px 18px', borderRadius: 12, fontSize: 13, fontWeight: 500, cursor: 'pointer', border: '1px solid', transition: 'all 0.15s', background: filter === f ? 'var(--accent-dim)' : 'var(--bg-card)', borderColor: filter === f ? 'var(--accent-border)' : 'var(--border)', color: filter === f ? 'var(--accent)' : 'var(--text-muted)' }}>
+          <div key={f} onClick={() => setFilter(f)} style={{ flex: 1, textAlign: 'center', padding: '10px 4px', fontSize: 13, fontWeight: 500, cursor: 'pointer', background: filter === f ? 'var(--accent-dim)' : 'transparent', color: filter === f ? 'var(--accent)' : 'var(--text-muted)', transition: 'all 0.15s' }}>
             {f.charAt(0).toUpperCase() + f.slice(1)}
           </div>
         ))}

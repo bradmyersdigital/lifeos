@@ -164,7 +164,7 @@ export default function Week({ onAddTask, onEditTask }) {
       {/* Sector filters */}
       <div style={{ display: 'flex', gap: 6, overflowX: 'auto', paddingBottom: 4, marginBottom: 10, WebkitOverflowScrolling: 'touch' }}>
         {filters.map(s => (
-          <div key={s} onClick={() => setActiveFilter(s)} style={{ padding: '5px 12px', borderRadius: 20, fontSize: 12, fontWeight: 500, cursor: 'pointer', border: '1px solid', whiteSpace: 'nowrap', background: activeFilter === s ? 'var(--accent-dim)' : 'var(--bg-card)', borderColor: activeFilter === s ? 'var(--accent-border)' : 'var(--border)', color: activeFilter === s ? 'var(--accent)' : 'var(--text-muted)' }}>
+          <div key={s} onClick={() => setActiveFilter(s)} style={{ padding: '8px 15px', borderRadius: 10, fontSize: 12.5, fontWeight: 500, cursor: 'pointer', border: '1px solid', whiteSpace: 'nowrap', background: activeFilter === s ? 'var(--accent-dim)' : 'var(--bg-card)', borderColor: activeFilter === s ? 'var(--accent-border)' : 'var(--border)', color: activeFilter === s ? 'var(--accent)' : 'var(--text-muted)' }}>
             {s}
           </div>
         ))}

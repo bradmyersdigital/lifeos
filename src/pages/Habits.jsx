@@ -22,9 +22,9 @@ function HabitStats({ habits, logs, isLogged, getStreak, statsPeriod, setStatsPe
   })
   return (
     <div>
-      <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
+      <div style={{ display: 'flex', background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 12, overflow: 'hidden', marginBottom: 20 }}>
         {[['week','This week'],['month','30 days']].map(([p,label]) => (
-          <div key={p} onClick={() => setStatsPeriod(p)} style={{ padding: '6px 16px', borderRadius: 20, fontSize: 13, fontWeight: 500, cursor: 'pointer', border: '1px solid', background: statsPeriod === p ? 'var(--accent-dim)' : 'var(--bg-card)', borderColor: statsPeriod === p ? 'var(--accent-border)' : 'var(--border)', color: statsPeriod === p ? 'var(--accent)' : 'var(--text-muted)' }}>
+          <div key={p} onClick={() => setStatsPeriod(p)} style={{ flex: 1, textAlign: 'center', padding: '10px 4px', fontSize: 13, fontWeight: 500, cursor: 'pointer', background: statsPeriod === p ? 'var(--accent-dim)' : 'transparent', color: statsPeriod === p ? 'var(--accent)' : 'var(--text-muted)', transition: 'all 0.15s' }}>
             {label}
           </div>
         ))}
@@ -457,7 +457,7 @@ export default function Habits() {
           </div>
           <div style={{ display: 'flex', gap: 6, marginBottom: 14, overflowX: 'auto', paddingBottom: 4 }}>
             <div onClick={() => setSelectedHabit(null)} style={{ padding: '5px 12px', borderRadius: 20, fontSize: 12, fontWeight: 500, cursor: 'pointer', border: '1px solid', whiteSpace: 'nowrap', background: !selectedHabit ? 'var(--accent-dim)' : 'var(--bg-card)', borderColor: !selectedHabit ? 'var(--accent-border)' : 'var(--border)', color: !selectedHabit ? 'var(--accent)' : 'var(--text-muted)' }}>All</div>
-            {habits.map(h => <div key={h.id} onClick={() => setSelectedHabit(h.id === selectedHabit ? null : h.id)} style={{ padding: '5px 12px', borderRadius: 20, fontSize: 12, fontWeight: 500, cursor: 'pointer', border: '1px solid', whiteSpace: 'nowrap', background: selectedHabit === h.id ? 'var(--accent-dim)' : 'var(--bg-card)', borderColor: selectedHabit === h.id ? 'var(--accent-border)' : 'var(--border)', color: selectedHabit === h.id ? 'var(--accent)' : 'var(--text-muted)' }}>{h.icon} {h.name}</div>)}
+            {habits.map(h => <div key={h.id} onClick={() => setSelectedHabit(h.id === selectedHabit ? null : h.id)} style={{ padding: '8px 15px', borderRadius: 10, fontSize: 12.5, fontWeight: 500, cursor: 'pointer', border: '1px solid', whiteSpace: 'nowrap', background: selectedHabit === h.id ? 'var(--accent-dim)' : 'var(--bg-card)', borderColor: selectedHabit === h.id ? 'var(--accent-border)' : 'var(--border)', color: selectedHabit === h.id ? 'var(--accent)' : 'var(--text-muted)' }}>{h.icon} {h.name}</div>)}
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', gap: 2, marginBottom: 4 }}>
             {DAY_LABELS.map((d,i) => <div key={i} style={{ textAlign: 'center', fontSize: 11, fontWeight: 600, color: 'var(--text-dim)', padding: '4px 0' }}>{d}</div>)}

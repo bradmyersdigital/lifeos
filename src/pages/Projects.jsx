@@ -445,9 +445,9 @@ export default function Projects({ onAddTask, onEditTask }) {
         }
       />
 
-      <div style={{ display:'flex',gap:6,marginBottom:18,overflowX:'auto',WebkitOverflowScrolling:'touch',paddingBottom:4 }}>
+      <div style={{ display:'flex',background:'var(--bg-card)',border:'1px solid var(--border)',borderRadius:12,overflow:'hidden',marginBottom:18 }}>
         {['all','active','backlog','completed'].map(f=>(
-          <div key={f} onClick={()=>setFilter(f)} style={{ padding:'9px 18px',borderRadius:12,fontSize:13,fontWeight:500,cursor:'pointer',border:'1px solid',transition:'all 0.15s',background:filter===f?'var(--accent-dim)':'var(--bg-card)',borderColor:filter===f?'var(--accent-border)':'var(--border)',color:filter===f?'var(--accent)':'var(--text-muted)' }}>
+          <div key={f} onClick={()=>setFilter(f)} style={{ flex:1,textAlign:'center',padding:'10px 4px',fontSize:13,fontWeight:500,cursor:'pointer',background:filter===f?'var(--accent-dim)':'transparent',color:filter===f?'var(--accent)':'var(--text-muted)',transition:'all 0.15s' }}>
             {f.charAt(0).toUpperCase()+f.slice(1)}
           </div>
         ))}

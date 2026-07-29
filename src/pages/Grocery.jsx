@@ -170,10 +170,10 @@ export default function Grocery() {
       </div>
 
       {/* Filter */}
-      <div style={{ display: 'flex', gap: 8, marginBottom: 18 }}>
+      <div style={{ display: 'flex', background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 12, overflow: 'hidden', marginBottom: 18 }}>
         {[['all','All'],['unchecked','Remaining'],['checked','Checked']].map(([val, label]) => (
           <div key={val} onClick={() => setFilter(val)}
-            style={{ padding: '6px 14px', borderRadius: 20, fontSize: 12, fontWeight: 500, cursor: 'pointer', border: '1px solid', background: filter === val ? 'var(--accent-dim)' : 'var(--bg-card)', borderColor: filter === val ? 'var(--accent-border)' : 'var(--border)', color: filter === val ? 'var(--accent)' : 'var(--text-muted)' }}>
+            style={{ flex: 1, textAlign: 'center', padding: '10px 4px', fontSize: 13, fontWeight: 500, cursor: 'pointer', background: filter === val ? 'var(--accent-dim)' : 'transparent', color: filter === val ? 'var(--accent)' : 'var(--text-muted)', transition: 'all 0.15s' }}>
             {label}
           </div>
         ))}

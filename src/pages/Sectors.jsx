@@ -334,9 +334,9 @@ function SectorDetail({ sector, onEditTask: onEditTaskRaw, onAddTask, onBack }) 
         ))}
       </div>
 
-      <div style={{ display: 'flex', gap: 6, marginBottom: 16 }}>
+      <div style={{ display: 'flex', background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 12, overflow: 'hidden', marginBottom: 16 }}>
         {['projects','tasks','notes'].map(t => (
-          <div key={t} onClick={() => setTab(t)} style={{ padding: '6px 16px', borderRadius: 20, fontSize: 13, fontWeight: 500, cursor: 'pointer', border: '1px solid', transition: 'all 0.15s', background: tab === t ? 'var(--accent-dim)' : 'var(--bg-card)', borderColor: tab === t ? 'var(--accent-border)' : 'var(--border)', color: tab === t ? 'var(--accent)' : 'var(--text-muted)' }}>
+          <div key={t} onClick={() => setTab(t)} style={{ flex: 1, textAlign: 'center', padding: '10px 4px', fontSize: 13, fontWeight: 500, cursor: 'pointer', background: tab === t ? 'var(--accent-dim)' : 'transparent', color: tab === t ? 'var(--accent)' : 'var(--text-muted)', transition: 'all 0.15s' }}>
             {t.charAt(0).toUpperCase() + t.slice(1)}
           </div>
         ))}
