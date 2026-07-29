@@ -153,12 +153,13 @@ export default function TaskModal({ mode, onClose, onSaved, task, defaultProject
         <div className="field">
           <div className="field-label">Task name</div>
           <textarea
+            className="task-name-input"
             placeholder="What needs to get done?"
             value={name}
             onChange={e => setName(e.target.value)}
             rows={1}
+            ref={el => { if (el) { el.style.height = 'auto'; el.style.height = el.scrollHeight + 'px' } }}
             onInput={e => { e.target.style.height = 'auto'; e.target.style.height = e.target.scrollHeight + 'px' }}
-            style={{ resize: 'none', overflow: 'hidden', minHeight: 0, lineHeight: 1.4 }}
             onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) e.preventDefault() }}
           />
         </div>

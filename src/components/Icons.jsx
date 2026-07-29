@@ -1,4 +1,5 @@
 import React from 'react'
+import { SvgIcon } from './IconPicker'
 
 /**
  * One icon per destination. All 20×20, 1.5 stroke, drawn to sit together.
@@ -165,6 +166,10 @@ export function PaletteIcon({ active, size = 20 }) {
 
 /* Sector name -> drawn icon. Falls back to null so a user's custom emoji wins. */
 export function SectorGlyph({ name, emoji, size = 24, active = true }) {
+  // New: a chosen SVG icon from the pack (stored as "Outline/Cat/Name")
+  if (emoji && typeof emoji === 'string' && emoji.includes('/')) {
+    return <SvgIcon iconRef={emoji} size={size} />
+  }
   const key = (name || '').toLowerCase()
   const map = {
     'real estate': HomeIcon,

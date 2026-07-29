@@ -349,3 +349,13 @@ input[type="date"], input[type="time"] { color-scheme: light dark; }
 [data-theme="dark"]  .brand-dark  { display: block !important; }
 [data-theme="light"] .brand-dark  { display: none !important; }
 [data-theme="light"] .brand-light { display: block !important; }
+
+
+/* Task-name field: single line that grows with content, never scrolls */
+.task-name-input {
+  min-height: 0 !important;
+  height: auto;
+  resize: none;
+  overflow: hidden !important;
+  line-height: 1.4;
+}

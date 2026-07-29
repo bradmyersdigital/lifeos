@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import SortableList from '../components/SortableList'
 import { SectorGlyph } from '../components/Icons'
+import IconPicker, { SvgIcon } from '../components/IconPicker'
 import { fmtDate } from '../utils'
 import TaskModal from '../components/TaskModal'
 
@@ -39,7 +40,7 @@ function NoteTextInput({ note, projectId, onClose, onSaved }) {
 function SectorModal({ sector, onClose, onSaved }) {
   const isEdit = !!sector
   const [name, setName] = useState(sector?.name || '')
-  const [icon, setIcon] = useState(sector?.icon || '📁')
+  const [icon, setIcon] = useState(sector?.icon || '')
   const [color, setColor] = useState(sector?.color || 'var(--accent)')
   const [saving, setSaving] = useState(false)
   const handleSave = async () => {
@@ -58,14 +59,15 @@ function SectorModal({ sector, onClose, onSaved }) {
       <div className="modal-sheet">
         <div className="modal-handle" />
         <div className="modal-title">{isEdit ? `Edit ${sector.name}` : 'New sector'}<div className="modal-close" onClick={onClose}>×</div></div>
-        <div style={{ textAlign: 'center', fontSize: 52, marginBottom: 12 }}>{icon}</div>
+        <div style={{ textAlign: 'center', marginBottom: 14, color: color }}>
+          {icon && icon.includes('/')
+            ? <SvgIcon iconRef={icon} size={52} color={color} />
+            : <span style={{ fontSize: 52 }}>{icon || '📁'}</span>}
+        </div>
         <div className="field"><div className="field-label">Name</div><input type="text" placeholder="e.g. Business..." value={name} onChange={e => setName(e.target.value)} /></div>
         <div className="field">
           <div className="field-label">Icon</div>
-          <input type="text" value={icon} onChange={e => setIcon(e.target.value)} style={{ fontSize: 22, textAlign: 'center' }} />
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7, marginTop: 10, justifyContent: 'center' }}>
-            {EMOJI_PICKS.map(e => <div key={e} onClick={() => setIcon(e)} style={{ width: 40, height: 40, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, background: icon === e ? 'var(--accent-dim)' : 'var(--bg-card)', border: `1px solid ${icon === e ? 'var(--accent-border)' : 'var(--border)'}`, borderRadius: 10, cursor: 'pointer' }}>{e}</div>)}
-          </div>
+          <IconPicker value={icon} onPick={setIcon} accent={color} />
         </div>
         <div className="field">
           <div className="field-label">Color</div>
