@@ -344,28 +344,29 @@ export default function Projects({ onAddTask, onEditTask }) {
     return p.sector === folder.id
   }
   const filtered = projects.filter(p => {
-    if (filter !== 'all' && p.status !== filter) return false
+    if (filter === 'all') { if (p.status === 'completed') return false }
+    else if (p.status !== filter) return false
     return inFolder(p)
   })
 
   // ── Folder index ──────────────────────────────────────────────────────────
   if (!folder) {
     // All Projects (top, standalone)
-    const allFolder = [{ id: '__all__', icon: 'icon:folder', label: 'All Projects', count: projects.length, color: 'var(--accent)' }]
+    const allFolder = [{ id: '__all__', icon: 'icon:folder', label: 'All Projects', count: projects.filter(p => p.status !== 'completed').length, color: 'var(--accent)' }]
 
     // Sector folders — ALWAYS shown, even at zero, so every life sector appears
     const sectorFolders = sectors.map(s => ({
       id: s.name,
       icon: s.icon || '\u{1F4C1}',
       label: s.name,
-      count: projects.filter(p => p.sector === s.name).length,
+      count: projects.filter(p => p.sector === s.name && p.status !== 'completed').length,
     }))
 
     // Custom (non-sector) folders + Unsorted
     const customFolderRows = customFolders.map(f => ({
-      id: f, icon: '\u{1F4C1}', label: f, count: projects.filter(p => p.sector === f).length,
+      id: f, icon: '\u{1F4C1}', label: f, count: projects.filter(p => p.sector === f && p.status !== 'completed').length,
     }))
-    const noSector = projects.filter(p => !p.sector || (!sectors.some(s=>s.name===p.sector) && !customFolders.includes(p.sector))).length
+    const noSector = projects.filter(p => (p.status !== 'completed') && (!p.sector || (!sectors.some(s=>s.name===p.sector) && !customFolders.includes(p.sector)))).length
     if (noSector > 0) customFolderRows.push({ id: '__none__', icon: '\u{1F4C4}', label: 'Unsorted', count: noSector })
 
     return (

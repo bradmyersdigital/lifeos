@@ -53,13 +53,21 @@ export default function Tasks({ onAddTask, onEditTask }) {
     }
   }
 
+  const clearAllDone = async () => {
+    const doneIds = tasks.filter(t => t.completed).map(t => t.id)
+    if (doneIds.length === 0) return
+    if (!window.confirm(`Are you sure you want to permanently delete these ${doneIds.length} completed task${doneIds.length === 1 ? '' : 's'}? This can't be undone.`)) return
+    await supabase.from('tasks').delete().in('id', doneIds)
+    setTasks(prev => prev.filter(t => !t.completed))
+  }
+
   const filtered = tasks.filter(t => {
     if (search && !t.name.toLowerCase().includes(search.toLowerCase())) return false
     if (filter === 'today') return t.start_date === today && !t.completed
     if (filter === 'upcoming') return t.start_date > today && !t.completed
     if (filter === 'overdue') return t.start_date < today && !t.completed
     if (filter === 'done') return t.completed
-    return true
+    return !t.completed   // 'all' and default: hide completed
   })
 
   const counts = {
@@ -135,6 +143,13 @@ export default function Tasks({ onAddTask, onEditTask }) {
           </div>
         ))}
       </div>
+
+      {filter === 'done' && counts.done > 0 && (
+        <div onClick={clearAllDone}
+          style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, padding: '11px', marginBottom: 16, borderRadius: 12, cursor: 'pointer', background: 'var(--danger-dim)', border: '1px solid var(--danger-border)', color: 'var(--danger)', fontSize: 13.5, fontWeight: 500 }}>
+          Clear all {counts.done} completed
+        </div>
+      )}
 
       {sectorGroups.map(({ key, label, icon, color, tasks: st }, idx) => {
         if (st.length === 0 && filter !== 'all') return null
