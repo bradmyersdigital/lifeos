@@ -350,34 +350,31 @@ export default function Projects({ onAddTask, onEditTask }) {
 
   // ── Folder index ──────────────────────────────────────────────────────────
   if (!folder) {
-    const folders = [
-      { id: '__all__', icon: '\u{1F5C2}\uFE0F', label: 'All Projects', count: projects.length, color: 'var(--accent)' },
-      ...sectors.map(s => ({
-        id: s.name,
-        icon: s.icon || '\u{1F4C1}',
-        label: s.name,
-        count: projects.filter(p => p.sector === s.name).length,
-      })),
-    ]
-    // custom (non-sector) folders
-    customFolders.forEach(f => {
-      folders.push({ id: f, icon: '\u{1F4C1}', label: f, count: projects.filter(p => p.sector === f).length })
-    })
+    // All Projects (top, standalone)
+    const allFolder = [{ id: '__all__', icon: 'var(--accent)', label: 'All Projects', count: projects.length, color: 'var(--accent)' }]
+
+    // Sector folders — ALWAYS shown, even at zero, so every life sector appears
+    const sectorFolders = sectors.map(s => ({
+      id: s.name,
+      icon: s.icon || '\u{1F4C1}',
+      label: s.name,
+      count: projects.filter(p => p.sector === s.name).length,
+    }))
+
+    // Custom (non-sector) folders + Unsorted
+    const customFolderRows = customFolders.map(f => ({
+      id: f, icon: '\u{1F4C1}', label: f, count: projects.filter(p => p.sector === f).length,
+    }))
     const noSector = projects.filter(p => !p.sector || (!sectors.some(s=>s.name===p.sector) && !customFolders.includes(p.sector))).length
-    if (noSector > 0) folders.push({ id: '__none__', icon: '\u{1F4C4}', label: 'Unsorted', count: noSector })
+    if (noSector > 0) customFolderRows.push({ id: '__none__', icon: '\u{1F4C4}', label: 'Unsorted', count: noSector })
 
     return (
       <div>
         <div style={{ display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:18 }}>
           <div style={{ fontSize:20,fontWeight:500 }}>Projects</div>
-          <div style={{ display:'flex',gap:8 }}>
-            <div onClick={()=>setShowFolderModal(true)} style={{ display:'flex',alignItems:'center',gap:5,background:'var(--bg-card)',border:'1px solid var(--border)',borderRadius:10,padding:'7px 12px',cursor:'pointer',fontSize:12.5,color:'var(--text-muted)',fontWeight:500 }}>
-              + Folder
-            </div>
-            <div onClick={()=>setShowModal(true)} style={{ display:'flex',alignItems:'center',gap:6,background:'var(--accent-dim)',border:'1px solid var(--accent-border)',borderRadius:10,padding:'7px 14px',cursor:'pointer',fontSize:13,color:'var(--accent)',fontWeight:500 }}>
-              <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><line x1="6.5" y1="1" x2="6.5" y2="12" stroke="var(--accent)" strokeWidth="1.8" strokeLinecap="round"/><line x1="1" y1="6.5" x2="12" y2="6.5" stroke="var(--accent)" strokeWidth="1.8" strokeLinecap="round"/></svg>
-              New
-            </div>
+          <div onClick={()=>setShowModal(true)} style={{ display:'flex',alignItems:'center',gap:6,background:'var(--accent-dim)',border:'1px solid var(--accent-border)',borderRadius:10,padding:'7px 14px',cursor:'pointer',fontSize:13,color:'var(--accent)',fontWeight:500 }}>
+            <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><line x1="6.5" y1="1" x2="6.5" y2="12" stroke="var(--accent)" strokeWidth="1.8" strokeLinecap="round"/><line x1="1" y1="6.5" x2="12" y2="6.5" stroke="var(--accent)" strokeWidth="1.8" strokeLinecap="round"/></svg>
+            New project
           </div>
         </div>
 
@@ -390,7 +387,23 @@ export default function Projects({ onAddTask, onEditTask }) {
           ))}
         </div>
 
-        <FolderList folders={folders} onOpen={setFolder} emptyText="No projects yet" />
+        {/* All Projects */}
+        <FolderList folders={allFolder} onOpen={setFolder} />
+
+        {/* Sectors */}
+        <div style={{ fontSize:11, fontWeight:600, letterSpacing:'0.09em', textTransform:'uppercase', color:'var(--text-dim)', margin:'20px 4px 8px' }}>Sectors</div>
+        <FolderList folders={sectorFolders} onOpen={setFolder} emptyText="No sectors yet" />
+
+        {/* Custom folders */}
+        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', margin:'20px 4px 8px' }}>
+          <div style={{ fontSize:11, fontWeight:600, letterSpacing:'0.09em', textTransform:'uppercase', color:'var(--text-dim)' }}>Folders</div>
+          <div onClick={()=>setShowFolderModal(true)} style={{ display:'flex',alignItems:'center',gap:5,cursor:'pointer',fontSize:12.5,color:'var(--accent)',fontWeight:500 }}>
+            + Folder
+          </div>
+        </div>
+        {customFolderRows.length > 0
+          ? <FolderList folders={customFolderRows} onOpen={setFolder} />
+          : <div onClick={()=>setShowFolderModal(true)} style={{ textAlign:'center', padding:'16px', color:'var(--text-dim)', fontSize:13, border:'1px dashed var(--border)', borderRadius:14, cursor:'pointer' }}>Make a folder that isn't tied to a sector</div>}
 
         {showModal&&<ProjectModal onClose={()=>setShowModal(false)} onSaved={loadProjects} />}
         {showFolderModal&&(

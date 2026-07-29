@@ -272,20 +272,13 @@ export default function Home({ onAddTask, onEditTask, onAddEvent }) {
   const loadAll = async () => {
     // Fetch today's tasks + overdue from past 7 days (not completed)
     const sevenDaysAgo = (() => { const d = new Date(); d.setDate(d.getDate()-7); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}` })()
+    // Today's Focus = tasks scheduled for TODAY only. Overdue tasks live on the
+    // Week/Tasks pages, not here — Focus should be a clean "what's on for today".
     supabase.from('tasks').select('*, projects(name)')
-      .gte('start_date', sevenDaysAgo)
-      .lte('start_date', todayStr)
+      .eq('start_date', todayStr)
       .eq('completed', false)
       .order('time_block')
-      .then(({ data }) => {
-        // Tasks from today show normally, past tasks show as overdue rolled over
-        const rolled = (data || []).map(t => ({
-          ...t,
-          _isRolledOver: t.start_date < todayStr,
-          _originalDate: t.start_date,
-        }))
-        setTasks(rolled)
-      })
+      .then(({ data }) => setTasks(data || []))
     supabase.from('projects').select('*, tasks(*)').eq('status', 'active').then(({ data }) => setProjects(data || []))
     supabase.from('habits').select('*').then(({ data }) => setHabits(data || []))
     supabase.from('habit_logs').select('*').gte('completed_date', weekDates[0]).then(({ data }) => setHabitLogs(data || []))
