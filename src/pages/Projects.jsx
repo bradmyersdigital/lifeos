@@ -351,7 +351,7 @@ export default function Projects({ onAddTask, onEditTask }) {
   // ── Folder index ──────────────────────────────────────────────────────────
   if (!folder) {
     // All Projects (top, standalone)
-    const allFolder = [{ id: '__all__', icon: 'var(--accent)', label: 'All Projects', count: projects.length, color: 'var(--accent)' }]
+    const allFolder = [{ id: '__all__', icon: 'icon:folder', label: 'All Projects', count: projects.length, color: 'var(--accent)' }]
 
     // Sector folders — ALWAYS shown, even at zero, so every life sector appears
     const sectorFolders = sectors.map(s => ({

@@ -164,6 +164,104 @@ export function PaletteIcon({ active, size = 20 }) {
 }
 
 /* Sector name -> drawn icon. Falls back to null so a user's custom emoji wins. */
+
+export function FolderIcon({ active, size = 20 }) {
+  const cc = col(active)
+  return wrap(size, <path d="M2.5 5.5a1 1 0 0 1 1-1h3.2l1.3 1.6H16.5a1 1 0 0 1 1 1v7.4a1 1 0 0 1-1 1h-13a1 1 0 0 1-1-1V5.5Z" stroke={cc} strokeWidth="1.5" />)
+}
+export function StarIcon({ active, size = 20 }) {
+  const cc = col(active)
+  return wrap(size, <path d="M10 2.5l2.2 4.6 5 .7-3.6 3.5.9 5-4.5-2.4-4.5 2.4.9-5L3.3 7.8l5-.7L10 2.5Z" stroke={cc} strokeWidth="1.5" />)
+}
+export function FlagIcon({ active, size = 20 }) {
+  const cc = col(active)
+  return wrap(size, <><path d="M5 2.5v15" stroke={cc} strokeWidth="1.5" /><path d="M5 3.5h9l-1.6 3L14 9.5H5" stroke={cc} strokeWidth="1.5" /></>)
+}
+export function BriefcaseIcon({ active, size = 20 }) {
+  const cc = col(active)
+  return wrap(size, <><rect x="2.8" y="6" width="14.4" height="10" rx="1.4" stroke={cc} strokeWidth="1.5" /><path d="M7 6V4.6a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1V6" stroke={cc} strokeWidth="1.5" /><path d="M2.8 10.5h14.4" stroke={cc} strokeWidth="1.5" /></>)
+}
+export function BookIcon({ active, size = 20 }) {
+  const cc = col(active)
+  return wrap(size, <path d="M4 3.5h8a2 2 0 0 1 2 2v11H6a2 2 0 0 1-2-2v-11Zm10 2a2 2 0 0 1 2-2v11" stroke={cc} strokeWidth="1.5" />)
+}
+export function DollarIcon({ active, size = 20 }) {
+  const cc = col(active)
+  return wrap(size, <><path d="M10 3v14" stroke={cc} strokeWidth="1.5" /><path d="M13 6.2c-.8-.9-1.9-1.2-3-1.2-1.7 0-3 .9-3 2.4 0 3.4 6.2 1.6 6.2 5 0 1.6-1.5 2.6-3.2 2.6-1.3 0-2.5-.4-3.3-1.4" stroke={cc} strokeWidth="1.5" /></>)
+}
+export function DumbbellIcon({ active, size = 20 }) {
+  const cc = col(active)
+  return wrap(size, <><path d="M6.5 10h7" stroke={cc} strokeWidth="1.5" /><rect x="3" y="7.5" width="2.4" height="5" rx="0.8" stroke={cc} strokeWidth="1.5" /><rect x="14.6" y="7.5" width="2.4" height="5" rx="0.8" stroke={cc} strokeWidth="1.5" /></>)
+}
+export function CarIcon({ active, size = 20 }) {
+  const cc = col(active)
+  return wrap(size, <><path d="M3 12.5v-1.6L4.8 6.5a1.4 1.4 0 0 1 1.3-.9h7.8a1.4 1.4 0 0 1 1.3.9L17 10.9v1.6" stroke={cc} strokeWidth="1.5" /><path d="M3 12.5h14v2.2a.8.8 0 0 1-.8.8h-1.4a.8.8 0 0 1-.8-.8v-.9H6v.9a.8.8 0 0 1-.8.8H3.8a.8.8 0 0 1-.8-.8v-2.2Z" stroke={cc} strokeWidth="1.5" /></>)
+}
+export function BulbIcon({ active, size = 20 }) {
+  const cc = col(active)
+  return wrap(size, <><path d="M7 12.5a4.5 4.5 0 1 1 6 0c-.6.5-1 1-1.1 1.8H8.1c-.1-.8-.5-1.3-1.1-1.8Z" stroke={cc} strokeWidth="1.5" /><path d="M8 16.5h4M8.5 18h3" stroke={cc} strokeWidth="1.5" /></>)
+}
+export function BellIcon({ active, size = 20 }) {
+  const cc = col(active)
+  return wrap(size, <><path d="M5.5 8a4.5 4.5 0 1 1 9 0c0 4 1.5 5 1.5 5H4s1.5-1 1.5-5Z" stroke={cc} strokeWidth="1.5" /><path d="M8.5 16a1.5 1.5 0 0 0 3 0" stroke={cc} strokeWidth="1.5" /></>)
+}
+export function CameraIcon({ active, size = 20 }) {
+  const cc = col(active)
+  return wrap(size, <><rect x="2.5" y="6" width="15" height="10.5" rx="1.6" stroke={cc} strokeWidth="1.5" /><path d="M7 6l1-2h4l1 2" stroke={cc} strokeWidth="1.5" /><circle cx="10" cy="11.2" r="2.6" stroke={cc} strokeWidth="1.5" /></>)
+}
+export function MusicIcon({ active, size = 20 }) {
+  const cc = col(active)
+  return wrap(size, <><path d="M7 14.5V5l8-1.5V13" stroke={cc} strokeWidth="1.5" /><circle cx="5.3" cy="14.5" r="1.8" stroke={cc} strokeWidth="1.5" /><circle cx="13.3" cy="13" r="1.8" stroke={cc} strokeWidth="1.5" /></>)
+}
+export function PlaneIcon({ active, size = 20 }) {
+  const cc = col(active)
+  return wrap(size, <path d="M17 3l-6.5 6.5M17 3l-4.5 14-2.5-6L4 8.5 17 3Z" stroke={cc} strokeWidth="1.5" />)
+}
+export function GiftIcon({ active, size = 20 }) {
+  const cc = col(active)
+  return wrap(size, <><rect x="3.5" y="8" width="13" height="8.5" rx="1" stroke={cc} strokeWidth="1.5" /><path d="M2.8 5.5h14.4V8H2.8zM10 5.5v11" stroke={cc} strokeWidth="1.5" /><path d="M10 5.5C10 5.5 8.5 2.8 6.8 3.5 5.6 4 6.5 5.5 7.5 5.5H10Zm0 0c0 0 1.5-2.7 3.2-2 1.2.5.3 2-.7 2H10Z" stroke={cc} strokeWidth="1.5" /></>)
+}
+export function PhoneIcon({ active, size = 20 }) {
+  const cc = col(active)
+  return wrap(size, <path d="M6.5 3.5c.4 0 .8.3 1 .7l1 2.3c.2.5 0 1-.3 1.3l-1 .9a9 9 0 0 0 4 4l.9-1c.3-.4.9-.5 1.3-.3l2.3 1c.4.2.7.6.7 1v2.4c0 .7-.6 1.3-1.3 1.2C9.5 17.4 4.6 12.5 3.9 5.9a1.2 1.2 0 0 1 1.2-1.3h1.4Z" stroke={cc} strokeWidth="1.5" />)
+}
+export function MailIcon({ active, size = 20 }) {
+  const cc = col(active)
+  return wrap(size, <><rect x="2.8" y="4.8" width="14.4" height="10.4" rx="1.4" stroke={cc} strokeWidth="1.5" /><path d="M3.2 5.8l6.8 5 6.8-5" stroke={cc} strokeWidth="1.5" /></>)
+}
+export function ClockIcon({ active, size = 20 }) {
+  const cc = col(active)
+  return wrap(size, <><circle cx="10" cy="10" r="7" stroke={cc} strokeWidth="1.5" /><path d="M10 6v4.2l2.8 1.6" stroke={cc} strokeWidth="1.5" /></>)
+}
+export function PinIcon({ active, size = 20 }) {
+  const cc = col(active)
+  return wrap(size, <><path d="M10 17.5s5.5-4.7 5.5-8.5a5.5 5.5 0 0 0-11 0c0 3.8 5.5 8.5 5.5 8.5Z" stroke={cc} strokeWidth="1.5" /><circle cx="10" cy="9" r="2" stroke={cc} strokeWidth="1.5" /></>)
+}
+export function CartIcon({ active, size = 20 }) {
+  const cc = col(active)
+  return wrap(size, <><path d="M2.5 3.5h1.8l1.9 9.2h8l1.6-6.8H5.2" stroke={cc} strokeWidth="1.5" /><circle cx="7.5" cy="16" r="1.2" stroke={cc} strokeWidth="1.5" /><circle cx="14" cy="16" r="1.2" stroke={cc} strokeWidth="1.5" /></>)
+}
+export function LeafIcon({ active, size = 20 }) {
+  const cc = col(active)
+  return wrap(size, <><path d="M4 16c0-7 5-12 13-12 0 8-5 13-11 13-.8 0-1.4-.1-2-.3" stroke={cc} strokeWidth="1.5" /><path d="M4 16c2-4 5-7 9-8.5" stroke={cc} strokeWidth="1.5" /></>)
+}
+export function FireIcon({ active, size = 20 }) {
+  const cc = col(active)
+  return wrap(size, <path d="M10 2.5s5 3.5 5 8.5a5 5 0 0 1-10 0c0-1.6.8-3 1.7-4 .2 1 .8 1.8 1.6 2 0-2.3.6-4.8 1.7-6.5Z" stroke={cc} strokeWidth="1.5" />)
+}
+export function TrophyIcon({ active, size = 20 }) {
+  const cc = col(active)
+  return wrap(size, <><path d="M6 3.5h8v4a4 4 0 0 1-8 0v-4Z" stroke={cc} strokeWidth="1.5" /><path d="M6 5H3.8v1.2A2.2 2.2 0 0 0 6 8.4M14 5h2.2v1.2A2.2 2.2 0 0 1 14 8.4M8.5 11.5h3M8 16.5h4M10 11.5v2.5" stroke={cc} strokeWidth="1.5" /></>)
+}
+export function RocketIcon({ active, size = 20 }) {
+  const cc = col(active)
+  return wrap(size, <><path d="M10 2.5c3 1.5 4.5 4.5 4.5 8l-2 2h-5l-2-2c0-3.5 1.5-6.5 4.5-8Z" stroke={cc} strokeWidth="1.5" /><circle cx="10" cy="8" r="1.5" stroke={cc} strokeWidth="1.5" /><path d="M7.5 14.5l-1.5 3M12.5 14.5l1.5 3M10 14.5v3" stroke={cc} strokeWidth="1.5" /></>)
+}
+export function BrainIcon({ active, size = 20 }) {
+  const cc = col(active)
+  return wrap(size, <path d="M10 4.5a2.5 2.5 0 0 0-4.6 1.3A2.3 2.3 0 0 0 4 9.5a2.3 2.3 0 0 0 1.2 3.5 2.3 2.3 0 0 0 4.3 1V4.5Zm0 0a2.5 2.5 0 0 1 4.6 1.3A2.3 2.3 0 0 1 16 9.5a2.3 2.3 0 0 1-1.2 3.5 2.3 2.3 0 0 1-4.3 1" stroke={cc} strokeWidth="1.5" />)
+}
+
 export function SectorGlyph({ name, emoji, size = 24, active = true }) {
   // A user-chosen icon from our set, stored as "icon:<key>"
   if (emoji && typeof emoji === 'string' && emoji.startsWith('icon:')) {
@@ -215,6 +313,30 @@ export const ICON_REGISTRY = {
   heart: HeartIcon,
   people: PeopleIcon,
   palette: PaletteIcon,
+  folder: FolderIcon,
+  star: StarIcon,
+  flag: FlagIcon,
+  briefcase: BriefcaseIcon,
+  book: BookIcon,
+  dollar: DollarIcon,
+  dumbbell: DumbbellIcon,
+  car: CarIcon,
+  bulb: BulbIcon,
+  bell: BellIcon,
+  camera: CameraIcon,
+  music: MusicIcon,
+  plane: PlaneIcon,
+  gift: GiftIcon,
+  phone: PhoneIcon,
+  mail: MailIcon,
+  clock: ClockIcon,
+  pin: PinIcon,
+  cart: CartIcon,
+  leaf: LeafIcon,
+  fire: FireIcon,
+  trophy: TrophyIcon,
+  rocket: RocketIcon,
+  brain: BrainIcon,
 }
 
 // friendly labels for the picker (search/tooltip)
@@ -224,4 +346,10 @@ export const ICON_LABELS = {
   goals: 'Goals / Target', focus: 'Focus / Timer', finance: 'Finance',
   grocery: 'Grocery / Cart', settings: 'Settings', heart: 'Heart',
   people: 'People', palette: 'Creative',
+  folder: 'Folder', star: 'Star', flag: 'Flag', briefcase: 'Work',
+  book: 'Book', dollar: 'Money', dumbbell: 'Fitness', car: 'Car',
+  bulb: 'Idea', bell: 'Reminder', camera: 'Photo', music: 'Music',
+  plane: 'Travel', gift: 'Gift', phone: 'Call', mail: 'Mail',
+  clock: 'Time', pin: 'Location', cart: 'Shopping', leaf: 'Nature',
+  fire: 'Streak', trophy: 'Win', rocket: 'Launch', brain: 'Mind',
 }

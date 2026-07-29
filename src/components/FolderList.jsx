@@ -1,4 +1,5 @@
 import React from 'react'
+import { ICON_REGISTRY } from './Icons'
 
 /**
  * Grouped folder list — the inset-rounded list pattern (Apple Journal / Settings style).
@@ -22,6 +23,8 @@ export default function FolderList({ folders, onOpen, emptyText = 'Nothing here 
   return (
     <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 16, overflow: 'hidden' }}>
       {folders.map((f, i) => {
+        const isDrawnIcon = typeof f.icon === 'string' && f.icon.startsWith('icon:')
+        const DrawnIcon = isDrawnIcon ? ICON_REGISTRY[f.icon.slice(5)] : null
         const isColorChip = typeof f.icon === 'string' && (f.icon.startsWith('#') || f.icon.startsWith('var('))
         return (
           <div key={f.id ?? f.label}
@@ -35,7 +38,9 @@ export default function FolderList({ folders, onOpen, emptyText = 'Nothing here 
 
             {/* Icon */}
             <div style={{ width: 30, height: 30, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-              {isColorChip
+              {DrawnIcon
+                ? <DrawnIcon active size={22} />
+                : isColorChip
                 ? <div style={{ width: 20, height: 20, borderRadius: 7, background: f.icon }} />
                 : <span style={{ fontSize: 21, lineHeight: 1 }}>{f.icon || '📁'}</span>}
             </div>
