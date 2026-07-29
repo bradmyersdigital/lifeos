@@ -8,6 +8,8 @@ export default function EventModal({ event, date, onClose, onSaved, sectors = []
   const isEdit = !!event
   const [title, setTitle] = useState(event?.title || '')
   const [eventDate, setEventDate] = useState(event?.start_date || date || '')
+  const [endDate, setEndDate] = useState(event?.end_date || event?.start_date || date || '')
+  const [allDay, setAllDay] = useState(event?.all_day || false)
   const [startTime, setStartTime] = useState(event?.start_time || '')
   const [endTime, setEndTime] = useState(event?.end_time || '')
   const [location, setLocation] = useState(event?.location || '')
@@ -33,7 +35,9 @@ export default function EventModal({ event, date, onClose, onSaved, sectors = []
     setSaving(true)
     const payload = {
       title: title.trim(), start_date: eventDate,
-      start_time: startTime || null, end_time: endTime || null,
+      end_date: endDate || eventDate,
+      all_day: allDay,
+      start_time: allDay ? null : (startTime || null), end_time: allDay ? null : (endTime || null),
       location: location || null, attending: attending || null,
       sector: sector || null, notes: notes || null,
       project_id: projectId || null, recurring: recurring || null,
@@ -63,25 +67,40 @@ export default function EventModal({ event, date, onClose, onSaved, sectors = []
           <input type="text" placeholder="What's happening?" value={title} onChange={e => setTitle(e.target.value)} />
         </div>
 
-        <div className="field-row">
-          <div className="field"><div className="field-label">Date</div>
-            <input type="date" value={eventDate} onChange={e => setEventDate(e.target.value)} />
-          </div>
-          <div className="field"><div className="field-label">Sector</div>
-            <select value={sector} onChange={e => setSector(e.target.value)}>
-              <option value="">None</option>
-              {sectorList.map(s => <option key={s}>{s}</option>)}
-            </select>
+        {/* All-day toggle */}
+        <div className="field">
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div className="field-label" style={{ margin: 0 }}>All day</div>
+            <div onClick={() => setAllDay(v => !v)} style={{ cursor: 'pointer' }}>
+              <div style={{ width: 44, height: 26, borderRadius: 13, background: allDay ? 'var(--accent)' : 'var(--border)', border: `1px solid ${allDay ? 'var(--accent-border)' : 'var(--border-hover)'}`, position: 'relative', transition: 'all 0.2s' }}>
+                <div style={{ width: 20, height: 20, borderRadius: '50%', background: allDay ? 'var(--on-accent)' : 'var(--text-dim)', position: 'absolute', top: 2, left: allDay ? 21 : 2, transition: 'left 0.2s' }} />
+              </div>
+            </div>
           </div>
         </div>
 
+        {/* Start */}
         <div className="field-row">
-          <div className="field"><div className="field-label">Start time</div>
-            <input type="time" value={startTime} onChange={e => setStartTime(e.target.value)} />
+          <div className="field"><div className="field-label">Starts</div>
+            <input type="date" value={eventDate} onChange={e => { setEventDate(e.target.value); if (endDate < e.target.value) setEndDate(e.target.value) }} />
           </div>
-          <div className="field"><div className="field-label">End time</div>
-            <input type="time" value={endTime} onChange={e => setEndTime(e.target.value)} />
+          {!allDay && (
+            <div className="field"><div className="field-label">Start time</div>
+              <input type="time" value={startTime} onChange={e => setStartTime(e.target.value)} />
+            </div>
+          )}
+        </div>
+
+        {/* End */}
+        <div className="field-row">
+          <div className="field"><div className="field-label">Ends</div>
+            <input type="date" value={endDate} min={eventDate} onChange={e => setEndDate(e.target.value)} />
           </div>
+          {!allDay && (
+            <div className="field"><div className="field-label">End time</div>
+              <input type="time" value={endTime} onChange={e => setEndTime(e.target.value)} />
+            </div>
+          )}
         </div>
 
         {/* Recurring */}
@@ -154,17 +173,23 @@ export default function EventModal({ event, date, onClose, onSaved, sectors = []
           )}
         </div>
 
-        <div className="field"><div className="field-label">Location</div>
-          <input type="text" placeholder="Where?" value={location} onChange={e => setLocation(e.target.value)} />
-        </div>
-        <div className="field"><div className="field-label">Who's attending</div>
-          <input type="text" placeholder="e.g. John, Sarah..." value={attending} onChange={e => setAttending(e.target.value)} />
-        </div>
         <div className="field"><div className="field-label">Link to project</div>
           <select value={projectId} onChange={e => setProjectId(e.target.value)}>
             <option value="">None</option>
             {projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
           </select>
+        </div>
+        <div className="field"><div className="field-label">Sector</div>
+          <select value={sector} onChange={e => setSector(e.target.value)}>
+            <option value="">None</option>
+            {sectorList.map(s => <option key={s}>{s}</option>)}
+          </select>
+        </div>
+        <div className="field"><div className="field-label">Location</div>
+          <input type="text" placeholder="Where?" value={location} onChange={e => setLocation(e.target.value)} />
+        </div>
+        <div className="field"><div className="field-label">Who's attending</div>
+          <input type="text" placeholder="e.g. John, Sarah..." value={attending} onChange={e => setAttending(e.target.value)} />
         </div>
         <div className="field"><div className="field-label">Notes</div>
           <textarea placeholder="Any details..." value={notes} onChange={e => setNotes(e.target.value)} />

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 
 const FREQ_MULT = { weekly: 4, biweekly: 2, monthly: 1, yearly: 1/12 }
@@ -746,7 +746,8 @@ export default function Finance() {
   const [vehicles, setVehicles] = useState([])
   const [loading, setLoading] = useState(true)
 
-  const [tab, setTab] = useState('overview')
+  const [searchParams] = useSearchParams()
+  const [tab, setTab] = useState(searchParams.get('tab') || 'overview')
   const [modal, setModal] = useState(null)        // { type, item }
   const [subModal, setSubModal] = useState(null)
   const [acctModal, setAcctModal] = useState(null)

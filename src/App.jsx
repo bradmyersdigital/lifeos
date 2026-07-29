@@ -259,6 +259,7 @@ function Shell() {
           <Route path="/task/new"  element={<TaskPage onSaved={onSaved} />} />
           <Route path="/task/:id"  element={<TaskPage onSaved={onSaved} edit />} />
           <Route path="/event/new" element={<EventPage onSaved={onSaved} />} />
+          <Route path="/event/:id" element={<EventPage onSaved={onSaved} edit />} />
         </Routes>
       </div>
 
@@ -316,18 +317,30 @@ function TaskPage({ onSaved, edit }) {
 }
 
 /* ── Routed event page ───────────────────────────────────────────────────── */
-function EventPage({ onSaved }) {
+function EventPage({ onSaved, edit }) {
   const navigate = useNavigate()
   const location = useLocation()
+  const { id } = useParams()
   const st = location.state || {}
   const back = st.from || '/week'
   const goBack = () => navigate(back)
 
+  const [fetched, setFetched] = useState(st.event || null)
+  const [loading, setLoading] = useState(edit && !st.event)
+  useEffect(() => {
+    if (edit && !st.event && id) {
+      supabaseClient.from('events').select('*').eq('id', id).single()
+        .then(({ data }) => { setFetched(data); setLoading(false) })
+    }
+  }, [edit, id])
+
+  if (loading) return <div style={{ textAlign: 'center', padding: 50, color: 'var(--text-dim)' }}>Loading…</div>
+
   return (
     <EventModal
       asPage
-      event={null}
-      date={new Date().toISOString().split('T')[0]}
+      event={edit ? fetched : null}
+      date={st.date || new Date().toISOString().split('T')[0]}
       onClose={goBack}
       onSaved={() => { onSaved?.(); goBack() }}
     />

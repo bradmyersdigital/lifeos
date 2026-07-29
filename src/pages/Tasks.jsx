@@ -13,7 +13,7 @@ const URG_STYLE = {
 export default function Tasks({ onAddTask, onEditTask }) {
   const [tasks, setTasks] = useState([])
   const [sectors, setSectors] = useState([])
-  const [filter, setFilter] = useState('all')
+  const [filter, setFilter] = useState('today')
   const [search, setSearch] = useState('')
   const [collapsed, setCollapsed] = useState({})
   const dragItem = useRef(null)

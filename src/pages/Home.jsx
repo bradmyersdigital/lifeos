@@ -143,7 +143,7 @@ function UpcomingSubsSection({ onNavigate }) {
     <div style={{ marginBottom: 18 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
         <div className="section-label" style={{ margin: 0 }}>Upcoming subscriptions</div>
-        <div onClick={() => onNavigate('/finance')} style={{ fontSize: 12, color: 'var(--text-dim)', cursor: 'pointer' }}>See all →</div>
+        <div onClick={() => onNavigate('/finance?tab=recurring')} style={{ fontSize: 12, color: 'var(--text-dim)', cursor: 'pointer' }}>See all →</div>
       </div>
       <div style={{ display: 'flex', gap: 10, overflowX: 'auto', WebkitOverflowScrolling: 'touch', paddingBottom: 6, marginLeft: -20, marginRight: -20, paddingLeft: 20, paddingRight: 20 }}>
         {subs.map(sub => {

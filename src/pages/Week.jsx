@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { supabase } from '../lib/supabase'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { fmtTime, eventOccursOn, fmtDate } from '../utils'
-import EventModal from '../components/EventModal'
 
 const DAY_NAMES = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun']
 const MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December']
@@ -28,7 +28,8 @@ export default function Week({ onAddTask, onEditTask }) {
   const [monthOffset, setMonthOffset] = useState(0)
   const [activeFilter, setActiveFilter] = useState('All')
   const [showOverdue, setShowOverdue] = useState(false)
-  const [eventModal, setEventModal] = useState(null)
+  const navigate = useNavigate()
+  const location = useLocation()
   const [daySheet, setDaySheet] = useState(null)
   const touchStartX = useRef(null)
 
@@ -148,7 +149,7 @@ export default function Week({ onAddTask, onEditTask }) {
           <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><line x1="7.5" y1="1" x2="7.5" y2="14" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/><line x1="1" y1="7.5" x2="14" y2="7.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/></svg>
           Add task
         </div>
-        <div className="action-btn btn-event" onClick={() => setEventModal({ event: null, date: todayStr })}>
+        <div className="action-btn btn-event" onClick={() => navigate('/event/new', { state: { date: todayStr, from: '/week' } })}>
           <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><rect x="1.5" y="2.5" width="12" height="11" rx="2" stroke="currentColor" strokeWidth="1.4"/><line x1="1.5" y1="6.5" x2="13.5" y2="6.5" stroke="currentColor" strokeWidth="1.4"/><line x1="5" y1="1" x2="5" y2="4" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/><line x1="10" y1="1" x2="10" y2="4" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/></svg>
           Add event
         </div>
@@ -252,7 +253,7 @@ export default function Week({ onAddTask, onEditTask }) {
                   : <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                       {items.map(item => {
                         if (item._type === 'event') return (
-                          <div key={item.id} onClick={() => setEventModal({ event: item, date: item.start_date })} className="event-card" style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', borderRadius: 12, cursor: 'pointer' }}>
+                          <div key={item.id} onClick={() => navigate(`/event/${item.id}`, { state: { event: item, date: item.start_date, from: '/week' } })} className="event-card" style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', borderRadius: 12, cursor: 'pointer' }}>
                             <svg width="12" height="12" viewBox="0 0 12 12" fill="none" style={{ flexShrink: 0 }}><circle cx="6" cy="6" r="5" stroke="var(--event-color)" strokeWidth="1.3"/><polyline points="6,3 6,6 8,7.5" stroke="var(--event-color)" strokeWidth="1.3" strokeLinecap="round"/></svg>
                             <div style={{ flex: 1, minWidth: 0 }}>
                               <div className="event-text" style={{ fontSize: 14, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.title}</div>
@@ -415,12 +416,12 @@ export default function Week({ onAddTask, onEditTask }) {
               <div className="action-btn btn-task" style={{ flex: 1, justifyContent: 'center' }} onClick={() => { setDaySheet(null); onAddTask('today') }}>
                 + Task
               </div>
-              <div className="action-btn btn-event" style={{ flex: 1, justifyContent: 'center' }} onClick={() => { setDaySheet(null); setEventModal({ event: null, date: daySheet.date }) }}>
+              <div className="action-btn btn-event" style={{ flex: 1, justifyContent: 'center' }} onClick={() => { setDaySheet(null); navigate('/event/new', { state: { date: daySheet.date, from: '/week' } }) }}>
                 + Event
               </div>
             </div>
             {daySheet.events.map(ev => (
-              <div key={ev.id} onClick={() => { setDaySheet(null); setEventModal({ event: ev, date: ev.start_date }) }} className="event-card" style={{ display: 'flex', gap: 12, padding: '12px 14px', borderRadius: 12, marginBottom: 8, cursor: 'pointer' }}>
+              <div key={ev.id} onClick={() => { setDaySheet(null); navigate(`/event/${ev.id}`, { state: { event: ev, date: ev.start_date, from: '/week' } }) }} className="event-card" style={{ display: 'flex', gap: 12, padding: '12px 14px', borderRadius: 12, marginBottom: 8, cursor: 'pointer' }}>
                 <svg width="14" height="14" viewBox="0 0 14 14" fill="none" style={{ flexShrink: 0, marginTop: 2 }}><circle cx="7" cy="7" r="6" stroke="var(--event-color)" strokeWidth="1.3"/><polyline points="7,4 7,7 9,8.5" stroke="var(--event-color)" strokeWidth="1.3" strokeLinecap="round"/></svg>
                 <div style={{ flex: 1 }}>
                   <div className="event-text" style={{ fontSize: 14, fontWeight: 500 }}>{ev.title}</div>
@@ -448,13 +449,6 @@ export default function Week({ onAddTask, onEditTask }) {
         </div>
       )}
 
-      {/* Event modal */}
-      {eventModal && (
-        <EventModal event={eventModal.event} date={eventModal.date} sectors={sectors}
-          onClose={() => setEventModal(null)}
-          onSaved={() => { setEventModal(null); supabase.from('events').select('*').then(({ data }) => setEvents(data || [])) }}
-        />
-      )}
     </div>
   )
 }
