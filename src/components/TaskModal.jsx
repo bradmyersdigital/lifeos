@@ -253,6 +253,12 @@ export default function TaskModal({ mode, onClose, onSaved, task, defaultProject
           <ProjectModal
             onClose={() => setShowNewProject(false)}
             defaultSector={sector || undefined}
+            folderOptions={(() => {
+              try {
+                const raw = JSON.parse(localStorage.getItem('nd_project_folders')) || []
+                return raw.map(f => typeof f === 'string' ? f : f.name)
+              } catch { return [] }
+            })()}
             onSaved={(saved) => {
               if (saved) {
                 setProjects(prev => [...prev, saved])
