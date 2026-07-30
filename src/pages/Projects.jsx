@@ -17,10 +17,11 @@ const SECTOR_COLORS = {
   'personal growth': '#f59e0b', family: '#ec4899', hobbies: '#a78bfa',
 }
 
-function ProjectModal({ onClose, onSaved, project }) {
+function ProjectModal({ onClose, onSaved, project, defaultSector, defaultFolder, folderOptions = [] }) {
   const isEdit = !!project
   const [name, setName] = useState(project?.name || '')
-  const [sector, setSector] = useState(project?.sector || '')
+  const [sector, setSector] = useState(project?.sector || defaultSector || '')
+  const [folder, setFolder] = useState(project?.folder || defaultFolder || '')
   const [goal, setGoal] = useState(project?.goal || '')
   const [description, setDescription] = useState(project?.description || '')
   const [dueDate, setDueDate] = useState(project?.due_date || '')
@@ -35,7 +36,7 @@ function ProjectModal({ onClose, onSaved, project }) {
 
   const handleSave = async () => {
     if (!name.trim()) return; setSaving(true)
-    const payload = { name: name.trim(), sector, goal: goal.trim() || null, description, due_date: dueDate || null, status, importance }
+    const payload = { name: name.trim(), sector, folder: folder || null, goal: goal.trim() || null, description, due_date: dueDate || null, status, importance }
     if (isEdit) await supabase.from('projects').update(payload).eq('id', project.id)
     else await supabase.from('projects').insert(payload)
     setSaving(false); onSaved(); onClose()
@@ -82,6 +83,12 @@ function ProjectModal({ onClose, onSaved, project }) {
           <div className="field"><div className="field-label">Status</div>
             <select value={status} onChange={e => setStatus(e.target.value)}><option value="active">Active</option><option value="backlog">Backlog</option><option value="completed">Completed</option></select>
           </div>
+        </div>
+        <div className="field"><div className="field-label">Folder <span style={{ color: 'var(--text-dim)', fontWeight: 400 }}>(optional)</span></div>
+          <select value={folder} onChange={e => setFolder(e.target.value)}>
+            <option value="">None</option>
+            {folderOptions.map(f => <option key={f}>{f}</option>)}
+          </select>
         </div>
         <div className="field"><div className="field-label">Due date</div><input type="date" value={dueDate} onChange={e => setDueDate(e.target.value)} /></div>
         <div style={{ display: 'flex', gap: 10, marginTop: 18 }}>
@@ -322,7 +329,7 @@ export default function Projects({ onAddTask, onEditTask }) {
   const persistFolders = (next) => { setCustomFolders(next); try { localStorage.setItem('nd_project_folders', JSON.stringify(next)) } catch {} }
   const addFolder = ({ name, icon }) => { persistFolders([...customFolders, { name, icon: icon || '' }]) }
   const deleteFolder = (name) => {
-    const count = projects.filter(p => p.sector === name).length
+    const count = projects.filter(p => p.folder === name).length
     if (!window.confirm(count > 0 ? `"${name}" has ${count} project${count===1?'':'s'} inside. Delete the folder anyway? The projects will move to Unsorted.` : `Delete the folder "${name}"?`)) return
     persistFolders(customFolders.filter(f => f.name !== name))
   }
@@ -333,9 +340,9 @@ export default function Projects({ onAddTask, onEditTask }) {
     persistFolders(customFolders.map(f => f.name === oldName ? { name, icon: icon || '' } : f))
     // if the name changed, re-point every project that referenced the old name
     if (oldName && oldName !== name) {
-      const affected = projects.filter(p => p.sector === oldName)
+      const affected = projects.filter(p => p.folder === oldName)
       if (affected.length) {
-        await supabase.from('projects').update({ sector: name }).eq('sector', oldName)
+        await supabase.from('projects').update({ folder: name }).eq('folder', oldName)
         loadProjects()
       }
     }
@@ -358,8 +365,9 @@ export default function Projects({ onAddTask, onEditTask }) {
   const inFolder = (p) => {
     if (!folder) return true
     if (folder.id === '__all__') return true
-    if (folder.id === '__none__') return !p.sector
-    return p.sector === folder.id
+    if (folder.id === '__none__') return !p.folder
+    if (folder._isSector) return p.sector === folder.id   // sector folder groups by sector
+    return p.folder === folder.id                          // custom folder groups by folder
   }
   const filtered = projects.filter(p => {
     if (filter === 'all') { if (p.status === 'completed') return false }
@@ -381,12 +389,12 @@ export default function Projects({ onAddTask, onEditTask }) {
     }))
 
     // Custom (non-sector) folders + Unsorted
-    const customNames = customFolders.map(f => f.name)
     const customFolderRows = customFolders.map(f => ({
-      id: f.name, icon: f.icon || '\u{1F4C1}', label: f.name, count: projects.filter(p => p.sector === f.name && p.status !== 'completed').length,
+      id: f.name, icon: f.icon || '\u{1F4C1}', label: f.name, count: projects.filter(p => p.folder === f.name && p.status !== 'completed').length,
       _deletable: true, _folder: f,
     }))
-    const noSector = projects.filter(p => (p.status !== 'completed') && (!p.sector || (!sectors.some(s=>s.name===p.sector) && !customNames.includes(p.sector)))).length
+    // Unsorted = projects with no custom folder assigned
+    const noSector = projects.filter(p => (p.status !== 'completed') && !p.folder).length
     if (noSector > 0) customFolderRows.push({ id: '__none__', icon: '\u{1F4C4}', label: 'Unsorted', count: noSector })
 
     return (
@@ -426,7 +434,7 @@ export default function Projects({ onAddTask, onEditTask }) {
           ? <FolderList folders={customFolderRows} onOpen={setFolder} onDelete={(f)=>deleteFolder(f.id)} onEdit={(f)=>setEditingFolder(f._folder)} />
           : <div onClick={()=>setShowFolderModal(true)} style={{ textAlign:'center', padding:'16px', color:'var(--text-dim)', fontSize:13, border:'1px dashed var(--border)', borderRadius:14, cursor:'pointer' }}>Make a folder that isn't tied to a sector</div>}
 
-        {showModal&&<ProjectModal onClose={()=>setShowModal(false)} onSaved={loadProjects} />}
+        {showModal&&<ProjectModal onClose={()=>setShowModal(false)} onSaved={loadProjects} folderOptions={customFolders.map(f=>f.name)} />}
         {showFolderModal && <FolderSheet onClose={()=>setShowFolderModal(false)} onCreate={addFolder} />}
         {editingFolder && <FolderSheet folder={editingFolder} onClose={()=>setEditingFolder(null)} onCreate={saveFolderEdit} />}
       </div>
@@ -490,7 +498,13 @@ export default function Projects({ onAddTask, onEditTask }) {
         )
       })}
 
-      {showModal&&<ProjectModal onClose={()=>setShowModal(false)} onSaved={loadProjects} />}
+      {showModal&&<ProjectModal
+        onClose={()=>setShowModal(false)}
+        onSaved={loadProjects}
+        folderOptions={customFolders.map(f=>f.name)}
+        defaultSector={folder && folder._isSector ? folder.id : undefined}
+        defaultFolder={folder && !folder._isSector && folder.id !== '__all__' && folder.id !== '__none__' ? folder.id : undefined}
+      />}
     </div>
   )
 }
