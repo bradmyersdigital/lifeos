@@ -43,7 +43,7 @@ export default function FolderSheet({ onClose, onCreate, title = 'New folder' })
           <div style={{ width: 60, height: 60, borderRadius: 16, background: 'var(--bg-card)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
             <IconOrEmoji value={chosen || 'icon:folder'} size={30} />
           </div>
-          <input type="text" placeholder="Folder name" value={name} autoFocus
+          <input type="text" placeholder="Folder name" value={name}
             onChange={e => setName(e.target.value)}
             onKeyDown={e => { if (e.key === 'Enter') create() }}
             style={{ flex: 1, background: 'var(--bg-input)', border: '1px solid var(--border)', borderRadius: 12, padding: '13px 15px', fontSize: 17, color: 'var(--text-primary)', fontFamily: "'DM Sans'", outline: 'none' }} />
@@ -52,7 +52,17 @@ export default function FolderSheet({ onClose, onCreate, title = 'New folder' })
         {/* Typed emoji */}
         <div style={{ fontSize: 12, fontWeight: 500, color: 'var(--text-muted)', marginBottom: 8 }}>Type an emoji</div>
         <input type="text" placeholder="e.g.  📁  🎯  💰  🔥" value={emoji}
-          onChange={e => { setEmoji(e.target.value); if (e.target.value) setIcon('') }}
+          onChange={e => {
+            const raw = e.target.value
+            let first = ''
+            try {
+              const seg = new Intl.Segmenter(undefined, { granularity: 'grapheme' })
+              first = [...seg.segment(raw)][0]?.segment || ''
+            } catch { first = Array.from(raw)[0] || '' }
+            setEmoji(first)
+            if (first) setIcon('')
+          }}
+          maxLength={4}
           style={{ width: '100%', background: 'var(--bg-input)', border: '1px solid var(--border)', borderRadius: 12, padding: '12px 14px', fontSize: 20, color: 'var(--text-primary)', outline: 'none', textAlign: 'center', marginBottom: 24 }} />
 
         {/* Icon grid — 4 rows, slides horizontally & continuously */}
