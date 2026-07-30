@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
+import { ProjectModal } from '../pages/Projects'
 
 const SECTORS = ['Business', 'Real Estate', 'Health', 'Personal Growth', 'Hobbies', 'Family']
 const URGENCIES = ['Low', 'Medium', 'High', 'Urgent']
@@ -115,7 +116,6 @@ export default function TaskModal({ mode, onClose, onSaved, task, defaultProject
   const [goalId, setGoalId] = useState(task?.goal_id || defaultGoalId || '')
   const [goals, setGoals] = useState([])
   const [showNewProject, setShowNewProject] = useState(false)
-  const [newProjectName, setNewProjectName] = useState('')
 
   useEffect(() => {
     supabase.from('projects').select('id, name, sector').eq('status', 'active').then(({ data }) => setProjects(data || []))
@@ -124,11 +124,6 @@ export default function TaskModal({ mode, onClose, onSaved, task, defaultProject
     supabase.from('goals').select('id, goal_text, timeframe').order('timeframe').then(({ data }) => setGoals(data || []))
   }, [])
 
-  const createNewProject = async () => {
-    if (!newProjectName.trim()) return
-    const { data } = await supabase.from('projects').insert({ name: newProjectName.trim(), sector, status: 'active' }).select().single()
-    if (data) { setProjects(prev => [...prev, data]); setProjectId(data.id); setShowNewProject(false); setNewProjectName('') }
-  }
 
   const handleSave = async () => {
     if (!name.trim()) return
@@ -240,27 +235,34 @@ export default function TaskModal({ mode, onClose, onSaved, task, defaultProject
 
         <div className="field">
           <div className="field-label">Link to project</div>
-          {showNewProject ? (
-            <div style={{ display: 'flex', gap: 8 }}>
-              <input type="text" placeholder="New project name..." value={newProjectName} onChange={e => setNewProjectName(e.target.value)} style={{ flex: 1 }} />
-              <button onClick={createNewProject} style={{ background: 'var(--accent)', border: 'none', borderRadius: 10, padding: '0 14px', color: '#fff', fontSize: 13, fontWeight: 500, cursor: 'pointer', fontFamily: "'DM Sans'" }}>Create</button>
-              <button onClick={() => setShowNewProject(false)} style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 10, padding: '0 12px', color: 'var(--text-muted)', fontSize: 13, cursor: 'pointer', fontFamily: "'DM Sans'" }}>×</button>
-            </div>
-          ) : (
-            <div style={{ display: 'flex', gap: 8 }}>
-              <select value={projectId} onChange={e => {
-                  const id = e.target.value
-                  setProjectId(id)
-                  const proj = projects.find(p => String(p.id) === String(id))
-                  if (proj?.sector) setSector(proj.sector)   // inherit the project's sector
-                }} style={{ flex: 1 }}>
-                <option value="">No project linked</option>
-                {projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-              </select>
-              <button onClick={() => setShowNewProject(true)} style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 10, padding: '0 12px', color: 'var(--text-muted)', fontSize: 12, cursor: 'pointer', fontFamily: "'DM Sans'", whiteSpace: 'nowrap' }}>+ New</button>
-            </div>
-          )}
+          <div style={{ display: 'flex', gap: 8 }}>
+            <select value={projectId} onChange={e => {
+                const id = e.target.value
+                setProjectId(id)
+                const proj = projects.find(p => String(p.id) === String(id))
+                if (proj?.sector) setSector(proj.sector)   // inherit the project's sector
+              }} style={{ flex: 1 }}>
+              <option value="">No project linked</option>
+              {projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+            </select>
+            <button onClick={() => setShowNewProject(true)} style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 10, padding: '0 12px', color: 'var(--text-muted)', fontSize: 12, cursor: 'pointer', fontFamily: "'DM Sans'", whiteSpace: 'nowrap' }}>+ New</button>
+          </div>
         </div>
+
+        {showNewProject && (
+          <ProjectModal
+            onClose={() => setShowNewProject(false)}
+            defaultSector={sector || undefined}
+            onSaved={(saved) => {
+              if (saved) {
+                setProjects(prev => [...prev, saved])
+                setProjectId(saved.id)
+                if (saved.sector) setSector(saved.sector)
+              }
+              setShowNewProject(false)
+            }}
+          />
+        )}
 
         {/* Sector below — item 11 */}
         <div className="field">

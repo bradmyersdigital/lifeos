@@ -17,7 +17,7 @@ const SECTOR_COLORS = {
   'personal growth': '#f59e0b', family: '#ec4899', hobbies: '#a78bfa',
 }
 
-function ProjectModal({ onClose, onSaved, project, defaultSector, defaultFolder, folderOptions = [] }) {
+export function ProjectModal({ onClose, onSaved, project, defaultSector, defaultFolder, folderOptions = [] }) {
   const isEdit = !!project
   const [name, setName] = useState(project?.name || '')
   // combined placement: one home, either a sector or a custom folder
@@ -49,9 +49,10 @@ function ProjectModal({ onClose, onSaved, project, defaultSector, defaultFolder,
       folder: isFolder ? placement.slice(7) : null,
       goal: goal.trim() || null, description, due_date: dueDate || null, status, importance,
     }
-    if (isEdit) await supabase.from('projects').update(payload).eq('id', project.id)
-    else await supabase.from('projects').insert(payload)
-    setSaving(false); onSaved(); onClose()
+    let saved = null
+    if (isEdit) { const { data } = await supabase.from('projects').update(payload).eq('id', project.id).select().single(); saved = data }
+    else { const { data } = await supabase.from('projects').insert(payload).select().single(); saved = data }
+    setSaving(false); onSaved(saved); onClose()
   }
 
   const handleDelete = async () => {

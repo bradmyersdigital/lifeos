@@ -359,3 +359,7 @@ input[type="date"], input[type="time"] { color-scheme: light dark; }
   overflow: hidden !important;
   line-height: 1.4;
 }
+
+
+/* Hide the floating hamburger when a full-screen sheet is open */
+body.sheet-open .hamburger-btn { display: none !important; }

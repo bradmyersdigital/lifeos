@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { ICON_REGISTRY, ICON_LABELS, IconOrEmoji } from './Icons'
 
 /**
@@ -16,6 +16,12 @@ export default function FolderSheet({ onClose, onCreate, folder = null, title })
   const [icon, setIcon] = useState(initialIsEmoji ? '' : initialIcon)
   const [emoji, setEmoji] = useState(initialIsEmoji ? initialIcon : '')
   const heading = title || (isEdit ? 'Edit folder' : 'New folder')
+
+  // hide the app hamburger while this full-screen sheet is open
+  useEffect(() => {
+    document.body.classList.add('sheet-open')
+    return () => document.body.classList.remove('sheet-open')
+  }, [])
 
   const chosen = emoji.trim() || icon
   const keys = Object.keys(ICON_REGISTRY)
@@ -35,7 +41,7 @@ export default function FolderSheet({ onClose, onCreate, folder = null, title })
   return (
     <div style={{ position: 'fixed', inset: 0, zIndex: 300, background: 'var(--bg)', display: 'flex', flexDirection: 'column', animation: 'sheetUp 0.3s cubic-bezier(0.22,1,0.36,1)' }}>
       {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '16px 20px 8px', paddingTop: 'calc(env(safe-area-inset-top, 12px) + 12px)' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '16px 20px 8px', paddingTop: 'calc(env(safe-area-inset-top, 0px) + 54px)' }}>
         <div onClick={onClose} style={{ width: 34, height: 34, borderRadius: 10, background: 'var(--bg-card)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: 18, color: 'var(--text-muted)', flexShrink: 0 }}>‹</div>
         <div style={{ flex: 1, fontSize: 20, fontWeight: 600, letterSpacing: '-0.3px' }}>{heading}</div>
         <div onClick={create} style={{ padding: '8px 18px', borderRadius: 11, cursor: name.trim() ? 'pointer' : 'default', background: name.trim() ? 'var(--accent)' : 'var(--bg-card)', border: `1px solid ${name.trim() ? 'var(--accent-border)' : 'var(--border)'}`, color: name.trim() ? 'var(--on-accent)' : 'var(--text-dim)', fontSize: 14, fontWeight: 600 }}>{isEdit ? 'Save' : 'Create'}</div>
