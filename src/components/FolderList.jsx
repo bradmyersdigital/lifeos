@@ -7,7 +7,7 @@ import { ICON_REGISTRY, IconOrEmoji } from './Icons'
  * onOpen(folder)   — row tap
  * onDelete(folder) — optional; deletable rows get Apple-style swipe-to-delete
  */
-export default function FolderList({ folders, onOpen, onDelete, emptyText = 'Nothing here yet' }) {
+export default function FolderList({ folders, onOpen, onDelete, onEdit, emptyText = 'Nothing here yet' }) {
   if (!folders || folders.length === 0) {
     return (
       <div style={{ textAlign: 'center', padding: '32px 20px', color: 'var(--text-dim)', fontSize: 14, border: '1px dashed var(--border)', borderRadius: 16 }}>
@@ -21,46 +21,52 @@ export default function FolderList({ folders, onOpen, onDelete, emptyText = 'Not
       {folders.map((f, i) => (
         <FolderRow key={f.id ?? f.label} f={f} isFirst={i === 0}
           onOpen={onOpen}
-          onDelete={onDelete && f._deletable ? onDelete : null} />
+          onDelete={onDelete && f._deletable ? onDelete : null}
+          onEdit={onEdit && f._deletable ? onEdit : null} />
       ))}
     </div>
   )
 }
 
-function FolderRow({ f, isFirst, onOpen, onDelete }) {
+function FolderRow({ f, isFirst, onOpen, onDelete, onEdit }) {
   const [offset, setOffset] = useState(0)      // current translateX
   const startX = useRef(null)
   const startY = useRef(null)
   const swiping = useRef(false)
-  const REVEAL = 84                            // px the delete button occupies
+  const actionCount = (onEdit ? 1 : 0) + (onDelete ? 1 : 0)
+  const ACTION_W = 78
+  const REVEAL = actionCount * ACTION_W        // total px the actions occupy
 
   const isDrawnIcon = typeof f.icon === 'string' && f.icon.startsWith('icon:')
   const DrawnIcon = isDrawnIcon ? ICON_REGISTRY[f.icon.slice(5)] : null
   const isColorChip = typeof f.icon === 'string' && (f.icon.startsWith('#') || f.icon.startsWith('var('))
 
   const onTouchStart = (e) => {
-    if (!onDelete) return
+    if (!actionCount) return
     startX.current = e.touches[0].clientX
     startY.current = e.touches[0].clientY
     swiping.current = false
   }
   const onTouchMove = (e) => {
-    if (!onDelete || startX.current === null) return
+    if (!actionCount || startX.current === null) return
     const dx = e.touches[0].clientX - startX.current
     const dy = e.touches[0].clientY - startY.current
     // only engage on a mostly-horizontal left swipe
     if (!swiping.current && Math.abs(dx) > 8 && Math.abs(dx) > Math.abs(dy) * 1.4) swiping.current = true
     if (swiping.current) {
       e.preventDefault()
+      e.stopPropagation()
+      document.body.style.overflow = 'hidden'   // freeze page scroll during swipe
       const base = offset < 0 ? -REVEAL : 0
       const next = Math.min(0, Math.max(-REVEAL - 20, base + dx))
       setOffset(next)
     }
   }
   const onTouchEnd = () => {
-    if (!onDelete) return
+    if (!actionCount) return
     setOffset(offset < -REVEAL / 2 ? -REVEAL : 0)   // snap open or closed
     startX.current = null
+    document.body.style.overflow = ''               // release page scroll
   }
 
   const handleRowClick = () => {
@@ -70,13 +76,21 @@ function FolderRow({ f, isFirst, onOpen, onDelete }) {
 
   return (
     <div style={{ position: 'relative', borderTop: isFirst ? 'none' : '1px solid var(--border)', overflow: 'hidden' }}>
-      {/* Delete action revealed underneath */}
-      {onDelete && (
-        <div onClick={() => { setOffset(0); onDelete(f) }}
-          style={{ position: 'absolute', top: 0, right: 0, bottom: 0, width: REVEAL,
-            background: 'var(--danger)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
-          Delete
+      {/* Actions revealed underneath (Edit + Delete) */}
+      {actionCount > 0 && (
+        <div style={{ position: 'absolute', top: 0, right: 0, bottom: 0, width: REVEAL, display: 'flex' }}>
+          {onEdit && (
+            <div onClick={() => { setOffset(0); document.body.style.overflow = ''; onEdit(f) }}
+              style={{ width: ACTION_W, background: 'var(--accent)', color: 'var(--on-accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+              Edit
+            </div>
+          )}
+          {onDelete && (
+            <div onClick={() => { setOffset(0); document.body.style.overflow = ''; onDelete(f) }}
+              style={{ width: ACTION_W, background: 'var(--danger)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+              Delete
+            </div>
+          )}
         </div>
       )}
 

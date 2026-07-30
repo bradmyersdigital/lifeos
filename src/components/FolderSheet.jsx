@@ -8,10 +8,14 @@ import { ICON_REGISTRY, ICON_LABELS, IconOrEmoji } from './Icons'
  *
  * onCreate({ name, icon }) — icon is "icon:<key>" or an emoji string (or '')
  */
-export default function FolderSheet({ onClose, onCreate, title = 'New folder' }) {
-  const [name, setName] = useState('')
-  const [icon, setIcon] = useState('')
-  const [emoji, setEmoji] = useState('')
+export default function FolderSheet({ onClose, onCreate, folder = null, title }) {
+  const isEdit = !!folder
+  const initialIcon = folder?.icon || ''
+  const initialIsEmoji = initialIcon && !initialIcon.startsWith('icon:')
+  const [name, setName] = useState(folder?.name || '')
+  const [icon, setIcon] = useState(initialIsEmoji ? '' : initialIcon)
+  const [emoji, setEmoji] = useState(initialIsEmoji ? initialIcon : '')
+  const heading = title || (isEdit ? 'Edit folder' : 'New folder')
 
   const chosen = emoji.trim() || icon
   const keys = Object.keys(ICON_REGISTRY)
@@ -24,7 +28,7 @@ export default function FolderSheet({ onClose, onCreate, title = 'New folder' })
 
   const create = () => {
     if (!name.trim()) return
-    onCreate({ name: name.trim(), icon: chosen })
+    onCreate({ name: name.trim(), icon: chosen, _original: folder })
     onClose()
   }
 
@@ -33,8 +37,8 @@ export default function FolderSheet({ onClose, onCreate, title = 'New folder' })
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '16px 20px 8px', paddingTop: 'calc(env(safe-area-inset-top, 12px) + 12px)' }}>
         <div onClick={onClose} style={{ width: 34, height: 34, borderRadius: 10, background: 'var(--bg-card)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: 18, color: 'var(--text-muted)', flexShrink: 0 }}>‹</div>
-        <div style={{ flex: 1, fontSize: 20, fontWeight: 600, letterSpacing: '-0.3px' }}>{title}</div>
-        <div onClick={create} style={{ padding: '8px 18px', borderRadius: 11, cursor: name.trim() ? 'pointer' : 'default', background: name.trim() ? 'var(--accent)' : 'var(--bg-card)', border: `1px solid ${name.trim() ? 'var(--accent-border)' : 'var(--border)'}`, color: name.trim() ? 'var(--on-accent)' : 'var(--text-dim)', fontSize: 14, fontWeight: 600 }}>Create</div>
+        <div style={{ flex: 1, fontSize: 20, fontWeight: 600, letterSpacing: '-0.3px' }}>{heading}</div>
+        <div onClick={create} style={{ padding: '8px 18px', borderRadius: 11, cursor: name.trim() ? 'pointer' : 'default', background: name.trim() ? 'var(--accent)' : 'var(--bg-card)', border: `1px solid ${name.trim() ? 'var(--accent-border)' : 'var(--border)'}`, color: name.trim() ? 'var(--on-accent)' : 'var(--text-dim)', fontSize: 14, fontWeight: 600 }}>{isEdit ? 'Save' : 'Create'}</div>
       </div>
 
       <div style={{ flex: 1, overflowY: 'auto', WebkitOverflowScrolling: 'touch', padding: '12px 20px 40px' }}>

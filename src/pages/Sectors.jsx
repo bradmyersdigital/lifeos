@@ -389,6 +389,42 @@ function SectorDetail({ sector, onEditTask: onEditTaskRaw, onAddTask, onBack }) 
   )
 }
 
+
+// Row wrapper: quick horizontal swipe reveals Edit + Delete; freezes page scroll
+// while swiping so the page doesn't move under your finger.
+function SectorSwipeRow({ children, onEdit, onDelete }) {
+  const [offset, setOffset] = useState(0)
+  const startX = useRef(null); const startY = useRef(null); const swiping = useRef(false)
+  const ACTION_W = 78; const REVEAL = ACTION_W * 2
+  const ts = (e) => { startX.current = e.touches[0].clientX; startY.current = e.touches[0].clientY; swiping.current = false }
+  const tm = (e) => {
+    if (startX.current === null) return
+    const dx = e.touches[0].clientX - startX.current
+    const dy = e.touches[0].clientY - startY.current
+    if (!swiping.current && Math.abs(dx) > 10 && Math.abs(dx) > Math.abs(dy) * 1.6) swiping.current = true
+    if (swiping.current) {
+      e.preventDefault(); e.stopPropagation()
+      document.body.style.overflow = 'hidden'
+      const base = offset < 0 ? -REVEAL : 0
+      setOffset(Math.min(0, Math.max(-REVEAL - 20, base + dx)))
+    }
+  }
+  const te = () => { setOffset(offset < -REVEAL/2 ? -REVEAL : 0); startX.current = null; document.body.style.overflow = '' }
+  const close = () => { setOffset(0); document.body.style.overflow = '' }
+  return (
+    <div style={{ position: 'relative', borderRadius: 14, overflow: 'hidden' }}>
+      <div style={{ position: 'absolute', top: 0, right: 0, bottom: 0, width: REVEAL, display: 'flex' }}>
+        <div onClick={() => { close(); onEdit() }} style={{ width: ACTION_W, background: 'var(--accent)', color: 'var(--on-accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>Edit</div>
+        <div onClick={() => { close(); onDelete() }} style={{ width: ACTION_W, background: 'var(--danger)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>Delete</div>
+      </div>
+      <div onTouchStart={ts} onTouchMove={tm} onTouchEnd={te}
+        style={{ transform: `translateX(${offset}px)`, transition: startX.current === null ? 'transform 0.22s cubic-bezier(0.22,1,0.36,1)' : 'none' }}>
+        {children({ closeSwipe: close, swipeOpen: offset < 0 })}
+      </div>
+    </div>
+  )
+}
+
 export default function Sectors({ onEditTask }) {
   const [sectors, setSectors] = useState([])
   const [selected, setSelected] = useState(null)
@@ -404,6 +440,11 @@ export default function Sectors({ onEditTask }) {
   const [sectorModal, setSectorModal] = useState(null)
   const [modifyMode, setModifyMode] = useState(false)
   const draggedRef = useRef(false)
+  const deleteSector = async (s) => {
+    if (!window.confirm(`Delete the "${s.name}" sector? Tasks and projects in it won't be deleted, but they'll lose this sector.`)) return
+    await supabase.from('sectors').delete().eq('id', s.id)
+    loadSectors()
+  }
 
   useEffect(() => { loadSectors() }, [])
 
@@ -432,17 +473,12 @@ export default function Sectors({ onEditTask }) {
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
         <div style={{ fontSize: 20, fontWeight: 500 }}>Sectors</div>
-        <div style={{ display: 'flex', gap: 8 }}>
-          <div onClick={() => setModifyMode(m => !m)} style={{ display: 'flex', alignItems: 'center', gap: 5, background: modifyMode ? 'var(--accent-dim)' : 'var(--bg-card)', border: `1px solid ${modifyMode ? 'var(--accent-border)' : 'var(--border)'}`, borderRadius: 10, padding: '7px 13px', cursor: 'pointer', fontSize: 13, color: modifyMode ? 'var(--accent)' : 'var(--text-muted)', fontWeight: 500 }}>
-            {modifyMode ? 'Done' : 'Modify'}
-          </div>
-          <div onClick={() => setSectorModal('new')} style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'var(--accent-dim)', border: '1px solid var(--accent-border)', borderRadius: 10, padding: '7px 14px', cursor: 'pointer', fontSize: 13, color: 'var(--accent)', fontWeight: 500 }}>
-            <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><line x1="6.5" y1="1" x2="6.5" y2="12" stroke="var(--accent)" strokeWidth="1.8" strokeLinecap="round"/><line x1="1" y1="6.5" x2="12" y2="6.5" stroke="var(--accent)" strokeWidth="1.8" strokeLinecap="round"/></svg>
-            New
-          </div>
+        <div onClick={() => setSectorModal('new')} style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'var(--accent-dim)', border: '1px solid var(--accent-border)', borderRadius: 10, padding: '7px 14px', cursor: 'pointer', fontSize: 13, color: 'var(--accent)', fontWeight: 500 }}>
+          <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><line x1="6.5" y1="1" x2="6.5" y2="12" stroke="var(--accent)" strokeWidth="1.8" strokeLinecap="round"/><line x1="1" y1="6.5" x2="12" y2="6.5" stroke="var(--accent)" strokeWidth="1.8" strokeLinecap="round"/></svg>
+          New
         </div>
       </div>
-      <div style={{ fontSize: 12, color: 'var(--text-dim)', marginBottom: 16 }}>{modifyMode ? 'Tap Edit to change a sector · hold and drag to reorder' : 'Hold and drag to reorder'}</div>
+      <div style={{ fontSize: 12, color: 'var(--text-dim)', marginBottom: 16 }}>Swipe a sector for edit &amp; delete · hold and drag to reorder</div>
 
       <SortableList
         items={sectors}
@@ -454,17 +490,19 @@ export default function Sectors({ onEditTask }) {
           saveOrder(next)
         }}
         renderItem={(s, { dragging }) => (
-          <div onClick={() => { if (!draggedRef.current) setSelected(s) }}
-            style={{ background: dragging ? 'var(--bg-card2)' : 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 14, padding: '12px 14px', position: 'relative', display: 'flex', alignItems: 'center', gap: 13, borderLeft: `3px solid ${s.color || 'var(--accent)'}` }}>
-            <div style={{ width: 30, flexShrink: 0, display: 'flex', justifyContent: 'center' }}><SectorGlyph name={s.name} emoji={s.icon} size={24} /></div>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: 15, fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.name}</div>
-              <div style={{ fontSize: 11.5, color: 'var(--text-muted)', marginTop: 2 }}>{s._taskCount || 0} tasks · {s._projCount || 0} projects</div>
-            </div>
-            {modifyMode
-              ? <div onClick={e => { e.stopPropagation(); setSectorModal(s) }} style={{ fontSize: 12.5, color: 'var(--accent)', fontWeight: 500, flexShrink: 0, padding: '4px 10px', borderRadius: 8, background: 'var(--accent-dim)', border: '1px solid var(--accent-border)' }}>Edit</div>
-              : <div style={{ fontSize: 17, color: 'var(--text-dim)', flexShrink: 0, lineHeight: 1 }}>›</div>}
-          </div>
+          <SectorSwipeRow onEdit={() => setSectorModal(s)} onDelete={() => deleteSector(s)}>
+            {({ closeSwipe, swipeOpen }) => (
+              <div onClick={() => { if (draggedRef.current) return; if (swipeOpen) { closeSwipe(); return } setSelected(s) }}
+                style={{ background: dragging ? 'var(--bg-card2)' : 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 14, padding: '12px 14px', display: 'flex', alignItems: 'center', gap: 13, borderLeft: `3px solid ${s.color || 'var(--accent)'}` }}>
+                <div style={{ width: 30, flexShrink: 0, display: 'flex', justifyContent: 'center' }}><SectorGlyph name={s.name} emoji={s.icon} size={24} /></div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 15, fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.name}</div>
+                  <div style={{ fontSize: 11.5, color: 'var(--text-muted)', marginTop: 2 }}>{s._taskCount || 0} tasks · {s._projCount || 0} projects</div>
+                </div>
+                <div style={{ fontSize: 17, color: 'var(--text-dim)', flexShrink: 0, lineHeight: 1 }}>›</div>
+              </div>
+            )}
+          </SectorSwipeRow>
         )}
       />
 

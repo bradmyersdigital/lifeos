@@ -326,6 +326,21 @@ export default function Projects({ onAddTask, onEditTask }) {
     if (!window.confirm(count > 0 ? `"${name}" has ${count} project${count===1?'':'s'} inside. Delete the folder anyway? The projects will move to Unsorted.` : `Delete the folder "${name}"?`)) return
     persistFolders(customFolders.filter(f => f.name !== name))
   }
+  const [editingFolder, setEditingFolder] = useState(null)
+  const saveFolderEdit = async ({ name, icon, _original }) => {
+    const oldName = _original?.name
+    // update the folder record
+    persistFolders(customFolders.map(f => f.name === oldName ? { name, icon: icon || '' } : f))
+    // if the name changed, re-point every project that referenced the old name
+    if (oldName && oldName !== name) {
+      const affected = projects.filter(p => p.sector === oldName)
+      if (affected.length) {
+        await supabase.from('projects').update({ sector: name }).eq('sector', oldName)
+        loadProjects()
+      }
+    }
+    setEditingFolder(null)
+  }
   const [showModal, setShowModal] = useState(false)
 
   useEffect(() => {
@@ -369,7 +384,7 @@ export default function Projects({ onAddTask, onEditTask }) {
     const customNames = customFolders.map(f => f.name)
     const customFolderRows = customFolders.map(f => ({
       id: f.name, icon: f.icon || '\u{1F4C1}', label: f.name, count: projects.filter(p => p.sector === f.name && p.status !== 'completed').length,
-      _deletable: true,
+      _deletable: true, _folder: f,
     }))
     const noSector = projects.filter(p => (p.status !== 'completed') && (!p.sector || (!sectors.some(s=>s.name===p.sector) && !customNames.includes(p.sector)))).length
     if (noSector > 0) customFolderRows.push({ id: '__none__', icon: '\u{1F4C4}', label: 'Unsorted', count: noSector })
@@ -408,11 +423,12 @@ export default function Projects({ onAddTask, onEditTask }) {
           </div>
         </div>
         {customFolderRows.length > 0
-          ? <FolderList folders={customFolderRows} onOpen={setFolder} onDelete={(f)=>deleteFolder(f.id)} />
+          ? <FolderList folders={customFolderRows} onOpen={setFolder} onDelete={(f)=>deleteFolder(f.id)} onEdit={(f)=>setEditingFolder(f._folder)} />
           : <div onClick={()=>setShowFolderModal(true)} style={{ textAlign:'center', padding:'16px', color:'var(--text-dim)', fontSize:13, border:'1px dashed var(--border)', borderRadius:14, cursor:'pointer' }}>Make a folder that isn't tied to a sector</div>}
 
         {showModal&&<ProjectModal onClose={()=>setShowModal(false)} onSaved={loadProjects} />}
-        {showFolderModal && <FolderSheet onClose={()=>setShowFolderModal(false)} onCreate={addFolder} subtitle="A folder that isn't tied to a life sector" />}
+        {showFolderModal && <FolderSheet onClose={()=>setShowFolderModal(false)} onCreate={addFolder} />}
+        {editingFolder && <FolderSheet folder={editingFolder} onClose={()=>setEditingFolder(null)} onCreate={saveFolderEdit} />}
       </div>
     )
   }

@@ -279,6 +279,16 @@ export default function Notes() {
     loadAll()
   }
 
+  const [editingFolder, setEditingFolder] = useState(null)
+  const saveFolderEdit = async ({ name, icon, _original }) => {
+    const oldName = _original?.name
+    await supabase.from('note_categories').update({ name, icon: icon || null }).eq('name', oldName)
+    if (oldName && oldName !== name) {
+      await supabase.from('notes').update({ category: name }).eq('category', oldName)
+    }
+    setEditingFolder(null); loadAll()
+  }
+
   // If viewing a note
   if (view === 'note') {
     return (
@@ -413,6 +423,7 @@ export default function Notes() {
               count: catNotes.length,
               subtitle: recent ? (recent.title || (recent.body || recent.text || '').substring(0, 40) || 'Untitled') : null,
               _deletable: true,
+              _folder: { name: cat.name, icon: cat.icon || '' },
             }
           }),
           ...(uncategorizedCount > 0
@@ -425,9 +436,11 @@ export default function Notes() {
           setView('category')
         }}
         onDelete={(f) => f.id !== '__uncategorized__' && deleteCategory(f.id)}
+        onEdit={(f) => f._folder && setEditingFolder(f._folder)}
         emptyText="No folders yet — tap + Folder to add one"
       />
       {showFolderSheet && <FolderSheet onClose={() => setShowFolderSheet(false)} onCreate={createFolder} />}
+      {editingFolder && <FolderSheet folder={editingFolder} onClose={() => setEditingFolder(null)} onCreate={saveFolderEdit} />}
 
       {notes.length === 0 && !showManage && (
         <div style={{ textAlign: 'center', padding: '40px 20px', color: 'var(--text-dim)', fontSize: 14, border: '1px dashed var(--border)', borderRadius: 14, marginTop: 10 }}>
