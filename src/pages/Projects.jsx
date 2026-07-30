@@ -20,8 +20,13 @@ const SECTOR_COLORS = {
 function ProjectModal({ onClose, onSaved, project, defaultSector, defaultFolder, folderOptions = [] }) {
   const isEdit = !!project
   const [name, setName] = useState(project?.name || '')
-  const [sector, setSector] = useState(project?.sector || defaultSector || '')
-  const [folder, setFolder] = useState(project?.folder || defaultFolder || '')
+  // combined placement: one home, either a sector or a custom folder
+  const initialPlacement = project?.folder ? `folder:${project.folder}`
+    : project?.sector ? `sector:${project.sector}`
+    : defaultFolder ? `folder:${defaultFolder}`
+    : defaultSector ? `sector:${defaultSector}`
+    : ''
+  const [placement, setPlacement] = useState(initialPlacement)
   const [goal, setGoal] = useState(project?.goal || '')
   const [description, setDescription] = useState(project?.description || '')
   const [dueDate, setDueDate] = useState(project?.due_date || '')
@@ -36,7 +41,14 @@ function ProjectModal({ onClose, onSaved, project, defaultSector, defaultFolder,
 
   const handleSave = async () => {
     if (!name.trim()) return; setSaving(true)
-    const payload = { name: name.trim(), sector, folder: folder || null, goal: goal.trim() || null, description, due_date: dueDate || null, status, importance }
+    const isFolder = placement.startsWith('folder:')
+    const isSector = placement.startsWith('sector:')
+    const payload = {
+      name: name.trim(),
+      sector: isSector ? placement.slice(7) : null,
+      folder: isFolder ? placement.slice(7) : null,
+      goal: goal.trim() || null, description, due_date: dueDate || null, status, importance,
+    }
     if (isEdit) await supabase.from('projects').update(payload).eq('id', project.id)
     else await supabase.from('projects').insert(payload)
     setSaving(false); onSaved(); onClose()
@@ -77,18 +89,22 @@ function ProjectModal({ onClose, onSaved, project, defaultSector, defaultFolder,
           </div>
         </div>
         <div className="field-row">
-          <div className="field"><div className="field-label">Sector</div>
-            <select value={sector} onChange={e => setSector(e.target.value)}><option value="">Select...</option>{sectorList.map(s => <option key={s}>{s}</option>)}</select>
+          <div className="field"><div className="field-label">Sector / Folder</div>
+            <select value={placement} onChange={e => setPlacement(e.target.value)}>
+              <option value="">Select...</option>
+              <optgroup label="Sectors">
+                {sectorList.map(s => <option key={'s'+s} value={`sector:${s}`}>{s}</option>)}
+              </optgroup>
+              {folderOptions.length > 0 && (
+                <optgroup label="Folders">
+                  {folderOptions.map(f => <option key={'f'+f} value={`folder:${f}`}>{f}</option>)}
+                </optgroup>
+              )}
+            </select>
           </div>
           <div className="field"><div className="field-label">Status</div>
             <select value={status} onChange={e => setStatus(e.target.value)}><option value="active">Active</option><option value="backlog">Backlog</option><option value="completed">Completed</option></select>
           </div>
-        </div>
-        <div className="field"><div className="field-label">Folder <span style={{ color: 'var(--text-dim)', fontWeight: 400 }}>(optional)</span></div>
-          <select value={folder} onChange={e => setFolder(e.target.value)}>
-            <option value="">None</option>
-            {folderOptions.map(f => <option key={f}>{f}</option>)}
-          </select>
         </div>
         <div className="field"><div className="field-label">Due date</div><input type="date" value={dueDate} onChange={e => setDueDate(e.target.value)} /></div>
         <div style={{ display: 'flex', gap: 10, marginTop: 18 }}>
@@ -386,6 +402,7 @@ export default function Projects({ onAddTask, onEditTask }) {
       icon: s.icon || '\u{1F4C1}',
       label: s.name,
       count: projects.filter(p => p.sector === s.name && p.status !== 'completed').length,
+      _isSector: true,
     }))
 
     // Custom (non-sector) folders + Unsorted
