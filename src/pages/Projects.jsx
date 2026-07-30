@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase'
 import { useSearchParams } from 'react-router-dom'
 import { fmtDate } from '../utils'
 import FolderList, { FolderHeader } from '../components/FolderList'
+import FolderSheet from '../components/FolderSheet'
 
 const IMPORTANCE = ['Critical','High','Medium','Low']
 const IMP_STYLES = {
@@ -311,17 +312,19 @@ export default function Projects({ onAddTask, onEditTask }) {
   const [filter, setFilter] = useState('active')
   const [folder, setFolder] = useState(null) // null = folder index, else { id, label, icon }
   const [customFolders, setCustomFolders] = useState(() => {
-    try { return JSON.parse(localStorage.getItem('nd_project_folders')) || [] } catch { return [] }
+    try {
+      const raw = JSON.parse(localStorage.getItem('nd_project_folders')) || []
+      // back-compat: old entries were plain strings
+      return raw.map(f => typeof f === 'string' ? { name: f, icon: '' } : f)
+    } catch { return [] }
   })
   const [showFolderModal, setShowFolderModal] = useState(false)
-  const [newFolderName, setNewFolderName] = useState('')
-  const addFolder = () => {
-    const n = newFolderName.trim()
-    if (!n) return
-    const next = [...customFolders, n]
-    setCustomFolders(next)
-    try { localStorage.setItem('nd_project_folders', JSON.stringify(next)) } catch {}
-    setNewFolderName(''); setShowFolderModal(false)
+  const persistFolders = (next) => { setCustomFolders(next); try { localStorage.setItem('nd_project_folders', JSON.stringify(next)) } catch {} }
+  const addFolder = ({ name, icon }) => { persistFolders([...customFolders, { name, icon: icon || '' }]) }
+  const deleteFolder = (name) => {
+    const count = projects.filter(p => p.sector === name).length
+    if (!window.confirm(count > 0 ? `"${name}" has ${count} project${count===1?'':'s'} inside. Delete the folder anyway? The projects will move to Unsorted.` : `Delete the folder "${name}"?`)) return
+    persistFolders(customFolders.filter(f => f.name !== name))
   }
   const [showModal, setShowModal] = useState(false)
 
@@ -363,10 +366,12 @@ export default function Projects({ onAddTask, onEditTask }) {
     }))
 
     // Custom (non-sector) folders + Unsorted
+    const customNames = customFolders.map(f => f.name)
     const customFolderRows = customFolders.map(f => ({
-      id: f, icon: '\u{1F4C1}', label: f, count: projects.filter(p => p.sector === f && p.status !== 'completed').length,
+      id: f.name, icon: f.icon || '\u{1F4C1}', label: f.name, count: projects.filter(p => p.sector === f.name && p.status !== 'completed').length,
+      _deletable: true,
     }))
-    const noSector = projects.filter(p => (p.status !== 'completed') && (!p.sector || (!sectors.some(s=>s.name===p.sector) && !customFolders.includes(p.sector)))).length
+    const noSector = projects.filter(p => (p.status !== 'completed') && (!p.sector || (!sectors.some(s=>s.name===p.sector) && !customNames.includes(p.sector)))).length
     if (noSector > 0) customFolderRows.push({ id: '__none__', icon: '\u{1F4C4}', label: 'Unsorted', count: noSector })
 
     return (
@@ -403,29 +408,11 @@ export default function Projects({ onAddTask, onEditTask }) {
           </div>
         </div>
         {customFolderRows.length > 0
-          ? <FolderList folders={customFolderRows} onOpen={setFolder} />
+          ? <FolderList folders={customFolderRows} onOpen={setFolder} onDelete={(f)=>deleteFolder(f.id)} />
           : <div onClick={()=>setShowFolderModal(true)} style={{ textAlign:'center', padding:'16px', color:'var(--text-dim)', fontSize:13, border:'1px dashed var(--border)', borderRadius:14, cursor:'pointer' }}>Make a folder that isn't tied to a sector</div>}
 
         {showModal&&<ProjectModal onClose={()=>setShowModal(false)} onSaved={loadProjects} />}
-        {showFolderModal&&(
-          <div className="modal-overlay" onClick={e=>e.target===e.currentTarget&&setShowFolderModal(false)}>
-            <div className="modal-sheet doc-page">
-              <div className="modal-handle" />
-              <div style={{ display:'flex',alignItems:'center',gap:12,marginBottom:22 }}>
-                <div onClick={()=>setShowFolderModal(false)} style={{ width:34,height:34,borderRadius:10,background:'var(--bg-card)',border:'1px solid var(--border)',display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',fontSize:18,color:'var(--text-muted)' }}>‹</div>
-                <div style={{ fontSize:20,fontWeight:600 }}>New folder</div>
-              </div>
-              <div className="field"><div className="field-label">Folder name</div>
-                <input type="text" placeholder="e.g. Side hustles" value={newFolderName} onChange={e=>setNewFolderName(e.target.value)} onKeyDown={e=>{if(e.key==='Enter')addFolder()}} autoFocus />
-              </div>
-              <div style={{ fontSize:11.5,color:'var(--text-dim)',lineHeight:1.5,marginBottom:16 }}>A folder that isn't tied to a life sector — for grouping projects your own way.</div>
-              <div style={{ display:'flex',gap:10 }}>
-                <button className="btn-ghost" style={{ flex:1 }} onClick={()=>setShowFolderModal(false)}>Cancel</button>
-                <button className="btn-primary" style={{ flex:2 }} onClick={addFolder} disabled={!newFolderName.trim()}>Create folder</button>
-              </div>
-            </div>
-          </div>
-        )}
+        {showFolderModal && <FolderSheet onClose={()=>setShowFolderModal(false)} onCreate={addFolder} subtitle="A folder that isn't tied to a life sector" />}
       </div>
     )
   }

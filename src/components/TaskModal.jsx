@@ -85,7 +85,7 @@ export default function TaskModal({ mode, onClose, onSaved, task, defaultProject
   const today = (() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}` })()
 
   const [name, setName] = useState(task?.name || '')
-  const [urgency, setUrgency] = useState(task?.urgency ? task.urgency.charAt(0).toUpperCase() + task.urgency.slice(1) : 'High')
+  const [urgency, setUrgency] = useState(task?.urgency ? task.urgency.charAt(0).toUpperCase() + task.urgency.slice(1) : '')
   const [sector, setSector] = useState(task?.sector || defaultSector || '')
   const [dueDate, setDueDate] = useState(task?.due_date || today)
   const [startDate, setStartDate] = useState(task?.start_date || today)
@@ -132,6 +132,7 @@ export default function TaskModal({ mode, onClose, onSaved, task, defaultProject
 
   const handleSave = async () => {
     if (!name.trim()) return
+    if (!urgency) { alert('Please choose an urgency level.'); return }
     setSaving(true)
     const payload = {
       name: name.trim(), urgency: urgency.toLowerCase(), sector,
@@ -209,7 +210,7 @@ export default function TaskModal({ mode, onClose, onSaved, task, defaultProject
         </div>
 
         <div className="field">
-          <div className="field-label">Urgency</div>
+          <div className="field-label">Urgency <span style={{ color: 'var(--danger)' }}>*</span></div>
           <div style={{ display: 'flex', gap: 7 }}>
             {URGENCIES.map(u => {
               const s = URG_STYLES[u]; const active = urgency === u
@@ -290,7 +291,7 @@ export default function TaskModal({ mode, onClose, onSaved, task, defaultProject
             </button>
           )}
           <button className="btn-ghost" style={{ flex: 1 }} onClick={onClose}>Cancel</button>
-          <button className="btn-primary" style={{ flex: 2 }} onClick={handleSave} disabled={saving}>
+          <button className="btn-primary" style={{ flex: 2, opacity: (!name.trim() || !urgency) ? 0.5 : 1 }} onClick={handleSave} disabled={saving || !name.trim() || !urgency}>
             {saving ? 'Saving…' : isEdit ? 'Save changes' : 'Save task'}
           </button>
         </div>

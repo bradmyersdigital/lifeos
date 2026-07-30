@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { supabase } from '../lib/supabase'
 import FolderList from '../components/FolderList'
+import FolderSheet from '../components/FolderSheet'
 
 const DEFAULT_CATS = [
   { name: 'Ideas', color: 'var(--purple)' },
@@ -235,6 +236,7 @@ export default function Notes() {
   const [activeCat, setActiveCat] = useState(null) // { name, color }
   const [activeNote, setActiveNote] = useState(null)
   const [showManage, setShowManage] = useState(false)
+  const [showFolderSheet, setShowFolderSheet] = useState(false)
   const [showNewCat, setShowNewCat] = useState(false)
   const [newCatName, setNewCatName] = useState('')
   const [newCatColor, setNewCatColor] = useState('var(--purple)')
@@ -261,6 +263,13 @@ export default function Notes() {
     if (!newCatName.trim()) return
     await supabase.from('note_categories').insert({ name: newCatName.trim(), color: newCatColor })
     setNewCatName(''); setShowNewCat(false)
+    loadAll()
+  }
+  const createFolder = async ({ name, icon }) => {
+    // pick a colour for the chip if no icon chosen
+    const palette = ['var(--purple)','var(--blue)','var(--success)','var(--warn)','var(--danger)','var(--accent)']
+    const color = palette[categories.length % palette.length]
+    await supabase.from('note_categories').insert({ name, color, icon: icon || null })
     loadAll()
   }
 
@@ -349,7 +358,7 @@ export default function Notes() {
       {/* Folders (custom categories) */}
       <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', margin:'20px 4px 8px' }}>
         <div style={{ fontSize:11, fontWeight:600, letterSpacing:'0.09em', textTransform:'uppercase', color:'var(--text-dim)' }}>Folders</div>
-        <div onClick={() => setShowManage(!showManage)} style={{ display:'flex', alignItems:'center', gap:5, cursor:'pointer', fontSize:12.5, color:'var(--accent)', fontWeight:500 }}>
+        <div onClick={() => setShowFolderSheet(true)} style={{ display:'flex', alignItems:'center', gap:5, cursor:'pointer', fontSize:12.5, color:'var(--accent)', fontWeight:500 }}>
           + Folder
         </div>
       </div>
@@ -407,11 +416,12 @@ export default function Notes() {
             const recent = catNotes[0]
             return {
               id: cat.name,
-              icon: cat.color,
+              icon: cat.icon || cat.color,
               color: cat.color,
               label: cat.name,
               count: catNotes.length,
               subtitle: recent ? (recent.title || (recent.body || recent.text || '').substring(0, 40) || 'Untitled') : null,
+              _deletable: true,
             }
           }),
           ...(uncategorizedCount > 0
@@ -419,11 +429,14 @@ export default function Notes() {
             : []),
         ]}
         onOpen={(f) => {
+          if (f.id === '__uncategorized__') { setActiveCat({ name: f.id, color: f.color || 'var(--text-dim)' }); setView('category'); return }
           setActiveCat({ name: f.id, color: f.color || 'var(--text-dim)' })
           setView('category')
         }}
-        emptyText="No folders yet — tap Edit to add one"
+        onDelete={(f) => f.id !== '__uncategorized__' && deleteCategory(f.id)}
+        emptyText="No folders yet — tap + Folder to add one"
       />
+      {showFolderSheet && <FolderSheet onClose={() => setShowFolderSheet(false)} onCreate={createFolder} />}
 
       {notes.length === 0 && !showManage && (
         <div style={{ textAlign: 'center', padding: '40px 20px', color: 'var(--text-dim)', fontSize: 14, border: '1px dashed var(--border)', borderRadius: 14, marginTop: 10 }}>
