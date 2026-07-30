@@ -310,9 +310,6 @@ export default function Notes() {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
         <div style={{ fontSize: 20, fontWeight: 500 }}>Notes</div>
         <div style={{ display: 'flex', gap: 8 }}>
-          <div onClick={() => setShowManage(!showManage)} style={{ padding: '7px 12px', borderRadius: 10, background: showManage ? 'var(--accent-dim)' : 'var(--bg-card)', border: `1px solid ${showManage ? 'var(--accent-border)' : 'var(--border)'}`, color: showManage ? 'var(--accent)' : 'var(--text-muted)', fontSize: 12, fontWeight: 500, cursor: 'pointer' }}>
-            ✏️ Edit
-          </div>
           <div onClick={() => { setActiveNote(null); setView('note') }} className="action-btn btn-task" style={{ gap: 5 }}>
             <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><line x1="6" y1="1" x2="6" y2="11" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/><line x1="1" y1="6" x2="11" y2="6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/></svg>
             Add note
@@ -320,6 +317,42 @@ export default function Notes() {
         </div>
       </div>
 
+      {/* Stats */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 8, marginBottom: 20 }}>
+        {[['Total', notes.length, 'var(--text-primary)'],['Pinned', notes.filter(n=>n.pinned).length,'var(--warn)'],['Categories', categories.length,'var(--accent)']].map(([l,v,c]) => (
+          <div key={l} style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 12, padding: 12 }}>
+            <div style={{ fontSize: 11, color: 'var(--text-dim)', marginBottom: 3 }}>{l}</div>
+            <div style={{ fontSize: 20, fontWeight: 500, color: c }}>{v}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* All Notes */}
+      <FolderList
+        folders={[{ id: '__all__', icon: 'icon:notes', label: 'All Notes', count: notes.length, color: 'var(--accent)' }]}
+        onOpen={() => { setActiveCat({ name: '__all__', color: 'var(--accent)' }); setView('category') }}
+      />
+
+      {/* Sectors */}
+      <div style={{ fontSize:11, fontWeight:600, letterSpacing:'0.09em', textTransform:'uppercase', color:'var(--text-dim)', margin:'20px 4px 8px' }}>Sectors</div>
+      <FolderList
+        folders={sectors.map(s => ({
+          id: '__sector__' + s.name,
+          icon: s.icon || '\u{1F4C1}',
+          label: s.name,
+          count: notes.filter(n => n.sector === s.name).length,
+        }))}
+        onOpen={(f) => { setActiveCat({ name: f.id, color: 'var(--text-dim)', label: f.label }); setView('category') }}
+        emptyText="No sectors yet"
+      />
+
+      {/* Folders (custom categories) */}
+      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', margin:'20px 4px 8px' }}>
+        <div style={{ fontSize:11, fontWeight:600, letterSpacing:'0.09em', textTransform:'uppercase', color:'var(--text-dim)' }}>Folders</div>
+        <div onClick={() => setShowManage(!showManage)} style={{ display:'flex', alignItems:'center', gap:5, cursor:'pointer', fontSize:12.5, color:'var(--accent)', fontWeight:500 }}>
+          + Folder
+        </div>
+      </div>
       {/* Manage categories panel */}
       {showManage && (
         <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 14, padding: 16, marginBottom: 20 }}>
@@ -367,37 +400,6 @@ export default function Notes() {
         </div>
       )}
 
-      {/* Stats */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 8, marginBottom: 20 }}>
-        {[['Total', notes.length, 'var(--text-primary)'],['Pinned', notes.filter(n=>n.pinned).length,'var(--warn)'],['Categories', categories.length,'var(--accent)']].map(([l,v,c]) => (
-          <div key={l} style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 12, padding: 12 }}>
-            <div style={{ fontSize: 11, color: 'var(--text-dim)', marginBottom: 3 }}>{l}</div>
-            <div style={{ fontSize: 20, fontWeight: 500, color: c }}>{v}</div>
-          </div>
-        ))}
-      </div>
-
-      {/* All Notes */}
-      <FolderList
-        folders={[{ id: '__all__', icon: 'icon:notes', label: 'All Notes', count: notes.length, color: 'var(--accent)' }]}
-        onOpen={() => { setActiveCat({ name: '__all__', color: 'var(--accent)' }); setView('category') }}
-      />
-
-      {/* Sectors */}
-      <div style={{ fontSize:11, fontWeight:600, letterSpacing:'0.09em', textTransform:'uppercase', color:'var(--text-dim)', margin:'20px 4px 8px' }}>Sectors</div>
-      <FolderList
-        folders={sectors.map(s => ({
-          id: '__sector__' + s.name,
-          icon: s.icon || '\u{1F4C1}',
-          label: s.name,
-          count: notes.filter(n => n.sector === s.name).length,
-        }))}
-        onOpen={(f) => { setActiveCat({ name: f.id, color: 'var(--text-dim)', label: f.label }); setView('category') }}
-        emptyText="No sectors yet"
-      />
-
-      {/* Folders (custom categories) */}
-      <div style={{ fontSize:11, fontWeight:600, letterSpacing:'0.09em', textTransform:'uppercase', color:'var(--text-dim)', margin:'20px 4px 8px' }}>Folders</div>
       <FolderList
         folders={[
           ...categories.map(cat => {
