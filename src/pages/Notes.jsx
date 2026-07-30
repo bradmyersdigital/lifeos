@@ -3,15 +3,6 @@ import { supabase } from '../lib/supabase'
 import FolderList from '../components/FolderList'
 import FolderSheet from '../components/FolderSheet'
 
-const DEFAULT_CATS = [
-  { name: 'Ideas', color: 'var(--purple)' },
-  { name: 'Business', color: 'var(--accent)' },
-  { name: 'Personal', color: 'var(--success)' },
-  { name: 'Health', color: 'var(--blue)' },
-  { name: 'Gratitude', color: 'var(--warn)' },
-  { name: 'Research', color: 'var(--blue)' },
-]
-
 function fmt(d) {
   if (!d) return ''
   return new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
@@ -228,7 +219,7 @@ function CategoryView({ categoryName, categoryColor, categoryLabel, notes, onBac
 // ── Main Notes ───────────────────────────────────────────────────────────────
 export default function Notes() {
   const [notes, setNotes] = useState([])
-  const [categories, setCategories] = useState(DEFAULT_CATS)
+  const [categories, setCategories] = useState([])
   const [projects, setProjects] = useState([])
   const [goals, setGoals] = useState([])
   const [sectors, setSectors] = useState([])
@@ -256,7 +247,7 @@ export default function Notes() {
     setProjects(projRes.data || [])
     setGoals(goalsRes.data || [])
     setSectors(sectorsRes.data || [])
-    if (catsRes.data?.length) setCategories(catsRes.data)
+    setCategories(catsRes.data || [])
   }
 
   const addCategory = async () => {

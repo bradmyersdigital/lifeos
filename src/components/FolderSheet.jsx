@@ -1,19 +1,26 @@
 import React, { useState } from 'react'
-import IconPicker from './IconPicker'
-import { IconOrEmoji } from './Icons'
+import { ICON_REGISTRY, ICON_LABELS, IconOrEmoji } from './Icons'
 
 /**
- * FolderSheet — half-screen sheet to name a folder and give it an icon.
- * Icon can come from the built-in drawn set (IconPicker) OR a typed emoji.
+ * FolderSheet — full-screen folder creator.
+ * Name + typed emoji + a horizontally-scrolling 4-row icon grid that slides
+ * smoothly (continuous horizontal scroll, not batch paging).
  *
  * onCreate({ name, icon }) — icon is "icon:<key>" or an emoji string (or '')
  */
-export default function FolderSheet({ onClose, onCreate, title = 'New folder', subtitle }) {
+export default function FolderSheet({ onClose, onCreate, title = 'New folder' }) {
   const [name, setName] = useState('')
   const [icon, setIcon] = useState('')
   const [emoji, setEmoji] = useState('')
 
-  const chosen = emoji.trim() || icon   // typed emoji wins if present
+  const chosen = emoji.trim() || icon
+  const keys = Object.keys(ICON_REGISTRY)
+
+  // Lay icons into column-major order so a 4-row grid fills top-to-bottom then
+  // moves right — the visual "4 rows that slide left/right" the user asked for.
+  const ROWS = 4
+  const cols = []
+  for (let i = 0; i < keys.length; i += ROWS) cols.push(keys.slice(i, i + ROWS))
 
   const create = () => {
     if (!name.trim()) return
@@ -22,43 +29,51 @@ export default function FolderSheet({ onClose, onCreate, title = 'New folder', s
   }
 
   return (
-    <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className="modal-sheet" style={{ height: 'auto', maxHeight: '72dvh' }}>
-        <div className="modal-handle" />
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 18 }}>
-          <div onClick={onClose} style={{ width: 34, height: 34, borderRadius: 10, background: 'var(--bg-card)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: 18, color: 'var(--text-muted)', flexShrink: 0 }}>‹</div>
-          <div style={{ fontSize: 19, fontWeight: 600, letterSpacing: '-0.3px' }}>{title}</div>
-        </div>
+    <div style={{ position: 'fixed', inset: 0, zIndex: 300, background: 'var(--bg)', display: 'flex', flexDirection: 'column', animation: 'sheetUp 0.3s cubic-bezier(0.22,1,0.36,1)' }}>
+      {/* Header */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '16px 20px 8px', paddingTop: 'calc(env(safe-area-inset-top, 12px) + 12px)' }}>
+        <div onClick={onClose} style={{ width: 34, height: 34, borderRadius: 10, background: 'var(--bg-card)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: 18, color: 'var(--text-muted)', flexShrink: 0 }}>‹</div>
+        <div style={{ flex: 1, fontSize: 20, fontWeight: 600, letterSpacing: '-0.3px' }}>{title}</div>
+        <div onClick={create} style={{ padding: '8px 18px', borderRadius: 11, cursor: name.trim() ? 'pointer' : 'default', background: name.trim() ? 'var(--accent)' : 'var(--bg-card)', border: `1px solid ${name.trim() ? 'var(--accent-border)' : 'var(--border)'}`, color: name.trim() ? 'var(--on-accent)' : 'var(--text-dim)', fontSize: 14, fontWeight: 600 }}>Create</div>
+      </div>
 
-        {/* Live preview + name */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
-          <div style={{ width: 46, height: 46, borderRadius: 12, background: 'var(--bg-card)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-            <IconOrEmoji value={chosen || 'icon:folder'} size={24} />
+      <div style={{ flex: 1, overflowY: 'auto', WebkitOverflowScrolling: 'touch', padding: '12px 20px 40px' }}>
+        {/* Preview + name */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 22 }}>
+          <div style={{ width: 60, height: 60, borderRadius: 16, background: 'var(--bg-card)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <IconOrEmoji value={chosen || 'icon:folder'} size={30} />
           </div>
           <input type="text" placeholder="Folder name" value={name} autoFocus
             onChange={e => setName(e.target.value)}
             onKeyDown={e => { if (e.key === 'Enter') create() }}
-            style={{ flex: 1, background: 'var(--bg-input)', border: '1px solid var(--border)', borderRadius: 10, padding: '11px 13px', fontSize: 16, color: 'var(--text-primary)', fontFamily: "'DM Sans'", outline: 'none' }} />
+            style={{ flex: 1, background: 'var(--bg-input)', border: '1px solid var(--border)', borderRadius: 12, padding: '13px 15px', fontSize: 17, color: 'var(--text-primary)', fontFamily: "'DM Sans'", outline: 'none' }} />
         </div>
 
-        {/* Emoji field */}
-        <div className="field">
-          <div className="field-label">Type an emoji (optional)</div>
-          <input type="text" placeholder="e.g. 📁  🎯  💰" value={emoji}
-            onChange={e => { setEmoji(e.target.value); if (e.target.value) setIcon('') }}
-            style={{ width: '100%', background: 'var(--bg-input)', border: '1px solid var(--border)', borderRadius: 10, padding: '10px 12px', fontSize: 18, color: 'var(--text-primary)', outline: 'none', textAlign: 'center' }} />
-        </div>
+        {/* Typed emoji */}
+        <div style={{ fontSize: 12, fontWeight: 500, color: 'var(--text-muted)', marginBottom: 8 }}>Type an emoji</div>
+        <input type="text" placeholder="e.g.  📁  🎯  💰  🔥" value={emoji}
+          onChange={e => { setEmoji(e.target.value); if (e.target.value) setIcon('') }}
+          style={{ width: '100%', background: 'var(--bg-input)', border: '1px solid var(--border)', borderRadius: 12, padding: '12px 14px', fontSize: 20, color: 'var(--text-primary)', outline: 'none', textAlign: 'center', marginBottom: 24 }} />
 
-        {/* Or pick an icon */}
-        <div className="field">
-          <div className="field-label">Or choose an icon</div>
-          <IconPicker value={emoji.trim() ? '' : icon} onPick={(v) => { setIcon(v); setEmoji('') }} />
+        {/* Icon grid — 4 rows, slides horizontally & continuously */}
+        <div style={{ fontSize: 12, fontWeight: 500, color: 'var(--text-muted)', marginBottom: 10 }}>Or choose an icon</div>
+        <div style={{ overflowX: 'auto', overflowY: 'hidden', WebkitOverflowScrolling: 'touch', paddingBottom: 10, marginLeft: -20, marginRight: -20, paddingLeft: 20, paddingRight: 20 }}>
+          <div style={{ display: 'grid', gridTemplateRows: `repeat(${ROWS}, 1fr)`, gridAutoFlow: 'column', gridAutoColumns: '64px', gap: 10, width: 'max-content' }}>
+            {keys.map(key => {
+              const Icon = ICON_REGISTRY[key]
+              const selected = !emoji.trim() && icon === `icon:${key}`
+              return (
+                <div key={key} onClick={() => { setIcon(`icon:${key}`); setEmoji('') }} title={ICON_LABELS[key] || key}
+                  style={{ width: 64, height: 64, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 14, cursor: 'pointer',
+                    background: selected ? 'var(--accent-dim)' : 'var(--bg-card)',
+                    border: `1px solid ${selected ? 'var(--accent-border)' : 'var(--border)'}` }}>
+                  <Icon active={selected} size={26} />
+                </div>
+              )
+            })}
+          </div>
         </div>
-
-        <div style={{ display: 'flex', gap: 10, marginTop: 14 }}>
-          <button className="btn-ghost" style={{ flex: 1 }} onClick={onClose}>Cancel</button>
-          <button className="btn-primary" style={{ flex: 2, opacity: name.trim() ? 1 : 0.5 }} onClick={create} disabled={!name.trim()}>Create folder</button>
-        </div>
+        <div style={{ textAlign: 'center', fontSize: 11, color: 'var(--text-dim)', marginTop: 8 }}>Slide left or right to see more</div>
       </div>
     </div>
   )
