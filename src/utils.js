@@ -1,3 +1,12 @@
+// Local calendar date as YYYY-MM-DD. NEVER use toISOString() for "today" —
+// that converts to UTC first, so after ~8pm US time it rolls to tomorrow.
+export function todayLocal(d = new Date()) {
+  const yr = d.getFullYear()
+  const mo = String(d.getMonth() + 1).padStart(2, '0')
+  const dy = String(d.getDate()).padStart(2, '0')
+  return `${yr}-${mo}-${dy}`
+}
+
 /** ISO 'YYYY-MM-DD' -> 'MM/DD/YYYY'. Pass-through for anything else. */
 export function fmtDate(d) {
   if (!d) return ''

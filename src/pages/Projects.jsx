@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import { useSearchParams } from 'react-router-dom'
-import { fmtDate } from '../utils'
+import { fmtDate , todayLocal } from '../utils'
 import FolderList, { FolderHeader } from '../components/FolderList'
 import FolderSheet from '../components/FolderSheet'
 
@@ -156,7 +156,7 @@ function ProjectDetail({ project, onBack, onAddTask, onEditTask, onRefresh }) {
   const [newShop, setNewShop] = useState('')
   const [editModal, setEditModal] = useState(false)
   const [noteModal, setNoteModal] = useState(null)
-  const today = new Date().toISOString().split('T')[0]
+  const today = todayLocal()
   const color = SECTOR_COLORS[project.sector?.toLowerCase()] || 'var(--accent)'
 
   useEffect(() => { loadDetail() }, [project.id])
@@ -514,9 +514,9 @@ export default function Projects({ onAddTask, onEditTask }) {
       {filtered.map(project=>{
         const tasks=project.tasks||[], done=tasks.filter(t=>t.completed).length, pct=tasks.length?Math.round(done/tasks.length*100):0
         const color=SECTOR_COLORS[project.sector?.toLowerCase()]||'var(--accent)'
-        const today=new Date().toISOString().split('T')[0]
+        const today=todayLocal()
         const isOverdue=project.due_date&&project.due_date<today
-        const isSoon=project.due_date&&!isOverdue&&project.due_date<=new Date(Date.now()+14*86400000).toISOString().split('T')[0]
+        const isSoon=project.due_date&&!isOverdue&&project.due_date<=todayLocal(new Date(Date.now()+14*86400000))
         const imp=project.importance?IMP_STYLES[project.importance]:null
         return (
           <div key={project.id} onClick={()=>setSelected(project)} style={{ background:'var(--bg-card)',border:'1px solid var(--border)',borderRadius:14,padding:16,marginBottom:10,cursor:'pointer' }}>

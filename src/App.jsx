@@ -17,6 +17,7 @@ import FocusTimer from './pages/FocusTimer'
 import Journal from './pages/Journal'
 import TaskModal from './components/TaskModal'
 import EventModal from './components/EventModal'
+import { todayLocal } from './utils'
 import SortableList from './components/SortableList'
 import {
   HomeIcon, WeekIcon, TasksIcon, SectorsIcon, HabitsIcon,
@@ -340,7 +341,7 @@ function EventPage({ onSaved, edit }) {
     <EventModal
       asPage
       event={edit ? fetched : null}
-      date={st.date || new Date().toISOString().split('T')[0]}
+      date={st.date || todayLocal()}
       onClose={goBack}
       onSaved={() => { onSaved?.(); goBack() }}
     />

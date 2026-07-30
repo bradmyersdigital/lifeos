@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { supabase } from '../lib/supabase'
+import { todayLocal } from '../utils'
 import { IconOrEmoji } from '../components/Icons'
 import { fmtDate } from '../utils'
 
@@ -18,7 +19,7 @@ export default function Tasks({ onAddTask, onEditTask }) {
   const [collapsed, setCollapsed] = useState({})
   const dragItem = useRef(null)
   const dragOver = useRef(null)
-  const today = new Date().toISOString().split('T')[0]
+  const today = todayLocal()
 
   useEffect(() => { loadAll() }, [])
 

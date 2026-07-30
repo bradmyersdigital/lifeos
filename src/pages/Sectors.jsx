@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import SortableList from '../components/SortableList'
 import { SectorGlyph, ICON_REGISTRY } from '../components/Icons'
+import { todayLocal } from '../utils'
 import IconPicker from '../components/IconPicker'
 import { fmtDate } from '../utils'
 import TaskModal from '../components/TaskModal'
@@ -103,7 +104,7 @@ function SectorDetail({ sector, onEditTask: onEditTaskRaw, onAddTask, onBack }) 
   const [projectNotes, setProjectNotes] = useState([])
   const [editProjectModal, setEditProjectModal] = useState(false)
   const [noteModal, setNoteModal] = useState(null)
-  const today = new Date().toISOString().split('T')[0]
+  const today = todayLocal()
 
   useEffect(() => {
     if (selectedProject) {
@@ -158,7 +159,7 @@ function SectorDetail({ sector, onEditTask: onEditTaskRaw, onAddTask, onBack }) 
     const done = projectTasks.filter(t => t.completed).length
     const pct = projectTasks.length ? Math.round(done/projectTasks.length*100) : 0
     const color = sector.color || 'var(--accent)'
-    const today = new Date().toISOString().split('T')[0]
+    const today = todayLocal()
 
     const toggleProjectTask = async (task) => {
       const updated = !task.completed

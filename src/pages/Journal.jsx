@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { supabase } from '../lib/supabase'
+import { todayLocal } from '../utils'
 import FolderList, { FolderHeader } from '../components/FolderList'
 
-function todayStr() { return new Date().toISOString().split('T')[0] }
+function todayStr() { return todayLocal() }
 function fmt(d) { return new Date(d + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' }) }
 function fmtShort(d) { return new Date(d + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) }
 
@@ -259,7 +260,7 @@ export default function Journal() {
   const todayEntry = entries.find(e => e.date === todayStr())
   const streak = (() => {
     let s = 0, d = new Date()
-    while (entries.find(e => e.date === d.toISOString().split('T')[0])) { s++; d.setDate(d.getDate() - 1) }
+    while (entries.find(e => e.date === todayLocal(d))) { s++; d.setDate(d.getDate() - 1) }
     return s
   })()
 
