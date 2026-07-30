@@ -196,52 +196,78 @@ function ProjectDetail({ project, onBack, onAddTask, onEditTask, onRefresh }) {
   const pct = tasks.length ? Math.round(done / tasks.length * 100) : 0
   const imp = project.importance ? IMP_STYLES[project.importance] : null
 
+  const statusMeta = project.status === 'completed'
+    ? { label: 'Completed', color: 'var(--success)', bg: 'var(--event-dim)', border: 'var(--success)' }
+    : project.status === 'backlog'
+    ? { label: 'Backlog', color: 'var(--text-muted)', bg: 'var(--bg-card)', border: 'var(--border)' }
+    : { label: 'Active', color: 'var(--accent)', bg: 'var(--accent-dim)', border: 'var(--accent-border)' }
+
   return (
-    <div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
-        <div onClick={onBack} style={{ width: 34, height: 34, borderRadius: 10, background: 'var(--bg-card)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: 18, color: 'var(--text-muted)' }}>‹</div>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <div style={{ fontSize: 18, fontWeight: 500 }}>{project.name}</div>
-            {imp && <span style={{ fontSize: 10, fontWeight: 600, padding: '2px 8px', borderRadius: 6, background: imp.bg, border: `1px solid ${imp.border}`, color: imp.color, flexShrink: 0 }}>{project.importance}</span>}
-          </div>
-          {project.sector && <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 1 }}>{project.sector}</div>}
+    <div className="doc-page" style={{ paddingBottom: 40 }}>
+      {/* ── Command bar: back · edit · complete ───────────────────────────── */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
+        <div onClick={onBack} style={{ width: 34, height: 34, borderRadius: 11, background: 'var(--bg-card)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: 18, color: 'var(--text-muted)', flexShrink: 0 }}>‹</div>
+        <div style={{ flex: 1 }} />
+        <div onClick={() => setEditModal(true)} style={{ display: 'flex', alignItems: 'center', gap: 6, height: 34, padding: '0 13px', borderRadius: 11, background: 'var(--bg-card)', border: '1px solid var(--border)', cursor: 'pointer', color: 'var(--text-muted)', fontSize: 13, fontWeight: 500, flexShrink: 0 }}>
+          <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M9 1.5L11 3.5L4.5 10H2.5V8L9 1.5Z" stroke="var(--text-muted)" strokeWidth="1.3" fill="none" strokeLinecap="round" strokeLinejoin="round"/></svg>
+          Edit
         </div>
         {project.status !== 'completed' && (
-          <div onClick={async () => { if(window.confirm('Mark as completed?')) { await supabase.from('projects').update({status:'completed'}).eq('id',project.id); onRefresh(); onBack() } }} style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '6px 10px', borderRadius: 10, background: 'var(--event-dim)', border: '1px solid var(--success)', color: 'var(--event-color)', fontSize: 12, fontWeight: 500, cursor: 'pointer', flexShrink: 0 }}>
-            <svg width="11" height="11" viewBox="0 0 11 11" fill="none"><polyline points="1,5.5 4,8.5 10,2.5" stroke="var(--event-color)" strokeWidth="1.6" fill="none" strokeLinecap="round"/></svg>
-            Done
+          <div onClick={async () => { if(window.confirm('Mark this project as completed?')) { await supabase.from('projects').update({status:'completed'}).eq('id',project.id); onRefresh(); onBack() } }} style={{ display: 'flex', alignItems: 'center', gap: 6, height: 34, padding: '0 14px', borderRadius: 11, background: 'var(--event-dim)', border: '1px solid var(--success)', color: 'var(--event-color)', fontSize: 13, fontWeight: 500, cursor: 'pointer', flexShrink: 0 }}>
+            <svg width="12" height="12" viewBox="0 0 11 11" fill="none"><polyline points="1,5.5 4,8.5 10,2.5" stroke="var(--event-color)" strokeWidth="1.7" fill="none" strokeLinecap="round"/></svg>
+            Complete
           </div>
         )}
-        <div onClick={() => setEditModal(true)} style={{ width: 34, height: 34, borderRadius: 10, background: 'var(--bg-card)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}>
-          <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M9 1.5L11 3.5L4.5 10H2.5V8L9 1.5Z" stroke="var(--text-muted)" strokeWidth="1.3" fill="none" strokeLinecap="round" strokeLinejoin="round"/></svg>
+      </div>
+
+      {/* ── Title block ───────────────────────────────────────────────────── */}
+      <div style={{ marginBottom: 18 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8, flexWrap: 'wrap' }}>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 11, fontWeight: 600, padding: '3px 9px', borderRadius: 7, background: statusMeta.bg, border: `1px solid ${statusMeta.border}`, color: statusMeta.color }}>
+            <span style={{ width: 6, height: 6, borderRadius: '50%', background: statusMeta.color }} />
+            {statusMeta.label}
+          </span>
+          {imp && <span style={{ fontSize: 11, fontWeight: 600, padding: '3px 9px', borderRadius: 7, background: imp.bg, border: `1px solid ${imp.border}`, color: imp.color }}>{project.importance}</span>}
+          {project.sector && <span style={{ fontSize: 11, fontWeight: 500, padding: '3px 9px', borderRadius: 7, background: 'var(--bg-card)', border: '1px solid var(--border)', color: 'var(--text-muted)' }}>{project.sector}</span>}
+          {project.folder && <span style={{ fontSize: 11, fontWeight: 500, padding: '3px 9px', borderRadius: 7, background: 'var(--bg-card)', border: '1px solid var(--border)', color: 'var(--text-muted)' }}>📁 {project.folder}</span>}
         </div>
+        <div style={{ fontSize: 27, fontWeight: 600, letterSpacing: '-0.5px', lineHeight: 1.15, color: 'var(--text-primary)' }}>{project.name}</div>
       </div>
 
       {project.goal && (
-        <div style={{ marginBottom: 12, padding: '13px 15px', background: 'var(--accent-dim)', borderRadius: 12, border: '1px solid var(--accent-border)' }}>
-          <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--accent)', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 5 }}>Objective</div>
-          <div style={{ fontSize: 14, color: 'var(--text-secondary)', lineHeight: 1.5 }}>{project.goal}</div>
+        <div style={{ marginBottom: 14, padding: '14px 16px', background: 'var(--accent-dim)', borderRadius: 14, border: '1px solid var(--accent-border)' }}>
+          <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--accent)', letterSpacing: '0.09em', textTransform: 'uppercase', marginBottom: 6 }}>Objective</div>
+          <div style={{ fontSize: 14.5, color: 'var(--text-secondary)', lineHeight: 1.55 }}>{project.goal}</div>
         </div>
       )}
-      {project.description && <div style={{ fontSize: 14, color: 'var(--text-muted)', marginBottom: 16, lineHeight: 1.5, padding: '12px 14px', background: 'var(--bg-card)', borderRadius: 12, border: '1px solid var(--border)' }}>{project.description}</div>}
+      {project.description && <div style={{ fontSize: 14, color: 'var(--text-muted)', marginBottom: 18, lineHeight: 1.55, padding: '13px 15px', background: 'var(--bg-card)', borderRadius: 14, border: '1px solid var(--border)' }}>{project.description}</div>}
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 8, marginBottom: 18 }}>
-        {[['Tasks', tasks.length,'var(--text-primary)'],['Done', done,'var(--success)'],['Left', tasks.length-done,'var(--accent)']].map(([l,v,c]) => (
-          <div key={l} style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 12, padding: 12 }}>
-            <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 3 }}>{l}</div>
-            <div style={{ fontSize: 22, fontWeight: 500, color: c }}>{v}</div>
+      {/* ── Progress hero ─────────────────────────────────────────────────── */}
+      <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 16, padding: '18px 18px 20px', marginBottom: 20 }}>
+        <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 14 }}>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
+            <span style={{ fontSize: 34, fontWeight: 600, letterSpacing: '-1px', color: color }}>{pct}%</span>
+            <span style={{ fontSize: 13, color: 'var(--text-dim)' }}>complete</span>
           </div>
-        ))}
+          {project.due_date && (
+            <div style={{ textAlign: 'right' }}>
+              <div style={{ fontSize: 10, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Due</div>
+              <div style={{ fontFamily: "'DM Mono'", fontSize: 13, fontWeight: 500, color: project.due_date < today ? 'var(--danger)' : 'var(--text-secondary)' }}>{fmtDate(project.due_date)}</div>
+            </div>
+          )}
+        </div>
+        <div className="prog-bar" style={{ marginBottom: 16, height: 8 }}><div className="prog-fill" style={{ width: pct+'%', background: color }} /></div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 10 }}>
+          {[['Total', tasks.length,'var(--text-primary)'],['Done', done,'var(--success)'],['Left', tasks.length-done,'var(--accent)']].map(([l,v,c]) => (
+            <div key={l} style={{ textAlign: 'center' }}>
+              <div style={{ fontSize: 22, fontWeight: 600, color: c, fontFamily: "'DM Mono'" }}>{v}</div>
+              <div style={{ fontSize: 11, color: 'var(--text-dim)', marginTop: 2, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{l}</div>
+            </div>
+          ))}
+        </div>
       </div>
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 20 }}>
-        <div className="prog-bar" style={{ flex: 1 }}><div className="prog-fill" style={{ width: pct+'%', background: color }} /></div>
-        <div style={{ fontFamily: "'DM Mono'", fontSize: 12, color: 'var(--text-muted)' }}>{pct}%</div>
-        {project.due_date && <div style={{ fontFamily: "'DM Mono'", fontSize: 11, color: project.due_date < today ? 'var(--danger)' : 'var(--text-dim)' }}>Due {fmtDate(project.due_date)}</div>}
-      </div>
-
-      <div style={{ marginBottom: 18 }}>
+      <div style={{ marginBottom: 22 }}>
         <div className="action-btn btn-task" style={{ width: '100%' }} onClick={() => onAddTask('today', { defaultProjectId: project.id, defaultSector: project.sector })}>
           <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><line x1="7.5" y1="1" x2="7.5" y2="14" stroke="var(--accent-text)" strokeWidth="1.8" strokeLinecap="round"/><line x1="1" y1="7.5" x2="14" y2="7.5" stroke="var(--accent-text)" strokeWidth="1.8" strokeLinecap="round"/></svg>
           Add Task
