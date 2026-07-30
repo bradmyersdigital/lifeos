@@ -164,12 +164,20 @@ function NoteEditor({ note, onBack, onSaved, categories, projects, goals, sector
 }
 
 // ── Category view — notes inside one category ────────────────────────────────
-function CategoryView({ categoryName, categoryColor, notes, onBack, onOpenNote, onNewNote }) {
-  const catNotes = categoryName === '__uncategorized__'
-    ? notes.filter(n => !n.category)
-    : notes.filter(n => n.category === categoryName)
+function CategoryView({ categoryName, categoryColor, categoryLabel, notes, onBack, onOpenNote, onNewNote }) {
+  const isSector = categoryName.startsWith('__sector__')
+  const sectorName = isSector ? categoryName.slice('__sector__'.length) : null
+  const catNotes =
+    categoryName === '__all__' ? notes :
+    categoryName === '__uncategorized__' ? notes.filter(n => !n.category) :
+    isSector ? notes.filter(n => n.sector === sectorName) :
+    notes.filter(n => n.category === categoryName)
 
-  const label = categoryName === '__uncategorized__' ? 'Uncategorized' : categoryName
+  const label =
+    categoryName === '__all__' ? 'All Notes' :
+    categoryName === '__uncategorized__' ? 'Uncategorized' :
+    isSector ? sectorName :
+    categoryName
 
   return (
     <div>
@@ -284,9 +292,7 @@ export default function Notes() {
   // If viewing a category
   if (view === 'category' && activeCat) {
     return (
-      <CategoryView
-        categoryName={activeCat.name}
-        categoryColor={activeCat.color}
+      <CategoryView categoryName={activeCat.name} categoryColor={activeCat.color} categoryLabel={activeCat.label}
         notes={notes}
         onBack={() => setView('categories')}
         onOpenNote={(note) => { setActiveNote(note); setView('note') }}
@@ -371,7 +377,27 @@ export default function Notes() {
         ))}
       </div>
 
-      {/* Folders */}
+      {/* All Notes */}
+      <FolderList
+        folders={[{ id: '__all__', icon: 'icon:notes', label: 'All Notes', count: notes.length, color: 'var(--accent)' }]}
+        onOpen={() => { setActiveCat({ name: '__all__', color: 'var(--accent)' }); setView('category') }}
+      />
+
+      {/* Sectors */}
+      <div style={{ fontSize:11, fontWeight:600, letterSpacing:'0.09em', textTransform:'uppercase', color:'var(--text-dim)', margin:'20px 4px 8px' }}>Sectors</div>
+      <FolderList
+        folders={sectors.map(s => ({
+          id: '__sector__' + s.name,
+          icon: s.icon || '\u{1F4C1}',
+          label: s.name,
+          count: notes.filter(n => n.sector === s.name).length,
+        }))}
+        onOpen={(f) => { setActiveCat({ name: f.id, color: 'var(--text-dim)', label: f.label }); setView('category') }}
+        emptyText="No sectors yet"
+      />
+
+      {/* Folders (custom categories) */}
+      <div style={{ fontSize:11, fontWeight:600, letterSpacing:'0.09em', textTransform:'uppercase', color:'var(--text-dim)', margin:'20px 4px 8px' }}>Folders</div>
       <FolderList
         folders={[
           ...categories.map(cat => {
@@ -394,7 +420,7 @@ export default function Notes() {
           setActiveCat({ name: f.id, color: f.color || 'var(--text-dim)' })
           setView('category')
         }}
-        emptyText="No categories yet — tap Edit to add one"
+        emptyText="No folders yet — tap Edit to add one"
       />
 
       {notes.length === 0 && !showManage && (
