@@ -483,13 +483,11 @@ export default function Home({ onAddTask, onEditTask, onAddEvent }) {
                 <div style={{ fontSize: 9, color: isToday ? 'var(--accent)' : 'var(--text-dim)', fontWeight: 600, textTransform: 'uppercase', marginBottom: 3 }}>{DAY_NAMES[i]}</div>
                 <div style={{ fontSize: 15, fontWeight: 500, color: isToday ? 'var(--accent)' : 'var(--text-muted)', marginBottom: 5 }}>{d.getDate()}</div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 3, alignItems: 'center', minHeight: 32, justifyContent: 'center' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 3, fontSize: 8.5, fontWeight: 600, color: dayEvents.length ? 'var(--success)' : 'var(--text-dim)', opacity: dayEvents.length ? 1 : 0.3 }}>
-                    <span style={{ width: 5, height: 5, borderRadius: '50%', background: 'var(--success)', flexShrink: 0 }} />
-                    {dayEvents.length} Ev
+                  <div style={{ fontSize: 8, fontWeight: 600, color: dayEvents.length ? 'var(--success)' : 'var(--text-dim)', opacity: dayEvents.length ? 1 : 0.35, whiteSpace: 'nowrap' }}>
+                    {dayEvents.length} Event{dayEvents.length === 1 ? '' : 's'}
                   </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 3, fontSize: 8.5, fontWeight: 600, color: dayTasks.length ? 'var(--warn)' : 'var(--text-dim)', opacity: dayTasks.length ? 1 : 0.3 }}>
-                    <span style={{ width: 5, height: 5, borderRadius: '50%', background: 'var(--warn)', flexShrink: 0 }} />
-                    {dayTasks.length} Tk
+                  <div style={{ fontSize: 8, fontWeight: 600, color: dayTasks.length ? 'var(--warn)' : 'var(--text-dim)', opacity: dayTasks.length ? 1 : 0.35, whiteSpace: 'nowrap' }}>
+                    {dayTasks.length} Task{dayTasks.length === 1 ? '' : 's'}
                   </div>
                 </div>
               </div>

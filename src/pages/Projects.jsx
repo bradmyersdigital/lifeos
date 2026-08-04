@@ -5,12 +5,12 @@ import { fmtDate , todayLocal } from '../utils'
 import FolderList, { FolderHeader } from '../components/FolderList'
 import FolderSheet from '../components/FolderSheet'
 
-const IMPORTANCE = ['Critical','High','Medium','Low']
+const IMPORTANCE = ['Low', 'Medium', 'High', 'Urgent']
 const IMP_STYLES = {
-  Critical: { bg: 'var(--danger-dim)', border: 'var(--danger-border)', color: 'var(--danger)' },
-  High:     { bg: 'var(--accent-dim)', border: 'var(--accent-border)', color: 'var(--accent-text)' },
-  Medium:   { bg: 'var(--warn-dim)', border: 'var(--warn-border)', color: 'var(--warn)' },
-  Low:      { bg: 'var(--success-dim)', border: 'var(--success-border)', color: 'var(--event-color)' },
+  Low:    { bg: 'var(--success-dim)', border: 'var(--success-border)', color: 'var(--event-color)' },
+  Medium: { bg: 'var(--warn-dim)', border: 'var(--warn-border)', color: 'var(--warn)' },
+  High:   { bg: 'var(--accent-dim)', border: 'var(--accent-border)', color: 'var(--accent-text)' },
+  Urgent: { bg: 'var(--danger-dim)', border: 'var(--danger-border)', color: 'var(--danger)' },
 }
 const SECTOR_COLORS = {
   business: '#d4520f', 'real estate': '#3b82f6', health: '#10b981',
@@ -31,7 +31,7 @@ export function ProjectModal({ onClose, onSaved, project, defaultSector, default
   const [description, setDescription] = useState(project?.description || '')
   const [dueDate, setDueDate] = useState(project?.due_date || '')
   const [status, setStatus] = useState(project?.status || 'active')
-  const [importance, setImportance] = useState(project?.importance || 'Medium')
+  const [importance, setImportance] = useState(project?.importance === 'Critical' ? 'Urgent' : (project?.importance || 'Medium'))
   const [goalId, setGoalId] = useState(project?.goal_id || '')
   const [goals, setGoals] = useState([])
   const [sectors, setSectors] = useState([])

@@ -99,20 +99,21 @@ export default function Week({ onAddTask, onEditTask }) {
   const monthYear = monthDate.getFullYear(), monthMonth = monthDate.getMonth()
 
   const openDaySheet = (date) => {
-    setDaySheet({ date, tasks: tasksForDay(date), events: eventsForDay(date) })
+    setDaySheet({ date })
   }
 
-  // Arrived from Home's week-glance with a specific day -> open that day's sheet
+  // Arrived from Home's week-glance with a specific day -> open that day's sheet.
+  // The sheet reads tasks/events live at render, so timing of the loads no longer
+  // matters — we just open it once after arriving.
   const openedFromNav = useRef(false)
   useEffect(() => {
     const target = location.state?.openDate
-    if (target && !openedFromNav.current && (tasks.length || events.length)) {
+    if (target && !openedFromNav.current) {
       openedFromNav.current = true
       openDaySheet(target)
-      // clear the state so it doesn't re-open on further renders
       navigate('/week', { replace: true, state: {} })
     }
-  }, [location.state, tasks, events])
+  }, [location.state])
 
   // Swipe to page. Attached to the calendar surface only — on the root it
   // fired anywhere on the page, including the filters and header.
@@ -416,7 +417,10 @@ export default function Week({ onAddTask, onEditTask }) {
       })()}
 
       {/* Day sheet modal */}
-      {daySheet && (
+      {daySheet && (() => {
+        const dayTasks = tasksForDay(daySheet.date)
+        const dayEvents = eventsForDay(daySheet.date)
+        return (
         <div className="modal-overlay" onClick={e => e.target === e.currentTarget && setDaySheet(null)}>
           <div className="modal-sheet">
             <div className="modal-handle" />
@@ -432,7 +436,7 @@ export default function Week({ onAddTask, onEditTask }) {
                 + Event
               </div>
             </div>
-            {daySheet.events.map(ev => (
+            {dayEvents.map(ev => (
               <div key={ev.id} onClick={() => { setDaySheet(null); navigate(`/event/${ev.id}`, { state: { event: ev, date: ev.start_date, from: '/week' } }) }} className="event-card" style={{ display: 'flex', gap: 12, padding: '12px 14px', borderRadius: 12, marginBottom: 8, cursor: 'pointer' }}>
                 <svg width="14" height="14" viewBox="0 0 14 14" fill="none" style={{ flexShrink: 0, marginTop: 2 }}><circle cx="7" cy="7" r="6" stroke="var(--event-color)" strokeWidth="1.3"/><polyline points="7,4 7,7 9,8.5" stroke="var(--event-color)" strokeWidth="1.3" strokeLinecap="round"/></svg>
                 <div style={{ flex: 1 }}>
@@ -442,9 +446,9 @@ export default function Week({ onAddTask, onEditTask }) {
                 </div>
               </div>
             ))}
-            {daySheet.tasks.map(task => (
+            {dayTasks.map(task => (
               <div key={task.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '11px 14px', background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 12, marginBottom: 6, cursor: 'pointer' }} onClick={() => { setDaySheet(null); onEditTask(task) }}>
-                <div onClick={e => { e.stopPropagation(); toggleTask(task).then(() => setDaySheet(ds => ({ ...ds, tasks: ds.tasks.map(t => t.id === task.id ? { ...t, completed: !t.completed } : t) }))) }}
+                <div onClick={e => { e.stopPropagation(); toggleTask(task) }}
                   style={{ width: 20, height: 20, borderRadius: '50%', border: `1.5px solid ${task.completed ? 'var(--accent)' : 'var(--border-hover)'}`, background: task.completed ? 'var(--accent)' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, cursor: 'pointer' }}>
                   {task.completed && <svg width="9" height="9" viewBox="0 0 9 9"><polyline points="1,4.5 3.5,7 8,2" stroke="white" strokeWidth="1.5" fill="none" strokeLinecap="round"/></svg>}
                 </div>
@@ -454,12 +458,13 @@ export default function Week({ onAddTask, onEditTask }) {
                 </div>
               </div>
             ))}
-            {daySheet.tasks.length === 0 && daySheet.events.length === 0 && (
+            {dayTasks.length === 0 && dayEvents.length === 0 && (
               <div style={{ textAlign: 'center', padding: '20px', color: 'var(--text-dim)', fontSize: 13 }}>Nothing scheduled — add something above</div>
             )}
           </div>
         </div>
-      )}
+        )
+      })()}
 
     </div>
   )
