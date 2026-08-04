@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { IconOrEmoji } from '../components/Icons'
-import { fmtDate } from '../utils'
+import {fmtDate, eventOccursOn } from '../utils'
 
 const SECTOR_COLORS = {
   business: '#d4520f', 'real estate': '#10b981', health: '#10b981',
@@ -297,7 +297,9 @@ export default function Home({ onAddTask, onEditTask, onAddEvent }) {
       .then(({ data }) => setTodayEvents(data || []))
     supabase.from('events').select('*').gte('start_date', todayStr).lte('start_date', weekDates[6]).order('start_date').order('start_time')
       .then(({ data }) => setWeekEvents(data || []))
-    supabase.from('events').select('*').gte('start_date', weekDates[0]).lte('start_date', weekDates[6])
+    // pull ALL events (recurring ones can start before this week); eventOccursOn
+    // expands the recurrence per-day below.
+    supabase.from('events').select('*')
       .then(({ data }) => setWeekGlanceEvents(data || []))
   }
 
@@ -476,7 +478,7 @@ export default function Home({ onAddTask, onEditTask, onAddEvent }) {
           {weekDates.map((date, i) => {
             const isToday = date === todayStr
             const dayTasks = weekTasks.filter(t => t.start_date === date)
-            const dayEvents = weekGlanceEvents.filter(e => e.start_date === date)
+            const dayEvents = weekGlanceEvents.filter(e => eventOccursOn(e, date))
             const d = new Date(date + 'T00:00:00')
             return (
               <div key={date} onClick={() => navigate('/week', { state: { openDate: date } })} style={{ background: isToday ? 'var(--accent-dim)' : 'var(--bg-card)', border: `1px solid ${isToday ? 'var(--accent-border)' : 'var(--border)'}`, borderRadius: 10, padding: '8px 3px', textAlign: 'center', cursor: 'pointer' }}>
