@@ -32,11 +32,15 @@ export function ProjectModal({ onClose, onSaved, project, defaultSector, default
   const [dueDate, setDueDate] = useState(project?.due_date || '')
   const [status, setStatus] = useState(project?.status || 'active')
   const [importance, setImportance] = useState(project?.importance || 'Medium')
+  const [goalId, setGoalId] = useState(project?.goal_id || '')
+  const [goals, setGoals] = useState([])
   const [sectors, setSectors] = useState([])
   const [saving, setSaving] = useState(false)
+  const isComplete = status === 'completed'
 
   useEffect(() => {
     supabase.from('sectors').select('name').order('sort_order').order('name').then(({ data }) => setSectors(data || []))
+    supabase.from('goals').select('id, goal_text, timeframe').order('timeframe').then(({ data }) => setGoals(data || []))
   }, [])
 
   const handleSave = async () => {
@@ -48,10 +52,19 @@ export function ProjectModal({ onClose, onSaved, project, defaultSector, default
       sector: isSector ? placement.slice(7) : null,
       folder: isFolder ? placement.slice(7) : null,
       goal: goal.trim() || null, description, due_date: dueDate || null, status, importance,
+      goal_id: goalId || null,
     }
     let saved = null
-    if (isEdit) { const { data } = await supabase.from('projects').update(payload).eq('id', project.id).select().single(); saved = data }
-    else { const { data } = await supabase.from('projects').insert(payload).select().single(); saved = data }
+    let error = null
+    if (isEdit) { const r = await supabase.from('projects').update(payload).eq('id', project.id).select().single(); saved = r.data; error = r.error }
+    else { const r = await supabase.from('projects').insert(payload).select().single(); saved = r.data; error = r.error }
+    // projects.goal_id may not exist yet in the DB — retry without it rather than losing the rest of the edit
+    if (error?.code === '42703' || error?.code === 'PGRST204') {
+      const { goal_id, ...fallback } = payload
+      if (isEdit) { const r = await supabase.from('projects').update(fallback).eq('id', project.id).select().single(); saved = r.data }
+      else { const r = await supabase.from('projects').insert(fallback).select().single(); saved = r.data }
+      console.warn('projects.goal_id column is missing — everything saved except the goal link. Add "goal_id uuid references goals(id)" to the projects table.')
+    }
     setSaving(false); onSaved(saved); onClose()
   }
 
@@ -61,10 +74,11 @@ export function ProjectModal({ onClose, onSaved, project, defaultSector, default
     onSaved(); onClose()
   }
 
-  const handleComplete = async () => {
-    if (!window.confirm('Mark this project as completed?')) return
-    await supabase.from('projects').update({ status: 'completed' }).eq('id', project.id)
-    onSaved(); onClose()
+  const toggleComplete = async () => {
+    if (!isEdit) return
+    const next = isComplete ? 'active' : 'completed'
+    setStatus(next)
+    await supabase.from('projects').update({ status: next }).eq('id', project.id)
   }
 
   const sectorList = sectors.length > 0 ? sectors.map(s => s.name) : ['Business','Real Estate','Health','Personal Growth','Hobbies','Family']
@@ -75,17 +89,29 @@ export function ProjectModal({ onClose, onSaved, project, defaultSector, default
         <div className="modal-handle" />
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 22, position: 'sticky', top: 14, background: 'var(--bg)', zIndex: 5, paddingBottom: 8 }}>
           <div onClick={onClose} style={{ width: 34, height: 34, borderRadius: 10, background: 'var(--bg-card)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: 18, color: 'var(--text-muted)', flexShrink: 0 }}>‹</div>
-          <div style={{ fontSize: 20, fontWeight: 600, letterSpacing: '-0.3px' }}>{isEdit ? 'Edit project' : 'New project'}</div>
+          <div style={{ flex: 1, fontSize: 20, fontWeight: 600, letterSpacing: '-0.3px' }}>{isEdit ? 'Edit project' : 'New project'}</div>
+          {isEdit && (
+            <div onClick={toggleComplete}
+              style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '8px 14px', borderRadius: 11, cursor: 'pointer', flexShrink: 0,
+                background: isComplete ? 'var(--success-dim)' : 'var(--bg-card)',
+                border: `1px solid ${isComplete ? 'var(--success-border)' : 'var(--border)'}`,
+                color: isComplete ? 'var(--success)' : 'var(--text-muted)' }}>
+              <div style={{ width: 18, height: 18, borderRadius: '50%', border: `1.5px solid ${isComplete ? 'var(--success)' : 'var(--border-hover)'}`, background: isComplete ? 'var(--success)' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                {isComplete && <svg width="10" height="10" viewBox="0 0 10 10"><polyline points="1.5,5 4,7.5 8.5,2.5" stroke="white" strokeWidth="1.8" fill="none" strokeLinecap="round"/></svg>}
+              </div>
+              <span style={{ fontSize: 13, fontWeight: 500 }}>{isComplete ? 'Completed' : 'Complete'}</span>
+            </div>
+          )}
         </div>
         <div className="field"><div className="field-label">Project name</div><input type="text" placeholder="What are you working on?" value={name} onChange={e => setName(e.target.value)} /></div>
         <div className="field"><div className="field-label">Objective</div><textarea placeholder="What does 'done' look like for this project?" value={goal} onChange={e => setGoal(e.target.value)} style={{ minHeight: 60 }} /></div>
         <div className="field"><div className="field-label">Description / notes</div><textarea placeholder="Context, details, anything worth remembering" value={description} onChange={e => setDescription(e.target.value)} /></div>
         <div className="field">
           <div className="field-label">Importance</div>
-          <div style={{ display: 'flex', gap: 6 }}>
+          <div style={{ display: 'flex', gap: 7 }}>
             {IMPORTANCE.map(imp => {
               const s = IMP_STYLES[imp]; const active = importance === imp
-              return <div key={imp} onClick={() => setImportance(imp)} style={{ flex: 1, padding: '7px 4px', borderRadius: 9, textAlign: 'center', fontSize: 11, fontWeight: 500, cursor: 'pointer', background: active ? s.bg : 'var(--bg)', border: `1px solid ${active ? s.border : 'var(--border)'}`, color: active ? s.color : 'var(--text-dim)' }}>{imp}</div>
+              return <div key={imp} onClick={() => setImportance(imp)} style={{ flex: 1, padding: '8px 4px', borderRadius: 10, textAlign: 'center', fontSize: 12, fontWeight: 500, cursor: 'pointer', transition: 'all 0.15s', background: active ? s.bg : 'var(--bg-input)', border: `1px solid ${active ? s.border : 'var(--border)'}`, color: active ? s.color : 'var(--text-dim)' }}>{imp}</div>
             })}
           </div>
         </div>
@@ -108,11 +134,17 @@ export function ProjectModal({ onClose, onSaved, project, defaultSector, default
           </div>
         </div>
         <div className="field"><div className="field-label">Due date</div><input type="date" value={dueDate} onChange={e => setDueDate(e.target.value)} /></div>
+        <div className="field">
+          <div className="field-label">Link to goal</div>
+          <select value={goalId} onChange={e => setGoalId(e.target.value)}>
+            <option value="">No goal linked</option>
+            {goals.map(g => <option key={g.id} value={g.id}>{g.timeframe?.replace('month','mo ').replace('year','yr ')} — {g.goal_text?.substring(0,40)}{g.goal_text?.length>40?'…':''}</option>)}
+          </select>
+        </div>
         <div style={{ display: 'flex', gap: 10, marginTop: 18 }}>
-          {isEdit && <>
+          {isEdit && (
             <button onClick={handleDelete} style={{ flex: 1, padding: 11, borderRadius: 10, background: 'var(--danger-dim)', border: '1px solid var(--danger-border)', color: 'var(--danger)', fontSize: 13, fontWeight: 500, cursor: 'pointer', fontFamily: "'DM Sans'" }}>Delete</button>
-            <button onClick={handleComplete} style={{ flex: 1, padding: 11, borderRadius: 10, background: 'var(--event-dim)', border: '1px solid var(--success)', color: 'var(--event-color)', fontSize: 13, fontWeight: 500, cursor: 'pointer', fontFamily: "'DM Sans'" }}>✓ Complete</button>
-          </>}
+          )}
           <button className="btn-ghost" style={{ flex: 1 }} onClick={onClose}>Cancel</button>
           <button className="btn-primary" style={{ flex: 2 }} onClick={handleSave} disabled={saving}>{saving ? 'Saving…' : isEdit ? 'Save' : 'Create'}</button>
         </div>
@@ -359,8 +391,9 @@ export default function Projects({ onAddTask, onEditTask }) {
       if (match) { setSelected(match); setSearchParams({}, { replace: true }) }
     }
   }, [searchParams, projects])
-  const [filter, setFilter] = useState('active')
+  const [filter, setFilter] = useState('all')
   const [folder, setFolder] = useState(null) // null = folder index, else { id, label, icon }
+  const openFolder = (f) => { setFolder(f); setFilter('all') }
   const [customFolders, setCustomFolders] = useState(() => {
     try {
       const raw = JSON.parse(localStorage.getItem('nd_project_folders')) || []
@@ -461,11 +494,11 @@ export default function Projects({ onAddTask, onEditTask }) {
         </div>
 
         {/* All Projects */}
-        <FolderList folders={allFolder} onOpen={setFolder} />
+        <FolderList folders={allFolder} onOpen={openFolder} />
 
         {/* Sectors */}
         <div style={{ fontSize:11, fontWeight:600, letterSpacing:'0.09em', textTransform:'uppercase', color:'var(--text-dim)', margin:'20px 4px 8px' }}>Sectors</div>
-        <FolderList folders={sectorFolders} onOpen={setFolder} emptyText="No sectors yet" />
+        <FolderList folders={sectorFolders} onOpen={openFolder} emptyText="No sectors yet" />
 
         {/* Custom folders */}
         <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', margin:'20px 4px 8px' }}>
@@ -475,7 +508,7 @@ export default function Projects({ onAddTask, onEditTask }) {
           </div>
         </div>
         {customFolderRows.length > 0
-          ? <FolderList folders={customFolderRows} onOpen={setFolder} onDelete={(f)=>deleteFolder(f.id)} onEdit={(f)=>setEditingFolder(f._folder)} />
+          ? <FolderList folders={customFolderRows} onOpen={openFolder} onDelete={(f)=>deleteFolder(f.id)} onEdit={(f)=>setEditingFolder(f._folder)} />
           : <div onClick={()=>setShowFolderModal(true)} style={{ textAlign:'center', padding:'16px', color:'var(--text-dim)', fontSize:13, border:'1px dashed var(--border)', borderRadius:14, cursor:'pointer' }}>Make a folder that isn't tied to a sector</div>}
 
         {showModal&&<ProjectModal onClose={()=>setShowModal(false)} onSaved={loadProjects} folderOptions={customFolders.map(f=>f.name)} />}

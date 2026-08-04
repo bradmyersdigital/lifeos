@@ -152,7 +152,7 @@ function UpcomingSubsSection({ onNavigate }) {
           const isUrgent = daysUntil <= 2
           const isImg = sub.icon?.startsWith('data:')
           return (
-            <div key={sub.id} onClick={() => onNavigate('/finance')}
+            <div key={sub.id} onClick={() => onNavigate('/finance?tab=recurring')}
               style={{ flexShrink: 0, width: 128, background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 14, overflow: 'hidden', cursor: 'pointer' }}>
               <div style={{ height: 52, background: 'var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24, overflow: 'hidden' }}>
                 {isImg ? <img src={sub.icon} alt={sub.name} style={{ width: 34, height: 34, borderRadius: 9, objectFit: 'cover' }} /> : icon}
@@ -239,7 +239,17 @@ export default function Home({ onAddTask, onEditTask, onAddEvent }) {
   const [weekTasks, setWeekTasks] = useState([])
   const [todayEvents, setTodayEvents] = useState([])
   const [weekEvents, setWeekEvents] = useState([])
+  const [weekGlanceEvents, setWeekGlanceEvents] = useState([])
   const [sectors, setSectors] = useState([])
+  const [quoteIdx, setQuoteIdx] = useState(() => new Date().getDate() % QUOTES.length)
+  const cycleQuote = () => {
+    setQuoteIdx(prev => {
+      if (QUOTES.length <= 1) return prev
+      let next
+      do { next = Math.floor(Math.random() * QUOTES.length) } while (next === prev)
+      return next
+    })
+  }
 
   const today = new Date()
   const todayStr = (() => {
@@ -266,7 +276,7 @@ export default function Home({ onAddTask, onEditTask, onAddEvent }) {
     return `${yr}-${mo}-${dy}`
   })
 
-  useEffect(() => { loadAll() }, [todayStr])
+  useEffect(() => { loadAll() }, [todayStr, weekGlanceOffset])
 
   const loadAll = async () => {
     // Fetch today's tasks + overdue from past 7 days (not completed)
@@ -287,6 +297,8 @@ export default function Home({ onAddTask, onEditTask, onAddEvent }) {
       .then(({ data }) => setTodayEvents(data || []))
     supabase.from('events').select('*').gte('start_date', todayStr).lte('start_date', weekDates[6]).order('start_date').order('start_time')
       .then(({ data }) => setWeekEvents(data || []))
+    supabase.from('events').select('*').gte('start_date', weekDates[0]).lte('start_date', weekDates[6])
+      .then(({ data }) => setWeekGlanceEvents(data || []))
   }
 
   const toggleTask = async (task) => {
@@ -337,12 +349,11 @@ export default function Home({ onAddTask, onEditTask, onAddEvent }) {
 
   return (
     <div>
-      {/* Header — logo, date, quote of the day */}
+      {/* Header — logo, date, quote of the day (tap to shuffle) */}
       {(() => {
-        const dayIdx = new Date().getDate() % QUOTES.length
-        const quote = QUOTES[dayIdx]
+        const quote = QUOTES[quoteIdx]
         return (
-          <div style={{ textAlign: 'center', marginBottom: 26 }}>
+          <div style={{ textAlign: 'center', marginBottom: 22 }}>
             {/* NeverDrift banner — light/dark variants swapped by data-theme */}
             <img src="/neverdrift-dark.png" alt="NeverDrift OS"
               className="brand-dark"
@@ -350,11 +361,11 @@ export default function Home({ onAddTask, onEditTask, onAddEvent }) {
             <img src="/neverdrift-light.png" alt="NeverDrift OS"
               className="brand-light"
               style={{ height: 64, width: 'auto', maxWidth: '85%', margin: '0 auto 16px', display: 'none' }} />
-            <div style={{ fontSize: 12, color: 'var(--text-dim)', marginBottom: 14, fontFamily: "'DM Mono'", letterSpacing: '0.04em' }}>{dateStr}</div>
-            <div style={{ fontSize: 23, fontWeight: 700, color: 'var(--text-primary)', lineHeight: 1.28, letterSpacing: '-0.4px', maxWidth: 440, margin: '0 auto 10px' }}>
+            <div style={{ fontSize: 12, color: 'var(--text-dim)', marginBottom: 12, fontFamily: "'DM Mono'", letterSpacing: '0.04em' }}>{dateStr}</div>
+            <div onClick={cycleQuote} style={{ fontSize: 12.5, fontWeight: 500, color: 'var(--text-secondary)', lineHeight: 1.4, letterSpacing: '-0.1px', maxWidth: 320, margin: '0 auto 4px', cursor: 'pointer' }}>
               {quote.text}
             </div>
-            <div style={{ fontSize: 12, color: 'var(--text-muted)', fontWeight: 500 }}>— {quote.author}</div>
+            <div style={{ fontSize: 10.5, color: 'var(--text-dim)', fontWeight: 500 }}>— {quote.author}</div>
           </div>
         )
       })()}
@@ -465,17 +476,26 @@ export default function Home({ onAddTask, onEditTask, onAddEvent }) {
           {weekDates.map((date, i) => {
             const isToday = date === todayStr
             const dayTasks = weekTasks.filter(t => t.start_date === date)
+            const dayEvents = weekGlanceEvents.filter(e => e.start_date === date)
             const d = new Date(date + 'T00:00:00')
             return (
               <div key={date} onClick={() => navigate('/week')} style={{ background: isToday ? 'var(--accent-dim)' : 'var(--bg-card)', border: `1px solid ${isToday ? 'var(--accent-border)' : 'var(--border)'}`, borderRadius: 10, padding: '8px 4px', textAlign: 'center', cursor: 'pointer' }}>
                 <div style={{ fontSize: 9, color: isToday ? 'var(--accent)' : 'var(--text-dim)', fontWeight: 600, textTransform: 'uppercase', marginBottom: 3 }}>{DAY_NAMES[i]}</div>
                 <div style={{ fontSize: 15, fontWeight: 500, color: isToday ? 'var(--accent)' : 'var(--text-muted)', marginBottom: 4 }}>{d.getDate()}</div>
-                {dayTasks.slice(0, 2).map((t, ti) => (
-                  <div key={ti} style={{ fontSize: 9, background: 'var(--border)', color: 'var(--text-dim)', borderRadius: 4, padding: '1px 3px', marginBottom: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {t.name.length > 7 ? t.name.substring(0, 7) + '…' : t.name}
-                  </div>
-                ))}
-                {dayTasks.length === 0 && <div style={{ fontSize: 10, color: 'var(--bg-card2)' }}>—</div>}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 3, alignItems: 'center', minHeight: 30, justifyContent: 'center' }}>
+                  {(dayEvents.length === 0 && dayTasks.length === 0)
+                    ? <div style={{ fontSize: 11, color: 'var(--text-dim)', opacity: 0.4 }}>·</div>
+                    : (<>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 3, fontSize: 10, fontWeight: 600, color: dayEvents.length ? 'var(--success)' : 'var(--text-dim)', fontFamily: "'DM Mono'", opacity: dayEvents.length ? 1 : 0.3 }}>
+                          <span style={{ width: 5, height: 5, borderRadius: '50%', background: 'var(--success)', flexShrink: 0 }} />
+                          {dayEvents.length}
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 3, fontSize: 10, fontWeight: 600, color: dayTasks.length ? 'var(--warn)' : 'var(--text-dim)', fontFamily: "'DM Mono'", opacity: dayTasks.length ? 1 : 0.3 }}>
+                          <span style={{ width: 5, height: 5, borderRadius: '50%', background: 'var(--warn)', flexShrink: 0 }} />
+                          {dayTasks.length}
+                        </div>
+                      </>)}
+                </div>
               </div>
             )
           })}
