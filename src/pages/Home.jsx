@@ -479,22 +479,18 @@ export default function Home({ onAddTask, onEditTask, onAddEvent }) {
             const dayEvents = weekGlanceEvents.filter(e => e.start_date === date)
             const d = new Date(date + 'T00:00:00')
             return (
-              <div key={date} onClick={() => navigate('/week')} style={{ background: isToday ? 'var(--accent-dim)' : 'var(--bg-card)', border: `1px solid ${isToday ? 'var(--accent-border)' : 'var(--border)'}`, borderRadius: 10, padding: '8px 4px', textAlign: 'center', cursor: 'pointer' }}>
+              <div key={date} onClick={() => navigate('/week', { state: { openDate: date } })} style={{ background: isToday ? 'var(--accent-dim)' : 'var(--bg-card)', border: `1px solid ${isToday ? 'var(--accent-border)' : 'var(--border)'}`, borderRadius: 10, padding: '8px 3px', textAlign: 'center', cursor: 'pointer' }}>
                 <div style={{ fontSize: 9, color: isToday ? 'var(--accent)' : 'var(--text-dim)', fontWeight: 600, textTransform: 'uppercase', marginBottom: 3 }}>{DAY_NAMES[i]}</div>
-                <div style={{ fontSize: 15, fontWeight: 500, color: isToday ? 'var(--accent)' : 'var(--text-muted)', marginBottom: 4 }}>{d.getDate()}</div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 3, alignItems: 'center', minHeight: 30, justifyContent: 'center' }}>
-                  {(dayEvents.length === 0 && dayTasks.length === 0)
-                    ? <div style={{ fontSize: 11, color: 'var(--text-dim)', opacity: 0.4 }}>·</div>
-                    : (<>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 3, fontSize: 10, fontWeight: 600, color: dayEvents.length ? 'var(--success)' : 'var(--text-dim)', fontFamily: "'DM Mono'", opacity: dayEvents.length ? 1 : 0.3 }}>
-                          <span style={{ width: 5, height: 5, borderRadius: '50%', background: 'var(--success)', flexShrink: 0 }} />
-                          {dayEvents.length}
-                        </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 3, fontSize: 10, fontWeight: 600, color: dayTasks.length ? 'var(--warn)' : 'var(--text-dim)', fontFamily: "'DM Mono'", opacity: dayTasks.length ? 1 : 0.3 }}>
-                          <span style={{ width: 5, height: 5, borderRadius: '50%', background: 'var(--warn)', flexShrink: 0 }} />
-                          {dayTasks.length}
-                        </div>
-                      </>)}
+                <div style={{ fontSize: 15, fontWeight: 500, color: isToday ? 'var(--accent)' : 'var(--text-muted)', marginBottom: 5 }}>{d.getDate()}</div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 3, alignItems: 'center', minHeight: 32, justifyContent: 'center' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 3, fontSize: 8.5, fontWeight: 600, color: dayEvents.length ? 'var(--success)' : 'var(--text-dim)', opacity: dayEvents.length ? 1 : 0.3 }}>
+                    <span style={{ width: 5, height: 5, borderRadius: '50%', background: 'var(--success)', flexShrink: 0 }} />
+                    {dayEvents.length} Ev
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 3, fontSize: 8.5, fontWeight: 600, color: dayTasks.length ? 'var(--warn)' : 'var(--text-dim)', opacity: dayTasks.length ? 1 : 0.3 }}>
+                    <span style={{ width: 5, height: 5, borderRadius: '50%', background: 'var(--warn)', flexShrink: 0 }} />
+                    {dayTasks.length} Tk
+                  </div>
                 </div>
               </div>
             )

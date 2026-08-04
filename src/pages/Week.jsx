@@ -102,6 +102,18 @@ export default function Week({ onAddTask, onEditTask }) {
     setDaySheet({ date, tasks: tasksForDay(date), events: eventsForDay(date) })
   }
 
+  // Arrived from Home's week-glance with a specific day -> open that day's sheet
+  const openedFromNav = useRef(false)
+  useEffect(() => {
+    const target = location.state?.openDate
+    if (target && !openedFromNav.current && (tasks.length || events.length)) {
+      openedFromNav.current = true
+      openDaySheet(target)
+      // clear the state so it doesn't re-open on further renders
+      navigate('/week', { replace: true, state: {} })
+    }
+  }, [location.state, tasks, events])
+
   // Swipe to page. Attached to the calendar surface only — on the root it
   // fired anywhere on the page, including the filters and header.
   const touchStartY = useRef(null)

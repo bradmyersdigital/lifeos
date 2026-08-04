@@ -188,6 +188,7 @@ function ProjectDetail({ project, onBack, onAddTask, onEditTask, onRefresh }) {
   const [newShop, setNewShop] = useState('')
   const [editModal, setEditModal] = useState(false)
   const [noteModal, setNoteModal] = useState(null)
+  const [taskTab, setTaskTab] = useState('active')  // 'active' | 'completed'
   const today = todayLocal()
   const color = SECTOR_COLORS[project.sector?.toLowerCase()] || 'var(--accent)'
 
@@ -306,10 +307,20 @@ function ProjectDetail({ project, onBack, onAddTask, onEditTask, onRefresh }) {
         </div>
       </div>
 
-      <div className="section-label">Tasks</div>
-      {tasks.length === 0 && <div style={{ textAlign:'center',padding:'20px',color:'var(--text-dim)',fontSize:13,border:'1px dashed var(--border)',borderRadius:12,marginBottom:18 }}>No tasks yet</div>}
+      <div style={{ display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:10 }}>
+        <div className="section-label" style={{ margin:0 }}>Tasks</div>
+        <div style={{ display:'flex',background:'var(--bg-card)',border:'1px solid var(--border)',borderRadius:9,overflow:'hidden' }}>
+          {[['active',`Active (${tasks.filter(t=>!t.completed).length})`],['completed',`Done (${tasks.filter(t=>t.completed).length})`]].map(([v,label])=>(
+            <div key={v} onClick={()=>setTaskTab(v)} style={{ padding:'6px 12px',fontSize:12,fontWeight:500,cursor:'pointer',background:taskTab===v?'var(--accent-dim)':'transparent',color:taskTab===v?'var(--accent)':'var(--text-muted)' }}>{label}</div>
+          ))}
+        </div>
+      </div>
+      {(() => {
+        const shown = tasks.filter(t => taskTab === 'completed' ? t.completed : !t.completed)
+        if (shown.length === 0) return <div style={{ textAlign:'center',padding:'20px',color:'var(--text-dim)',fontSize:13,border:'1px dashed var(--border)',borderRadius:12,marginBottom:18 }}>{taskTab==='completed'?'No completed tasks':'No active tasks'}</div>
+        return (
       <div style={{ display:'flex',flexDirection:'column',gap:6,marginBottom:20 }}>
-        {tasks.map(task => {
+        {shown.map(task => {
           const isOverdue = task.start_date < today && !task.completed
           return (
             <div key={task.id} onClick={() => onEditTask(task)} style={{ display:'flex',alignItems:'center',gap:10,padding:'11px 14px',background:'var(--bg-card)',border:'1px solid var(--border)',borderRadius:12,opacity:task.completed?0.4:1,cursor:'pointer' }}>
@@ -327,6 +338,8 @@ function ProjectDetail({ project, onBack, onAddTask, onEditTask, onRefresh }) {
           )
         })}
       </div>
+        )
+      })()}
 
       <div style={{ display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:10 }}>
         <div className="section-label" style={{ margin:0 }}>Notes</div>
