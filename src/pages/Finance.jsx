@@ -755,6 +755,7 @@ export default function Finance() {
   const [goalModal, setGoalModal] = useState(null)
   const [vehModal, setVehModal] = useState(null)
   const [recurView, setRecurView] = useState('list')  // list | calendar
+  const [subSort, setSubSort] = useState('due')  // due | amount
   const [showPaused, setShowPaused] = useState(false)
 
   useEffect(() => { load() }, [])
@@ -1130,10 +1131,18 @@ export default function Finance() {
             </>
           )}
         </div>
-      )}
+        )
+      })()}
 
       {/* ══════════════════ RECURRING ══════════════════ */}
-      {tab === 'recurring' && (
+      {tab === 'recurring' && (() => {
+        const sortedSubs = activeSubs.slice().sort((a, b) => {
+          if (subSort === 'amount') return toYearly(b.amount, b.frequency) - toYearly(a.amount, a.frequency)
+          // due: by billing day (undated go last)
+          const ad = a.billing_day || 99, bd = b.billing_day || 99
+          return ad - bd
+        })
+        return (
         <div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 16 }}>
             <StatTile label="Every month" value={fmt(mBills + mSubs)} sub={`${activeSubs.length + activeBills.length} items`} />
@@ -1153,6 +1162,13 @@ export default function Finance() {
                   border: `1px solid ${recurView === v ? 'var(--accent-border)' : 'var(--border)'}`,
                   color: recurView === v ? 'var(--accent)' : 'var(--text-muted)' }}>{l}</div>
             ))}
+            {recurView === 'list' && (
+              <div onClick={() => setSubSort(s => s === 'due' ? 'amount' : 'due')}
+                style={{ marginLeft: 'auto', padding: '6px 14px', borderRadius: 18, fontSize: 12.5, fontWeight: 500, cursor: 'pointer', background: 'var(--bg-card)', border: '1px solid var(--border)', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 5 }}>
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M3 2v8M3 10l-1.5-1.5M3 10l1.5-1.5M9 10V2M9 2L7.5 3.5M9 2l1.5 1.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                {subSort === 'due' ? 'By due date' : 'By amount'}
+              </div>
+            )}
           </div>
 
           {recurView === 'calendar' ? (
@@ -1189,7 +1205,7 @@ export default function Finance() {
 
               {activeSubs.length === 0 && activeBills.length === 0 ? (
                 <EmptyState icon="🔁" text="Nothing recurring yet. Add your subscriptions and bills to see the real monthly cost." action="Add subscription" onAction={() => setSubModal('new')} />
-              ) : activeSubs.map(s => (
+              ) : sortedSubs.map(s => (
                 <SubCard key={s.id} sub={s} customCats={customCats} onEdit={() => setSubModal(s)} />
               ))}
 
