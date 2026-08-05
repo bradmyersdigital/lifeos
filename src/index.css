@@ -219,6 +219,14 @@ body { overflow: hidden; }
 .rich-body blockquote { margin: 8px 0; padding: 2px 14px; border-left: 3px solid var(--accent-border); color: var(--text-muted); font-style: italic; }
 .rich-body hr { border: none; border-top: 1px solid var(--border); margin: 16px 0; }
 .rich-body ol { margin: 4px 0; padding-left: 22px; }
+.ndl-img { max-width: 100%; border-radius: 12px; margin: 8px 0; display: block; }
+.ndl-audio, .ndl-file { display: flex; align-items: center; gap: 10px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 10px 12px; margin: 8px 0; user-select: none; }
+.ndl-audio-play { width: 30px; height: 30px; border-radius: 50%; background: var(--accent-dim); color: var(--accent); display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; font-size: 12px; }
+.ndl-audio-info { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+.ndl-audio-name, .ndl-file-name { font-size: 14px; color: var(--text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ndl-audio-dur { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--text-dim); margin-top: 2px; }
+.ndl-audio-menu, .ndl-file-menu { color: var(--text-dim); cursor: pointer; padding: 4px 6px; flex-shrink: 0; font-size: 16px; }
+.ndl-file-icon { font-size: 16px; flex-shrink: 0; }
 .rich-body pre { font-family: 'DM Mono', monospace; font-size: 14px; background: var(--bg-card); border-radius: 8px; padding: 10px 12px; white-space: pre-wrap; margin: 8px 0; }
 .rich-body ul { margin: 4px 0; padding-left: 22px; }
 .rich-body li { margin-bottom: 4px; }
