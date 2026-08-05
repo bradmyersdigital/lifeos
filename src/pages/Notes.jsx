@@ -56,13 +56,13 @@ const audioCardHtml = (a) => `<div class="ndl-audio" contenteditable="false" dat
 const keepFocus = (e) => e.preventDefault()
 
 // ── Compact formatting bar — floating rounded pill, only visible while the body is focused (keyboard up) ──
-function RichToolbar({ onCmd, onStyle, onColor, onChecklist, onList, onAttach, onRecord, isRecording, activeStyle, activeFormats, onOpenInsert }) {
+function RichToolbar({ onCmd, onStyle, onColor, onChecklist, onList, onAttach, onRecord, isRecording, activeStyle, activeFormats, onOpenInsert, kbOffset }) {
   const [showStyles, setShowStyles] = useState(false)
   const [showColors, setShowColors] = useState(false)
   const btn = (active) => ({ width: 32, height: 32, borderRadius: 9, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0, background: active ? 'var(--accent)' : 'var(--bg)', border: `1px solid ${active ? 'var(--accent)' : 'var(--border)'}`, color: active ? 'var(--bg)' : 'var(--text-muted)', fontSize: 14, fontWeight: 600 })
 
   return (
-    <div style={{ position: 'sticky', bottom: 8, marginTop: 10 }}>
+    <div style={{ position: 'sticky', bottom: kbOffset + 8, marginTop: 10 }}>
       {showStyles && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 2, marginBottom: 8, background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 16, padding: 6, boxShadow: '0 6px 24px rgba(0,0,0,0.35)' }}>
           {TEXT_STYLES.map(s => (
@@ -233,12 +233,14 @@ function AttachmentMenu({ attachment, onClose, onRename, onDownload, onShare, on
 }
 
 // ── Links & category — moved off the page into a "⋯" sheet ─────────────────────
-function LinksSheet({ onClose, category, setCategory, sector, setSector, projectId, setProjectId, goalId, setGoalId, categories, sectors, projects, goals }) {
+function LinksSheet({ onClose, onDelete, category, setCategory, sector, setSector, projectId, setProjectId, goalId, setGoalId, categories, sectors, projects, goals }) {
   return (
     <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
       <div className="modal-sheet">
         <div className="modal-handle" />
-        <div className="modal-title">Links &amp; category<div className="modal-close" onClick={onClose}>×</div></div>
+        <div className="modal-title">Note actions<div className="modal-close" onClick={onClose}>×</div></div>
+
+        <div onClick={() => { onClose(); onDelete() }} style={{ padding: '12px 4px', marginBottom: 18, cursor: 'pointer', fontSize: 14, fontWeight: 500, color: 'var(--danger)', borderBottom: '1px solid var(--border)' }}>Delete note</div>
 
         <div className="field" style={{ marginBottom: 12 }}>
           <div className="field-label">Category</div>
@@ -317,6 +319,17 @@ function NoteEditor({ note, onBack, onSaved, categories, projects, goals, sector
   const levelFrameRef = useRef(null)
   const savedRangeRef = useRef(null)
   const touchStart = useRef(null)
+
+  const [kbOffset, setKbOffset] = useState(0)
+  useEffect(() => {
+    const vv = window.visualViewport
+    if (!vv) return
+    const update = () => setKbOffset(Math.max(0, window.innerHeight - vv.height - vv.offsetTop))
+    vv.addEventListener('resize', update)
+    vv.addEventListener('scroll', update)
+    update()
+    return () => { vv.removeEventListener('resize', update); vv.removeEventListener('scroll', update) }
+  }, [])
 
   // Load body into the contentEditable on mount and whenever we swipe to a different note.
   // Never React-driven by state on every keystroke — that causes cursor jumping.
@@ -669,8 +682,8 @@ function NoteEditor({ note, onBack, onSaved, categories, projects, goals, sector
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column' }} onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
-      {/* Top bar */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
+      {/* Top bar — sticky so it's always reachable, even scrolled deep into a long note */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14, position: 'sticky', top: 0, zIndex: 20, background: 'var(--bg)', paddingTop: 4, paddingBottom: 4, marginLeft: -16, marginRight: -16, paddingLeft: 16, paddingRight: 16 }}>
         <div onClick={() => { autoSave(); onBack() }} style={{ width: 34, height: 34, borderRadius: 10, background: 'var(--bg-card)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: 18, color: 'var(--text-muted)', flexShrink: 0 }}>‹</div>
         <div style={{ flex: 1, fontSize: 11, color: 'var(--text-dim)', fontFamily: "'DM Mono'" }}>
           {saving ? 'Saving…' : lastSaved ? `Saved ${fmtRelative(lastSaved)}` : note?.id ? `Saved` : 'New note'}
@@ -682,9 +695,7 @@ function NoteEditor({ note, onBack, onSaved, categories, projects, goals, sector
             <div onClick={() => goToOffset(1)} style={{ width: 28, height: 28, borderRadius: 8, background: currentIndex === notesInCategory.length - 1 ? 'var(--bg)' : 'var(--bg-card)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: currentIndex === notesInCategory.length - 1 ? 'default' : 'pointer', fontSize: 14, color: currentIndex === notesInCategory.length - 1 ? 'var(--border)' : 'var(--text-muted)' }}>›</div>
           </div>
         )}
-        <div onClick={() => setShowLinksSheet(true)} style={{ width: 34, height: 34, borderRadius: 10, background: 'var(--bg-card)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: 16, color: 'var(--text-muted)', flexShrink: 0 }}>⋯</div>
-        <div onClick={handleDelete} style={{ padding: '6px 12px', borderRadius: 10, background: 'var(--danger-dim)', border: '1px solid var(--danger-border)', color: 'var(--danger)', fontSize: 12, cursor: 'pointer' }}>Delete</div>
-        <div onClick={() => { autoSave(); onBack() }} className="btn-primary" style={{ padding: '6px 14px', borderRadius: 10, fontSize: 12, cursor: 'pointer', border: 'none' }}>Done</div>
+        <div onClick={() => setShowLinksSheet(true)} style={{ width: 40, height: 34, borderRadius: 10, background: 'var(--bg-card)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: 20, fontWeight: 700, letterSpacing: '1px', color: 'var(--text-secondary)', flexShrink: 0 }}>⋯</div>
       </div>
 
       {isRecording && (
@@ -725,7 +736,7 @@ function NoteEditor({ note, onBack, onSaved, categories, projects, goals, sector
           onCmd={cmd} onStyle={applyStyle} onColor={applyColor}
           onChecklist={insertChecklist} onList={() => insertList('bullet')}
           onAttach={handleAttachClick} onRecord={toggleRecord} isRecording={isRecording}
-          activeStyle={activeStyle} activeFormats={activeFormats} onOpenInsert={() => setShowInsertMenu(true)}
+          activeStyle={activeStyle} activeFormats={activeFormats} onOpenInsert={() => setShowInsertMenu(true)} kbOffset={kbOffset}
         />
       )}
 
@@ -748,7 +759,7 @@ function NoteEditor({ note, onBack, onSaved, categories, projects, goals, sector
         />
       )}
       {showLinksSheet && (
-        <LinksSheet onClose={() => setShowLinksSheet(false)}
+        <LinksSheet onClose={() => setShowLinksSheet(false)} onDelete={handleDelete}
           category={category} setCategory={setCategory}
           sector={sector} setSector={setSector}
           projectId={projectId} setProjectId={setProjectId}
