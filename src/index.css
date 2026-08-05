@@ -210,6 +210,17 @@ body { overflow: hidden; }
 }
 
 /* ── Form fields ── */
+.rich-body:empty:before { content: attr(data-placeholder); color: var(--text-dim); pointer-events: none; }
+.rich-body p { margin: 0 0 8px; }
+.rich-body h1 { font-size: 22px; font-weight: 700; margin: 14px 0 8px; color: var(--text-primary); }
+.rich-body h2 { font-size: 18px; font-weight: 700; margin: 12px 0 6px; color: var(--text-primary); }
+.rich-body h3 { font-size: 16px; font-weight: 600; margin: 10px 0 6px; color: var(--text-secondary); }
+.rich-body pre { font-family: 'DM Mono', monospace; font-size: 14px; background: var(--bg-card); border-radius: 8px; padding: 10px 12px; white-space: pre-wrap; margin: 8px 0; }
+.rich-body ul { margin: 4px 0; padding-left: 22px; }
+.rich-body li { margin-bottom: 4px; }
+.ndl-check { display: flex; align-items: flex-start; gap: 8px; margin: 4px 0; }
+.ndl-box { cursor: pointer; flex-shrink: 0; user-select: none; }
+
 .field { margin-bottom: 16px; }
 .field-row { display: flex; gap: 10px; margin-bottom: 0; }
 .field-row .field { flex: 1; }
