@@ -73,7 +73,7 @@ function TimeInput({ start, end, onChange }) {
   )
 }
 
-export default function TaskModal({ mode, onClose, onSaved, task, defaultProjectId, defaultSector, defaultGoalId, asPage }) {
+export default function TaskModal({ mode, onClose, onSaved, task, defaultProjectId, defaultSector, defaultGoalId, defaultNoteId, asPage }) {
   const isEdit = !!task
   const [isComplete, setIsComplete] = useState(task?.completed || false)
   const toggleComplete = async () => {
@@ -92,7 +92,7 @@ export default function TaskModal({ mode, onClose, onSaved, task, defaultProject
   const [startDate, setStartDate] = useState(task?.start_date || today)
   const [deadlineTouched, setDeadlineTouched] = useState(!!task)  // existing tasks: never auto-cascade
   const [projectId, setProjectId] = useState(task?.project_id || defaultProjectId || '')
-  const [noteId, setNoteId] = useState(task?.note_id || '')
+  const [noteId, setNoteId] = useState(task?.note_id || defaultNoteId || '')
   const [notesText, setNotesText] = useState(task?.notes_text || '')
   const [subtasks, setSubtasks] = useState(() => {
     try { return task?.subtasks ? (typeof task.subtasks === 'string' ? JSON.parse(task.subtasks) : task.subtasks) : [] } catch { return [] }

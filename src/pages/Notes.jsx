@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react'
 import { supabase } from '../lib/supabase'
 import FolderList from '../components/FolderList'
 import FolderSheet from '../components/FolderSheet'
+import TaskModal from '../components/TaskModal'
 
 function fmt(d) {
   if (!d) return ''
@@ -18,11 +19,12 @@ function fmtRelative(d) {
 
 // ── Rich text helpers ──────────────────────────────────────────────────────────
 const TEXT_STYLES = [
-  { tag: 'P',  label: 'Body',       preview: { fontSize: 15, fontWeight: 400 } },
-  { tag: 'H1', label: 'Title',      preview: { fontSize: 22, fontWeight: 700 } },
-  { tag: 'H2', label: 'Heading',    preview: { fontSize: 18, fontWeight: 700 } },
-  { tag: 'H3', label: 'Subheading', preview: { fontSize: 16, fontWeight: 600 } },
-  { tag: 'PRE',label: 'Monospace',  preview: { fontSize: 14, fontWeight: 400, fontFamily: "'DM Mono'" } },
+  { tag: 'P',  label: 'Normal text',    preview: { fontSize: 15, fontWeight: 400 } },
+  { tag: 'H1', label: 'Large heading',  preview: { fontSize: 22, fontWeight: 700 } },
+  { tag: 'H2', label: 'Medium heading', preview: { fontSize: 19, fontWeight: 700 } },
+  { tag: 'H3', label: 'Small heading',  preview: { fontSize: 17, fontWeight: 600 } },
+  { tag: 'H4', label: 'Extra small heading', preview: { fontSize: 15, fontWeight: 600, color: 'var(--text-muted)' } },
+  { tag: 'PRE',label: 'Monospace',      preview: { fontSize: 14, fontWeight: 400, fontFamily: "'DM Mono'" } },
 ]
 const TEXT_COLORS = ['#e8e8ea', '#d4520f', '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#a78bfa']
 
@@ -43,7 +45,11 @@ function fmtDuration(sec) {
 }
 
 // ── Rich text toolbar ────────────────────────────────────────────────────────
-function RichToolbar({ onCmd, onStyle, onColor, onChecklist, onList, onAttach, onRecord, isRecording, activeStyle }) {
+// Prevents a toolbar/menu button from stealing focus (and cursor position) away from the note body
+const keepFocus = (e) => e.preventDefault()
+
+// ── Compact formatting bar — only visible while the body is focused (keyboard up) ──
+function RichToolbar({ onCmd, onStyle, onColor, onChecklist, onList, onAttach, onRecord, isRecording, activeStyle, onOpenInsert }) {
   const [showStyles, setShowStyles] = useState(false)
   const [showColors, setShowColors] = useState(false)
   const btn = { width: 32, height: 32, borderRadius: 9, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0, background: 'var(--bg-card)', border: '1px solid var(--border)', color: 'var(--text-muted)', fontSize: 14, fontWeight: 600 }
@@ -53,7 +59,7 @@ function RichToolbar({ onCmd, onStyle, onColor, onChecklist, onList, onAttach, o
       {showStyles && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 2, marginBottom: 8, background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 12, padding: 6 }}>
           {TEXT_STYLES.map(s => (
-            <div key={s.tag} onClick={() => { onStyle(s.tag); setShowStyles(false) }}
+            <div key={s.tag} onMouseDown={keepFocus} onClick={() => { onStyle(s.tag); setShowStyles(false) }}
               style={{ padding: '9px 12px', borderRadius: 8, cursor: 'pointer', color: activeStyle === s.tag ? 'var(--accent)' : 'var(--text-secondary)', background: activeStyle === s.tag ? 'var(--accent-dim)' : 'transparent', ...s.preview }}>
               {s.label}
             </div>
@@ -63,32 +69,114 @@ function RichToolbar({ onCmd, onStyle, onColor, onChecklist, onList, onAttach, o
       {showColors && (
         <div style={{ display: 'flex', gap: 8, marginBottom: 8, background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 12, padding: 10, justifyContent: 'center' }}>
           {TEXT_COLORS.map(c => (
-            <div key={c} onClick={() => { onColor(c); setShowColors(false) }} style={{ width: 26, height: 26, borderRadius: '50%', background: c, cursor: 'pointer', border: '2px solid var(--bg-card)', boxShadow: '0 0 0 1px var(--border)' }} />
+            <div key={c} onMouseDown={keepFocus} onClick={() => { onColor(c); setShowColors(false) }} style={{ width: 26, height: 26, borderRadius: '50%', background: c, cursor: 'pointer', border: '2px solid var(--bg-card)', boxShadow: '0 0 0 1px var(--border)' }} />
           ))}
         </div>
       )}
       <div style={{ display: 'flex', gap: 6, overflowX: 'auto', paddingBottom: 2 }}>
-        <div style={{ ...btn, width: 'auto', padding: '0 10px', color: showStyles ? 'var(--accent)' : 'var(--text-muted)', borderColor: showStyles ? 'var(--accent-border)' : 'var(--border)' }} onClick={() => { setShowStyles(!showStyles); setShowColors(false) }}>Aa</div>
-        <div style={btn} onClick={() => onCmd('bold')}><b>B</b></div>
-        <div style={{ ...btn, fontStyle: 'italic' }} onClick={() => onCmd('italic')}>I</div>
-        <div style={{ ...btn, textDecoration: 'underline' }} onClick={() => onCmd('underline')}>U</div>
-        <div style={{ ...btn, textDecoration: 'line-through' }} onClick={() => onCmd('strikeThrough')}>S</div>
-        <div style={btn} onClick={() => { setShowColors(!showColors); setShowStyles(false) }}>
+        <div style={{ ...btn, background: 'var(--accent-dim)', borderColor: 'var(--accent-border)', color: 'var(--accent)' }} onMouseDown={keepFocus} onClick={onOpenInsert}>
+          <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><line x1="7.5" y1="1" x2="7.5" y2="14" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/><line x1="1" y1="7.5" x2="14" y2="7.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/></svg>
+        </div>
+        <div style={{ ...btn, width: 'auto', padding: '0 10px', color: showStyles ? 'var(--accent)' : 'var(--text-muted)', borderColor: showStyles ? 'var(--accent-border)' : 'var(--border)' }} onMouseDown={keepFocus} onClick={() => { setShowStyles(!showStyles); setShowColors(false) }}>Aa</div>
+        <div style={btn} onMouseDown={keepFocus} onClick={() => onCmd('bold')}><b>B</b></div>
+        <div style={{ ...btn, fontStyle: 'italic' }} onMouseDown={keepFocus} onClick={() => onCmd('italic')}>I</div>
+        <div style={{ ...btn, textDecoration: 'underline' }} onMouseDown={keepFocus} onClick={() => onCmd('underline')}>U</div>
+        <div style={{ ...btn, textDecoration: 'line-through' }} onMouseDown={keepFocus} onClick={() => onCmd('strikeThrough')}>S</div>
+        <div style={btn} onMouseDown={keepFocus} onClick={() => { setShowColors(!showColors); setShowStyles(false) }}>
           <div style={{ width: 15, height: 15, borderRadius: '50%', background: 'linear-gradient(135deg,#d4520f,#3b82f6,#10b981)' }} />
         </div>
-        <div style={btn} onClick={onList}>
+        <div style={btn} onMouseDown={keepFocus} onClick={onList}>
           <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><circle cx="2" cy="3" r="1.3" fill="currentColor"/><circle cx="2" cy="7.5" r="1.3" fill="currentColor"/><circle cx="2" cy="12" r="1.3" fill="currentColor"/><line x1="5.5" y1="3" x2="14" y2="3" stroke="currentColor" strokeWidth="1.4"/><line x1="5.5" y1="7.5" x2="14" y2="7.5" stroke="currentColor" strokeWidth="1.4"/><line x1="5.5" y1="12" x2="14" y2="12" stroke="currentColor" strokeWidth="1.4"/></svg>
         </div>
-        <div style={btn} onClick={onChecklist}>
+        <div style={btn} onMouseDown={keepFocus} onClick={onChecklist}>
           <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><rect x="1.5" y="1.5" width="10" height="10" rx="2.5" stroke="currentColor" strokeWidth="1.4"/><polyline points="4,6.5 6,8.5 9.5,4" stroke="currentColor" strokeWidth="1.4" fill="none" strokeLinecap="round" strokeLinejoin="round"/></svg>
         </div>
-        <div style={btn} onClick={onAttach}>
+        <div style={btn} onMouseDown={keepFocus} onClick={onAttach}>
           <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M13 6.5L7.2 12.3a3 3 0 01-4.24-4.24L8.8 2.2a2 2 0 012.83 2.83L5.8 10.9a1 1 0 01-1.42-1.42L9.5 4.35" stroke="currentColor" strokeWidth="1.3" fill="none" strokeLinecap="round"/></svg>
         </div>
-        <div style={{ ...btn, background: isRecording ? 'var(--danger-dim)' : 'var(--bg-card)', borderColor: isRecording ? 'var(--danger-border)' : 'var(--border)', color: isRecording ? 'var(--danger)' : 'var(--text-muted)' }} onClick={onRecord}>
+        <div style={{ ...btn, background: isRecording ? 'var(--danger-dim)' : 'var(--bg-card)', borderColor: isRecording ? 'var(--danger-border)' : 'var(--border)', color: isRecording ? 'var(--danger)' : 'var(--text-muted)' }} onMouseDown={keepFocus} onClick={onRecord}>
           {isRecording
             ? <svg width="13" height="13" viewBox="0 0 13 13"><rect x="2" y="2" width="9" height="9" rx="1.5" fill="currentColor"/></svg>
             : <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="4.5" y="1" width="5" height="8" rx="2.5" stroke="currentColor" strokeWidth="1.3"/><path d="M2 7.5a5 5 0 0010 0M7 12.5v1.5" stroke="currentColor" strokeWidth="1.3" fill="none" strokeLinecap="round"/></svg>}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ── "+" Insert menu — categorized bottom sheet, like Evernote/Notion's block-insert menu ──
+const INSERT_TABS = ['Essentials', 'Text Styles', 'Lists', 'Media', 'Advanced']
+
+function InsertTile({ icon, label, disabled, onClick }) {
+  return (
+    <div onMouseDown={keepFocus} onClick={disabled ? undefined : onClick}
+      style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, opacity: disabled ? 0.4 : 1, cursor: disabled ? 'default' : 'pointer' }}>
+      <div style={{ width: 52, height: 52, borderRadius: 14, background: 'var(--bg-card)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>{icon}</div>
+      <div style={{ fontSize: 11, color: 'var(--text-muted)', textAlign: 'center', lineHeight: 1.25 }}>{label}</div>
+    </div>
+  )
+}
+
+function InsertMenu({ onClose, onStyle, onList, onDivider, onQuote, onNewTask, onAttach, onRecord }) {
+  const [tab, setTab] = useState('Essentials')
+  const soon = (label) => () => alert(`${label} is on the roadmap — not built yet.`)
+
+  return (
+    <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
+      <div className="modal-sheet" style={{ maxHeight: '72vh', display: 'flex', flexDirection: 'column' }}>
+        <div className="modal-handle" />
+        <div style={{ display: 'flex', gap: 6, overflowX: 'auto', marginBottom: 16, paddingBottom: 2 }}>
+          {INSERT_TABS.map(t => (
+            <div key={t} onMouseDown={keepFocus} onClick={() => setTab(t)}
+              style={{ padding: '7px 14px', borderRadius: 20, fontSize: 13, fontWeight: 500, cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0, background: tab === t ? 'var(--accent-dim)' : 'var(--bg-card)', border: `1px solid ${tab === t ? 'var(--accent-border)' : 'var(--border)'}`, color: tab === t ? 'var(--accent)' : 'var(--text-muted)' }}>
+              {t}
+            </div>
+          ))}
+        </div>
+
+        <div style={{ overflowY: 'auto' }}>
+          {tab === 'Essentials' && (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 14 }}>
+              <InsertTile icon="☑️" label="New task" onClick={() => { onNewTask(); onClose() }} />
+              <InsertTile icon="—" label="Divider" onClick={() => { onDivider(); onClose() }} />
+              <InsertTile icon="❝" label="Quote" onClick={() => { onQuote(); onClose() }} />
+              <InsertTile icon="🔗" label="Link to note" disabled onClick={soon('Link to note')} />
+              <InsertTile icon="📑" label="Table of contents" disabled onClick={soon('Table of contents')} />
+            </div>
+          )}
+          {tab === 'Text Styles' && (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 14 }}>
+              {TEXT_STYLES.map(s => (
+                <InsertTile key={s.tag} icon={s.tag === 'PRE' ? 'Aa' : s.tag === 'P' ? 'Aa' : s.tag} label={s.label} onClick={() => { onStyle(s.tag); onClose() }} />
+              ))}
+            </div>
+          )}
+          {tab === 'Lists' && (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 14 }}>
+              <InsertTile icon="•≡" label="Bullet list" onClick={() => { onList('bullet'); onClose() }} />
+              <InsertTile icon="☑≡" label="Checklist" onClick={() => { onList('checklist'); onClose() }} />
+              <InsertTile icon="1≡" label="Numbered list" onClick={() => { onList('numbered'); onClose() }} />
+            </div>
+          )}
+          {tab === 'Media' && (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 14 }}>
+              <InsertTile icon="🖼️" label="Image" onClick={() => { onAttach(); onClose() }} />
+              <InsertTile icon="📎" label="File" onClick={() => { onAttach(); onClose() }} />
+              <InsertTile icon="🎙️" label="Voice memo" onClick={() => { onRecord(); onClose() }} />
+              <InsertTile icon="📷" label="Camera" disabled onClick={soon('Camera capture')} />
+              <InsertTile icon="🖊️" label="Sketch" disabled onClick={soon('Sketch')} />
+              <InsertTile icon="📄" label="Scan" disabled onClick={soon('Document scan')} />
+            </div>
+          )}
+          {tab === 'Advanced' && (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 14 }}>
+              <InsertTile icon="▦" label="Table" disabled onClick={soon('Table')} />
+              <InsertTile icon="💬" label="Callout" disabled onClick={soon('Callout')} />
+              <InsertTile icon="▸" label="Toggle" disabled onClick={soon('Toggle')} />
+              <InsertTile icon="{ }" label="Code block" disabled onClick={soon('Code block')} />
+              <InsertTile icon="⇄" label="Mermaid diagram" disabled onClick={soon('Mermaid diagram')} />
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -140,6 +228,9 @@ function NoteEditor({ note, onBack, onSaved, categories, projects, goals, sector
   const [attachments, setAttachments] = useState([])
   const [isRecording, setIsRecording] = useState(false)
   const [activeStyle, setActiveStyle] = useState('P')
+  const [isFocused, setIsFocused] = useState(false)
+  const [showInsertMenu, setShowInsertMenu] = useState(false)
+  const [newTaskModal, setNewTaskModal] = useState(false)
   const saveTimer = useRef(null)
   const bodyRef = useRef(null)
   const fileInputRef = useRef(null)
@@ -239,7 +330,15 @@ function NoteEditor({ note, onBack, onSaved, categories, projects, goals, sector
   const cmd = (command, value = null) => { focusBody(); document.execCommand(command, false, value); scheduleSave() }
   const applyStyle = (tag) => { focusBody(); document.execCommand('formatBlock', false, tag); setActiveStyle(tag); scheduleSave() }
   const applyColor = (hex) => { focusBody(); document.execCommand('foreColor', false, hex); scheduleSave() }
-  const insertList = () => { focusBody(); document.execCommand('insertUnorderedList'); scheduleSave() }
+  const insertList = (type = 'bullet') => {
+    focusBody()
+    if (type === 'checklist') { insertChecklist(); return }
+    document.execCommand(type === 'numbered' ? 'insertOrderedList' : 'insertUnorderedList')
+    scheduleSave()
+  }
+  const insertDivider = () => { focusBody(); document.execCommand('insertHorizontalRule'); scheduleSave() }
+  const insertQuote = () => { focusBody(); document.execCommand('formatBlock', false, 'BLOCKQUOTE'); scheduleSave() }
+  const openNewTask = async () => { await ensureSaved(); setNewTaskModal(true) }
   const insertChecklist = () => {
     focusBody()
     document.execCommand('insertHTML', false,
@@ -381,18 +480,36 @@ function NoteEditor({ note, onBack, onSaved, categories, projects, goals, sector
       <div ref={bodyRef} contentEditable suppressContentEditableWarning
         data-placeholder="Start writing…" className="rich-body"
         onInput={scheduleSave} onClick={handleBodyClick}
+        onFocus={() => setIsFocused(true)}
+        onBlur={() => setIsFocused(false)}
         onKeyUp={() => { const b = document.queryCommandValue?.('formatBlock'); if (b) setActiveStyle(b.toUpperCase()) }}
         style={{ width: '100%', fontSize: 16, color: 'var(--text-secondary)', fontFamily: "'DM Sans'", lineHeight: 1.7, minHeight: 200, outline: 'none' }} />
 
       <input ref={fileInputRef} type="file" onChange={handleFileChosen} style={{ display: 'none' }} />
       <AttachmentList attachments={attachments} onDelete={deleteAttachment} />
 
-      <RichToolbar
-        onCmd={cmd} onStyle={applyStyle} onColor={applyColor}
-        onChecklist={insertChecklist} onList={insertList}
-        onAttach={handleAttachClick} onRecord={toggleRecord} isRecording={isRecording}
-        activeStyle={activeStyle}
-      />
+      {(isFocused || showInsertMenu) && (
+        <RichToolbar
+          onCmd={cmd} onStyle={applyStyle} onColor={applyColor}
+          onChecklist={insertChecklist} onList={() => insertList('bullet')}
+          onAttach={handleAttachClick} onRecord={toggleRecord} isRecording={isRecording}
+          activeStyle={activeStyle} onOpenInsert={() => setShowInsertMenu(true)}
+        />
+      )}
+
+      {showInsertMenu && (
+        <InsertMenu
+          onClose={() => setShowInsertMenu(false)}
+          onStyle={applyStyle} onList={insertList} onDivider={insertDivider} onQuote={insertQuote}
+          onNewTask={openNewTask} onAttach={handleAttachClick} onRecord={toggleRecord}
+        />
+      )}
+      {newTaskModal && (
+        <TaskModal mode="today" defaultNoteId={noteId}
+          onClose={() => setNewTaskModal(false)}
+          onSaved={() => setNewTaskModal(false)}
+        />
+      )}
 
       {/* Links panel — toggleable */}
       <div style={{ marginTop: 24, background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 14, overflow: 'hidden' }}>

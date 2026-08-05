@@ -215,6 +215,10 @@ body { overflow: hidden; }
 .rich-body h1 { font-size: 22px; font-weight: 700; margin: 14px 0 8px; color: var(--text-primary); }
 .rich-body h2 { font-size: 18px; font-weight: 700; margin: 12px 0 6px; color: var(--text-primary); }
 .rich-body h3 { font-size: 16px; font-weight: 600; margin: 10px 0 6px; color: var(--text-secondary); }
+.rich-body h4 { font-size: 14px; font-weight: 600; margin: 8px 0 4px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.04em; }
+.rich-body blockquote { margin: 8px 0; padding: 2px 14px; border-left: 3px solid var(--accent-border); color: var(--text-muted); font-style: italic; }
+.rich-body hr { border: none; border-top: 1px solid var(--border); margin: 16px 0; }
+.rich-body ol { margin: 4px 0; padding-left: 22px; }
 .rich-body pre { font-family: 'DM Mono', monospace; font-size: 14px; background: var(--bg-card); border-radius: 8px; padding: 10px 12px; white-space: pre-wrap; margin: 8px 0; }
 .rich-body ul { margin: 4px 0; padding-left: 22px; }
 .rich-body li { margin-bottom: 4px; }
