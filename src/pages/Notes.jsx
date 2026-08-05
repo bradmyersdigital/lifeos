@@ -46,6 +46,9 @@ function fmtDuration(sec) {
 function escHtml(s) {
   return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
 }
+// Notes can have multiple "pages" (flip through them like a notebook). This marker only ever
+// exists in the serialized body_html string for storage — it's never a real node in the DOM.
+const PAGE_BREAK = '<!--NDL_PAGE_BREAK-->'
 // Inline attachment cards — embedded directly in the note body at the cursor, not tacked onto the bottom.
 const imageCardHtml = (a) => `<img class="ndl-img" src="${a.url}" data-attachment-id="${a.id}" alt="${escHtml(a.name || '')}" /><div><br></div>`
 const fileCardHtml = (a) => `<div class="ndl-file" contenteditable="false" data-attachment-id="${a.id}" data-url="${a.url}"><span class="ndl-file-icon">📎</span><span class="ndl-file-name">${escHtml(a.name)}</span><span class="ndl-file-menu">⋯</span></div><div><br></div>`
@@ -62,7 +65,7 @@ function RichToolbar({ onCmd, onStyle, onColor, onChecklist, onList, onAttach, o
   const btn = (active) => ({ width: 32, height: 32, borderRadius: 9, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0, background: active ? 'var(--accent)' : 'var(--bg)', border: `1px solid ${active ? 'var(--accent)' : 'var(--border)'}`, color: active ? 'var(--bg)' : 'var(--text-muted)', fontSize: 14, fontWeight: 600 })
 
   return (
-    <div style={{ position: 'sticky', bottom: kbOffset + 8, marginTop: 10 }}>
+    <div style={{ position: 'fixed', left: '50%', transform: 'translateX(-50%)', width: '100%', maxWidth: 820, boxSizing: 'border-box', padding: '0 16px', bottom: kbOffset + 8, zIndex: 50 }}>
       {showStyles && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 2, marginBottom: 8, background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 16, padding: 6, boxShadow: '0 6px 24px rgba(0,0,0,0.35)' }}>
           {TEXT_STYLES.map(s => (
@@ -122,14 +125,28 @@ function InsertTile({ icon, label, disabled, onClick }) {
   )
 }
 
-function InsertMenu({ onClose, onStyle, onList, onDivider, onQuote, onNewTask, onAttach, onRecord }) {
+function InsertMenu({ onClose, onStyle, onList, onDivider, onQuote, onNewTask, onNewPage, onAttach, onRecord }) {
   const [tab, setTab] = useState('Essentials')
+  const [dragY, setDragY] = useState(0)
+  const dragStart = useRef(null)
   const soon = (label) => () => alert(`${label} is on the roadmap — not built yet.`)
+
+  const onHandleTouchStart = (e) => { dragStart.current = e.touches[0].clientY }
+  const onHandleTouchMove = (e) => {
+    if (dragStart.current == null) return
+    const dy = e.touches[0].clientY - dragStart.current
+    if (dy > 0) setDragY(dy)
+  }
+  const onHandleTouchEnd = () => {
+    if (dragY > 90) onClose()
+    setDragY(0)
+    dragStart.current = null
+  }
 
   return (
     <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className="modal-sheet" style={{ maxHeight: '72vh', display: 'flex', flexDirection: 'column' }}>
-        <div className="modal-handle" />
+      <div className="modal-sheet" style={{ maxHeight: '72vh', display: 'flex', flexDirection: 'column', transform: `translateY(${dragY}px)`, transition: dragY ? 'none' : 'transform 0.25s ease' }}>
+        <div className="modal-handle" onTouchStart={onHandleTouchStart} onTouchMove={onHandleTouchMove} onTouchEnd={onHandleTouchEnd} style={{ touchAction: 'none' }} />
         <div style={{ display: 'flex', gap: 6, overflowX: 'auto', marginBottom: 16, paddingBottom: 2 }}>
           {INSERT_TABS.map(t => (
             <div key={t} onMouseDown={keepFocus} onClick={() => setTab(t)}
@@ -143,6 +160,7 @@ function InsertMenu({ onClose, onStyle, onList, onDivider, onQuote, onNewTask, o
           {tab === 'Essentials' && (
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 14 }}>
               <InsertTile icon="☑️" label="New task" onClick={() => { onNewTask(); onClose() }} />
+              <InsertTile icon="📖" label="New page" onClick={() => { onNewPage(); onClose() }} />
               <InsertTile icon="—" label="Divider" onClick={() => { onDivider(); onClose() }} />
               <InsertTile icon="❝" label="Quote" onClick={() => { onQuote(); onClose() }} />
               <InsertTile icon="🔗" label="Link to note" disabled onClick={soon('Link to note')} />
@@ -306,6 +324,11 @@ function NoteEditor({ note, onBack, onSaved, categories, projects, goals, sector
   const [newTaskModal, setNewTaskModal] = useState(false)
   const [showLinksSheet, setShowLinksSheet] = useState(false)
   const [attachmentMenu, setAttachmentMenu] = useState(null) // { id, name, url, type }
+  const [pageIndex, setPageIndex] = useState(0)
+  const [pageCount, setPageCount] = useState(1)
+  const [flipDir, setFlipDir] = useState(null) // 'next' | 'prev' | null while animating
+  const [flipSnapshot, setFlipSnapshot] = useState(null)
+  const pagesRef = useRef([''])
   const saveTimer = useRef(null)
   const bodyRef = useRef(null)
   const fileInputRef = useRef(null)
@@ -341,7 +364,14 @@ function NoteEditor({ note, onBack, onSaved, categories, projects, goals, sector
     setGoalId(note?.goal_id || '')
     setNoteId(note?.id || null)
     setLastSaved(null)
-    if (bodyRef.current) bodyRef.current.innerHTML = note?.body_html || plainToHtml(note?.body || note?.text || '')
+    {
+      const rawHtml = note?.body_html || plainToHtml(note?.body || note?.text || '')
+      const split = rawHtml.split(PAGE_BREAK)
+      pagesRef.current = split.length ? split : ['']
+      setPageCount(pagesRef.current.length)
+      setPageIndex(0)
+      if (bodyRef.current) bodyRef.current.innerHTML = pagesRef.current[0] || ''
+    }
     wireAudioCards()
     loadAttachments(note?.id)
   }, [note?.id])
@@ -363,10 +393,36 @@ function NoteEditor({ note, onBack, onSaved, categories, projects, goals, sector
     return () => clearTimeout(saveTimer.current)
   }, [title, category, sector, projectId, goalId])
 
+  // Pulls the live DOM content of the page you're currently on back into the pages array —
+  // needed before saving or flipping away, since only the active page is ever a real contentEditable.
+  const syncCurrentPage = () => { pagesRef.current[pageIndex] = bodyRef.current?.innerHTML || '' }
+  const buildFullHtml = () => { syncCurrentPage(); return pagesRef.current.join(PAGE_BREAK) }
+
+  const flipToPage = (targetIndex, dir) => {
+    if (targetIndex < 0 || targetIndex >= pagesRef.current.length || targetIndex === pageIndex) return
+    syncCurrentPage()
+    setFlipSnapshot(pagesRef.current[pageIndex])
+    setFlipDir(dir)
+    setTimeout(() => {
+      setPageIndex(targetIndex)
+      if (bodyRef.current) bodyRef.current.innerHTML = pagesRef.current[targetIndex] || ''
+      wireAudioCards()
+      setFlipDir(null)
+      setFlipSnapshot(null)
+      scheduleSave()
+    }, 360)
+  }
+  const addPage = () => {
+    syncCurrentPage()
+    pagesRef.current.push('')
+    setPageCount(pagesRef.current.length)
+    flipToPage(pagesRef.current.length - 1, 'next')
+  }
+
   // Ensures the note has a row saved in the DB — needed before attaching files/audio to a brand-new note
   const ensureSaved = async () => {
     if (noteId) return noteId
-    const html = bodyRef.current?.innerHTML || ''
+    const html = buildFullHtml()
     const { data } = await supabase.from('notes').insert({
       title: title.trim() || null, body: htmlToPlain(html) || null, text: htmlToPlain(html) || null,
       body_html: html || null, category: category || null, sector: sector || null,
@@ -378,7 +434,7 @@ function NoteEditor({ note, onBack, onSaved, categories, projects, goals, sector
 
   const autoSave = async () => {
     setSaving(true)
-    const html = bodyRef.current?.innerHTML || ''
+    const html = buildFullHtml()
     const plain = htmlToPlain(html)
     const payload = {
       title: title.trim() || null,
@@ -419,7 +475,6 @@ function NoteEditor({ note, onBack, onSaved, categories, projects, goals, sector
   }
 
   // ── Formatting commands ──────────────────────────────────────────────────
-  const focusBody = () => bodyRef.current?.focus()
 
   // Remembers exactly where the cursor was, so an attachment/voice memo that finishes
   // uploading seconds later still lands where the user was typing — not at the bottom.
@@ -439,6 +494,7 @@ function NoteEditor({ note, onBack, onSaved, categories, projects, goals, sector
   }
 
   const updateActiveFormats = () => {
+    saveRange()
     try {
       setActiveFormats({
         bold: document.queryCommandState('bold'),
@@ -456,20 +512,20 @@ function NoteEditor({ note, onBack, onSaved, categories, projects, goals, sector
     return () => document.removeEventListener('selectionchange', updateActiveFormats)
   }, [isFocused])
 
-  const cmd = (command, value = null) => { focusBody(); document.execCommand(command, false, value); scheduleSave(); updateActiveFormats() }
-  const applyStyle = (tag) => { focusBody(); document.execCommand('formatBlock', false, tag); setActiveStyle(tag); scheduleSave() }
-  const applyColor = (hex) => { focusBody(); document.execCommand('foreColor', false, hex); scheduleSave() }
+  const cmd = (command, value = null) => { restoreRange(); document.execCommand(command, false, value); scheduleSave(); updateActiveFormats() }
+  const applyStyle = (tag) => { restoreRange(); document.execCommand('formatBlock', false, tag); setActiveStyle(tag); scheduleSave() }
+  const applyColor = (hex) => { restoreRange(); document.execCommand('foreColor', false, hex); scheduleSave() }
   const insertList = (type = 'bullet') => {
-    focusBody()
+    restoreRange()
     if (type === 'checklist') { insertChecklist(); return }
     document.execCommand(type === 'numbered' ? 'insertOrderedList' : 'insertUnorderedList')
     scheduleSave()
   }
-  const insertDivider = () => { focusBody(); document.execCommand('insertHorizontalRule'); scheduleSave() }
-  const insertQuote = () => { focusBody(); document.execCommand('formatBlock', false, 'BLOCKQUOTE'); scheduleSave() }
+  const insertDivider = () => { restoreRange(); document.execCommand('insertHorizontalRule'); scheduleSave() }
+  const insertQuote = () => { restoreRange(); document.execCommand('formatBlock', false, 'BLOCKQUOTE'); scheduleSave() }
   const openNewTask = async () => { await ensureSaved(); setNewTaskModal(true) }
   const insertChecklist = () => {
-    focusBody()
+    restoreRange()
     document.execCommand('insertHTML', false,
       '<div class="ndl-check" data-checked="false"><span class="ndl-box" contenteditable="false">\u2610</span><span> </span></div><div><br></div>')
     scheduleSave()
@@ -657,7 +713,7 @@ function NoteEditor({ note, onBack, onSaved, categories, projects, goals, sector
   const stopRecording = () => { recordCancelledRef.current = false; mediaRecorderRef.current?.stop() }
   const cancelRecording = () => { recordCancelledRef.current = true; mediaRecorderRef.current?.stop() }
 
-  // ── Swipe between notes in this folder, like flipping notebook pages ───────
+  // ── Jump between different notes in this folder — chevron buttons only, not swipe ──
   const currentIndex = notesInCategory?.findIndex(n => n.id === noteId) ?? -1
   const canSwipe = notesInCategory && notesInCategory.length > 1 && currentIndex !== -1
   const goToOffset = async (offset) => {
@@ -667,13 +723,14 @@ function NoteEditor({ note, onBack, onSaved, categories, projects, goals, sector
     await autoSave()
     onNavigate?.(notesInCategory[nextIndex])
   }
+  // ── Swipe flips between pages of THIS note, like turning a page in a notebook ──
   const onTouchStart = (e) => { touchStart.current = { x: e.touches[0].clientX, y: e.touches[0].clientY } }
   const onTouchEnd = (e) => {
     if (!touchStart.current) return
     const dx = e.changedTouches[0].clientX - touchStart.current.x
     const dy = e.changedTouches[0].clientY - touchStart.current.y
     touchStart.current = null
-    if (Math.abs(dx) > 70 && Math.abs(dy) < 50) goToOffset(dx < 0 ? 1 : -1)
+    if (Math.abs(dx) > 70 && Math.abs(dy) < 50) flipToPage(pageIndex + (dx < 0 ? 1 : -1), dx < 0 ? 'next' : 'prev')
   }
 
   const catColor = categories.find(c => c.name === category)?.color || 'var(--text-dim)'
@@ -717,26 +774,46 @@ function NoteEditor({ note, onBack, onSaved, categories, projects, goals, sector
         style={{ width: '100%', background: 'transparent', border: 'none', outline: 'none', fontSize: 26, fontWeight: 600, color: 'var(--text-primary)', fontFamily: "'DM Sans'", resize: 'none', marginBottom: 10, lineHeight: 1.3, padding: 0 }}
         onInput={e => { e.target.style.height = 'auto'; e.target.style.height = e.target.scrollHeight + 'px' }} />
 
+      {/* Page dots — this note's own pages, flipped through by swiping */}
+      {(pageCount > 1 || isFocused) && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10 }}>
+          {Array.from({ length: pageCount }).map((_, i) => (
+            <div key={i} onClick={() => flipToPage(i, i > pageIndex ? 'next' : 'prev')}
+              style={{ width: pageIndex === i ? 20 : 7, height: 7, borderRadius: 4, background: pageIndex === i ? 'var(--accent)' : 'var(--border)', cursor: 'pointer', transition: 'all 0.2s' }} />
+          ))}
+          <div onMouseDown={keepFocus} onClick={addPage} style={{ marginLeft: 6, fontSize: 11, color: 'var(--accent)', cursor: 'pointer', fontWeight: 500 }}>+ Page</div>
+          {pageCount > 1 && <div style={{ marginLeft: 'auto', fontSize: 11, color: 'var(--text-dim)', fontFamily: "'DM Mono'" }}>Page {pageIndex + 1} of {pageCount}</div>}
+        </div>
+      )}
+
       {/* Rich body — images/files/voice memos render inline at wherever the cursor was */}
-      <div ref={bodyRef} contentEditable suppressContentEditableWarning
-        data-placeholder="Start writing…" className="rich-body"
-        onInput={scheduleSave} onClick={handleBodyClick}
-        onFocus={() => setIsFocused(true)}
-        onBlur={() => setIsFocused(false)}
-        onKeyUp={updateActiveFormats} onMouseUp={updateActiveFormats}
-        style={{ width: '100%', fontSize: 16, color: 'var(--text-secondary)', fontFamily: "'DM Sans'", lineHeight: 1.7, minHeight: 200, outline: 'none' }} />
+      <div style={{ position: 'relative', perspective: 1400 }}>
+        {flipSnapshot != null && (
+          <div className={flipDir === 'next' ? 'ndl-page-flip-next' : 'ndl-page-flip-prev'}
+            dangerouslySetInnerHTML={{ __html: flipSnapshot }}
+            style={{ position: 'absolute', inset: 0, background: 'var(--bg)', fontSize: 16, color: 'var(--text-secondary)', fontFamily: "'DM Sans'", lineHeight: 1.7, pointerEvents: 'none', zIndex: 2 }} />
+        )}
+        <div ref={bodyRef} contentEditable suppressContentEditableWarning
+          data-placeholder="Start writing…" className="rich-body"
+          onInput={scheduleSave} onClick={handleBodyClick}
+          onFocus={() => setIsFocused(true)}
+          onBlur={() => setIsFocused(false)}
+          onKeyUp={updateActiveFormats} onMouseUp={updateActiveFormats}
+          style={{ width: '100%', fontSize: 16, color: 'var(--text-secondary)', fontFamily: "'DM Sans'", lineHeight: 1.7, minHeight: 200, outline: 'none' }} />
+      </div>
 
       <input ref={fileInputRef} type="file" onChange={handleFileChosen} style={{ display: 'none' }} />
 
       {/* Extra scroll room so typed content and the toolbar never fight over the same space above the keyboard */}
       {isFocused && <div style={{ height: '42vh', flexShrink: 0 }} />}
 
+
       {(isFocused || showInsertMenu) && (
         <RichToolbar
           onCmd={cmd} onStyle={applyStyle} onColor={applyColor}
           onChecklist={insertChecklist} onList={() => insertList('bullet')}
           onAttach={handleAttachClick} onRecord={toggleRecord} isRecording={isRecording}
-          activeStyle={activeStyle} activeFormats={activeFormats} onOpenInsert={() => setShowInsertMenu(true)} kbOffset={kbOffset}
+          activeStyle={activeStyle} activeFormats={activeFormats} onOpenInsert={() => { saveRange(); bodyRef.current?.blur(); setShowInsertMenu(true) }} kbOffset={kbOffset}
         />
       )}
 
@@ -744,7 +821,7 @@ function NoteEditor({ note, onBack, onSaved, categories, projects, goals, sector
         <InsertMenu
           onClose={() => setShowInsertMenu(false)}
           onStyle={applyStyle} onList={insertList} onDivider={insertDivider} onQuote={insertQuote}
-          onNewTask={openNewTask} onAttach={handleAttachClick} onRecord={toggleRecord}
+          onNewTask={openNewTask} onNewPage={addPage} onAttach={handleAttachClick} onRecord={toggleRecord}
         />
       )}
       {newTaskModal && (
