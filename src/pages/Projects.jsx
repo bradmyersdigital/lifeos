@@ -181,7 +181,7 @@ function NoteModal({ projectId, note, onClose, onSaved }) {
   )
 }
 
-function ProjectDetail({ project, onBack, onAddTask, onEditTask, onRefresh }) {
+export function ProjectDetail({ project, onBack, onAddTask, onEditTask, onRefresh }) {
   const [tasks, setTasks] = useState([])
   const [notes, setNotes] = useState([])
   const [shopping, setShopping] = useState([])
@@ -189,6 +189,7 @@ function ProjectDetail({ project, onBack, onAddTask, onEditTask, onRefresh }) {
   const [editModal, setEditModal] = useState(false)
   const [noteModal, setNoteModal] = useState(null)
   const [taskTab, setTaskTab] = useState('active')  // 'active' | 'completed'
+  const [bodyTab, setBodyTab] = useState('tasks')    // 'tasks' | 'notes' | 'shopping'
   const today = todayLocal()
   const color = SECTOR_COLORS[project.sector?.toLowerCase()] || 'var(--accent)'
 
@@ -300,7 +301,15 @@ function ProjectDetail({ project, onBack, onAddTask, onEditTask, onRefresh }) {
         </div>
       </div>
 
-      <div style={{ marginBottom: 22 }}>
+      {/* Body tabs: Tasks · Notes · Shopping */}
+      <div style={{ display:'flex', gap:6, marginBottom:18, background:'var(--bg-card)', border:'1px solid var(--border)', borderRadius:12, padding:4 }}>
+        {[['tasks',`Tasks`],['notes',`Notes`],['shopping',`Shopping`]].map(([v,label])=>(
+          <div key={v} onClick={()=>setBodyTab(v)} style={{ flex:1, textAlign:'center', padding:'9px 4px', borderRadius:9, fontSize:13, fontWeight:500, cursor:'pointer', background:bodyTab===v?'var(--accent-dim)':'transparent', color:bodyTab===v?'var(--accent)':'var(--text-muted)', transition:'all 0.15s' }}>{label}</div>
+        ))}
+      </div>
+
+      {bodyTab === 'tasks' && (<>
+      <div style={{ marginBottom: 18 }}>
         <div className="action-btn btn-task" style={{ width: '100%' }} onClick={() => onAddTask('today', { defaultProjectId: project.id, defaultSector: project.sector })}>
           <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><line x1="7.5" y1="1" x2="7.5" y2="14" stroke="var(--accent-text)" strokeWidth="1.8" strokeLinecap="round"/><line x1="1" y1="7.5" x2="14" y2="7.5" stroke="var(--accent-text)" strokeWidth="1.8" strokeLinecap="round"/></svg>
           Add Task
@@ -340,7 +349,9 @@ function ProjectDetail({ project, onBack, onAddTask, onEditTask, onRefresh }) {
       </div>
         )
       })()}
+      </>)}
 
+      {bodyTab === 'notes' && (<>
       <div style={{ display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:10 }}>
         <div className="section-label" style={{ margin:0 }}>Notes</div>
         <div onClick={()=>setNoteModal('new')} style={{ fontSize:12,color:'var(--accent)',cursor:'pointer',padding:'4px 10px',background:'var(--accent-dim)',border:'1px solid var(--accent-border)',borderRadius:8 }}>+ Add note</div>
@@ -354,9 +365,11 @@ function ProjectDetail({ project, onBack, onAddTask, onEditTask, onRefresh }) {
           </div>
         ))}
       </div>
+      </>)}
 
+      {bodyTab === 'shopping' && (<>
       {/* Shopping list — items scoped to this project */}
-      <div style={{ display:'flex',justifyContent:'space-between',alignItems:'center',marginTop:22,marginBottom:10 }}>
+      <div style={{ display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:10 }}>
         <div className="section-label" style={{ margin:0 }}>Shopping list</div>
         {shopping.length>0 && <div style={{ fontSize:11.5,color:'var(--text-dim)',fontFamily:"'DM Mono'" }}>{shopping.filter(s=>!s.checked).length} to buy</div>}
       </div>
@@ -384,6 +397,7 @@ function ProjectDetail({ project, onBack, onAddTask, onEditTask, onRefresh }) {
           ))}
         </div>
       )}
+      </>)}
 
       {editModal&&<ProjectModal project={project} onClose={()=>setEditModal(false)} onSaved={()=>{onRefresh();onBack()}} />}
       {noteModal&&<NoteModal projectId={project.id} note={noteModal==='new'?null:noteModal} onClose={()=>setNoteModal(null)} onSaved={loadDetail} />}

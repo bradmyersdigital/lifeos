@@ -1131,8 +1131,7 @@ export default function Finance() {
             </>
           )}
         </div>
-        )
-      })()}
+      )}
 
       {/* ══════════════════ RECURRING ══════════════════ */}
       {tab === 'recurring' && (() => {
@@ -1224,7 +1223,8 @@ export default function Finance() {
             </>
           )}
         </div>
-      )}
+        )
+      })()}
 
       {/* ══════════════════ INCOME ══════════════════ */}
       {tab === 'income' && (
