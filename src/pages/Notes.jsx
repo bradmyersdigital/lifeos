@@ -77,7 +77,7 @@ function RichToolbar({ onCmd, onStyle, onColor, onChecklist, onList, onAttach, o
   const btn = (active) => ({ width: 38, height: 38, borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0, background: active ? 'var(--accent)' : 'transparent', border: 'none', color: active ? 'var(--bg)' : 'var(--text-secondary)', fontSize: 16, fontWeight: 600 })
 
   return (
-    <div style={{ position: 'fixed', left: '50%', transform: 'translate3d(-50%, 0, 0)', WebkitTransform: 'translate3d(-50%, 0, 0)', width: '100%', maxWidth: 820, boxSizing: 'border-box', padding: '0 16px', bottom: kbOffset + 8, zIndex: 50 }}>
+    <div className="ndl-toolbar-fixed" style={{ position: 'fixed', left: '50%', transform: 'translate3d(-50%, 0, 0)', WebkitTransform: 'translate3d(-50%, 0, 0)', width: '100%', maxWidth: 820, boxSizing: 'border-box', padding: '0 16px', bottom: kbOffset + 8, zIndex: 50 }}>
       {showStyles && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 2, marginBottom: 8, background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 16, padding: 6, boxShadow: '0 6px 24px rgba(0,0,0,0.35)' }}>
           {TEXT_STYLES.map(s => (
@@ -259,6 +259,8 @@ function InsertMenu({ onClose, onStyle, onList, onDivider, onQuote, onNewTask, o
               <InsertTile icon="⇄" label="Mermaid diagram" disabled onClick={soon('Mermaid diagram')} />
             </div>
           </div>
+          {/* Lets the last section scroll all the way up to the top band, same as every other section */}
+          <div style={{ height: '50vh' }} />
         </div>
       </div>
     </div>
@@ -342,9 +344,7 @@ function LinksSheet({ onClose, onDelete, category, setCategory, sector, setSecto
         <div className="modal-handle" />
         <div className="modal-title">Note actions<div className="modal-close" onClick={onClose}>×</div></div>
 
-        <div onClick={() => { onClose(); onDelete() }} style={{ padding: '12px 4px', marginBottom: 18, cursor: 'pointer', fontSize: 14, fontWeight: 500, color: 'var(--danger)', borderBottom: '1px solid var(--border)' }}>Delete note</div>
-
-        <div className="field" style={{ marginBottom: 12 }}>
+        <div className="field" style={{ marginBottom: 18 }}>
           <div className="field-label">Category</div>
           <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
             <div onClick={() => setCategory('')} style={{ padding: '5px 12px', borderRadius: 20, fontSize: 12, fontWeight: 500, cursor: 'pointer', border: '1px solid', background: !category ? 'var(--accent-dim)' : 'var(--bg-input)', borderColor: !category ? 'var(--accent-border)' : 'var(--border)', color: !category ? 'var(--accent)' : 'var(--text-dim)' }}>None</div>
@@ -357,30 +357,31 @@ function LinksSheet({ onClose, onDelete, category, setCategory, sector, setSecto
           </div>
         </div>
 
-        <div className="field-row" style={{ marginBottom: 12 }}>
-          <div className="field" style={{ marginBottom: 0 }}>
-            <div className="field-label">Sector</div>
-            <select value={sector} onChange={e => setSector(e.target.value)}>
-              <option value="">None</option>
-              {sectors.map(s => <option key={s.id||s.name} value={s.name}>{s.name}</option>)}
-            </select>
-          </div>
-          <div className="field" style={{ marginBottom: 0 }}>
-            <div className="field-label">Project</div>
-            <select value={projectId} onChange={e => setProjectId(e.target.value)}>
-              <option value="">None</option>
-              {projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-            </select>
-          </div>
+        <div className="field" style={{ marginBottom: 18 }}>
+          <div className="field-label">Project</div>
+          <select value={projectId} onChange={e => setProjectId(e.target.value)}>
+            <option value="">None</option>
+            {projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+          </select>
         </div>
 
-        <div className="field" style={{ marginBottom: 0 }}>
+        <div className="field" style={{ marginBottom: 18 }}>
+          <div className="field-label">Sector</div>
+          <select value={sector} onChange={e => setSector(e.target.value)}>
+            <option value="">None</option>
+            {sectors.map(s => <option key={s.id||s.name} value={s.name}>{s.name}</option>)}
+          </select>
+        </div>
+
+        <div className="field" style={{ marginBottom: 24 }}>
           <div className="field-label">Goal</div>
           <select value={goalId} onChange={e => setGoalId(e.target.value)}>
             <option value="">None</option>
             {goals.map(g => <option key={g.id} value={g.id}>{g.timeframe} — {g.goal_text?.substring(0,40)}</option>)}
           </select>
         </div>
+
+        <div onClick={() => { onClose(); onDelete() }} style={{ padding: '12px 4px', cursor: 'pointer', fontSize: 14, fontWeight: 500, color: 'var(--danger)', borderTop: '1px solid var(--border)' }}>Delete note</div>
       </div>
     </div>
   )
@@ -404,6 +405,19 @@ function NoteEditor({ note, onBack, onSaved, categories, projects, goals, sector
   const [activeStyle, setActiveStyle] = useState('P')
   const [activeFormats, setActiveFormats] = useState({ bold: false, italic: false, underline: false, strikeThrough: false })
   const [isFocused, setIsFocused] = useState(false)
+  useEffect(() => {
+    if (!isFocused) return
+    const scrollEl = document.querySelector('.page-scroll')
+    if (!scrollEl) return
+    let lastTop = scrollEl.scrollTop
+    const onScroll = () => {
+      const delta = scrollEl.scrollTop - lastTop
+      lastTop = scrollEl.scrollTop
+      if (Math.abs(delta) > 12) bodyRef.current?.blur()
+    }
+    scrollEl.addEventListener('scroll', onScroll, { passive: true })
+    return () => scrollEl.removeEventListener('scroll', onScroll)
+  }, [isFocused])
   const [showInsertMenu, setShowInsertMenu] = useState(false)
   const [newTaskModal, setNewTaskModal] = useState(false)
   const [showLinksSheet, setShowLinksSheet] = useState(false)
@@ -430,6 +444,7 @@ function NoteEditor({ note, onBack, onSaved, categories, projects, goals, sector
   const touchStart = useRef(null)
 
   const [kbOffset, setKbOffset] = useState(0)
+  const frozenKbOffset = useRef(0)
   useEffect(() => {
     let usingNative = false
     let removeNativeListeners = () => {}
@@ -712,6 +727,59 @@ function NoteEditor({ note, onBack, onSaved, categories, projects, goals, sector
   const insertDivider = () => { ensureSelection(); document.execCommand('insertHorizontalRule'); scheduleSave() }
   const insertQuote = () => { ensureSelection(); document.execCommand('formatBlock', false, 'BLOCKQUOTE'); scheduleSave() }
   const openNewTask = async () => { await ensureSaved(); setNewTaskModal(true) }
+  const handleBodyKeyDown = (e) => {
+    if (e.key !== 'Enter') return
+    const sel = window.getSelection()
+    if (!sel || sel.rangeCount === 0) return
+    const range = sel.getRangeAt(0)
+    const container = range.startContainer.nodeType === 3 ? range.startContainer.parentElement : range.startContainer
+    const checkLine = container?.closest?.('.ndl-check')
+    if (!checkLine || !bodyRef.current?.contains(checkLine)) return // not in a checklist — let the browser handle Enter normally
+    e.preventDefault()
+
+    const textSpan = checkLine.querySelector('.ndl-check-text')
+    const isEmpty = !textSpan || textSpan.textContent.replace(/\u200b/g, '').trim() === ''
+
+    if (isEmpty) {
+      // Enter on an empty checklist item exits the list, like Apple Notes/Evernote
+      const p = document.createElement('div')
+      p.innerHTML = '<br>'
+      checkLine.replaceWith(p)
+      const newRange = document.createRange()
+      newRange.setStart(p, 0)
+      newRange.collapse(true)
+      sel.removeAllRanges(); sel.addRange(newRange)
+      scheduleSave()
+      return
+    }
+
+    // Split at the cursor — text after it moves into the new checklist item, like a normal list
+    const splitRange = range.cloneRange()
+    splitRange.setEndAfter(textSpan.lastChild || textSpan)
+    const remainder = splitRange.extractContents()
+
+    const newLine = document.createElement('div')
+    newLine.className = 'ndl-check'
+    newLine.dataset.checked = 'false'
+    const newBox = document.createElement('span')
+    newBox.className = 'ndl-box'
+    newBox.contentEditable = 'false'
+    newBox.textContent = '\u2610'
+    const newTextSpan = document.createElement('span')
+    newTextSpan.className = 'ndl-check-text'
+    newTextSpan.appendChild(remainder)
+    if (!newTextSpan.textContent) newTextSpan.textContent = '\u200b'
+    newLine.appendChild(newBox)
+    newLine.appendChild(newTextSpan)
+    checkLine.after(newLine)
+
+    const newRange = document.createRange()
+    newRange.selectNodeContents(newTextSpan)
+    newRange.collapse(true)
+    sel.removeAllRanges(); sel.addRange(newRange)
+    scheduleSave()
+  }
+
   const insertChecklist = () => {
     ensureSelection()
     document.execCommand('insertHTML', false,
@@ -915,15 +983,18 @@ function NoteEditor({ note, onBack, onSaved, categories, projects, goals, sector
   const cancelRecording = () => { recordCancelledRef.current = true; mediaRecorderRef.current?.stop() }
 
   // ── Swipe flips between pages of THIS note, like turning a page in a notebook ──
-  // Ignores touches that start inside any open sheet/menu (insert menu, page manager, etc.)
-  // so scrolling or dragging inside those doesn't get misread as a page-flip attempt.
+  // Ignores touches that start inside any open sheet/menu or the toolbar itself, so scrolling
+  // or dragging those doesn't get misread as a page-flip attempt. Note: the toolbar is portaled
+  // to document.body, but React still bubbles its synthetic touch events through the *React*
+  // tree (not the physical DOM tree) — being portaled alone doesn't exclude it here.
+  const isSwipeExempt = (target) => target.closest?.('.modal-overlay, .ndl-toolbar-fixed')
   const onTouchStart = (e) => {
-    if (e.target.closest?.('.modal-overlay')) { touchStart.current = null; return }
+    if (isSwipeExempt(e.target)) { touchStart.current = null; return }
     touchStart.current = { x: e.touches[0].clientX, y: e.touches[0].clientY }
   }
   const onTouchEnd = (e) => {
     if (!touchStart.current) return
-    if (e.target.closest?.('.modal-overlay')) { touchStart.current = null; return }
+    if (isSwipeExempt(e.target)) { touchStart.current = null; return }
     const dx = e.changedTouches[0].clientX - touchStart.current.x
     const dy = e.changedTouches[0].clientY - touchStart.current.y
     touchStart.current = null
@@ -945,7 +1016,7 @@ function NoteEditor({ note, onBack, onSaved, categories, projects, goals, sector
             <div style={{ flex: 1, fontSize: 11, color: 'var(--text-dim)', fontFamily: "'DM Mono'" }}>
               {saving ? 'Saving…' : lastSaved ? `Saved ${fmtRelative(lastSaved)}` : note?.id ? `Saved` : 'New note'}
             </div>
-            <div onClick={() => setShowLinksSheet(true)} style={{ width: 40, height: 34, borderRadius: 10, background: 'var(--bg-card)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: 20, fontWeight: 700, letterSpacing: '1px', color: 'var(--text-secondary)', flexShrink: 0 }}>⋯</div>
+            <div onClick={() => setShowLinksSheet(v => !v)} style={{ width: 40, height: 34, borderRadius: 10, background: 'var(--bg-card)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: 20, fontWeight: 700, letterSpacing: '1px', color: 'var(--text-secondary)', flexShrink: 0 }}>⋯</div>
           </div>
         </div>,
         document.body
@@ -1007,7 +1078,7 @@ function NoteEditor({ note, onBack, onSaved, categories, projects, goals, sector
           onInput={scheduleSave} onClick={handleBodyClick}
           onFocus={() => setIsFocused(true)}
           onBlur={() => setIsFocused(false)}
-          onKeyUp={updateActiveFormats} onMouseUp={updateActiveFormats}
+          onKeyDown={handleBodyKeyDown} onKeyUp={updateActiveFormats} onMouseUp={updateActiveFormats}
           style={{ width: '100%', fontSize: 16, color: 'var(--text-secondary)', fontFamily: "'DM Sans'", lineHeight: 1.7, minHeight: 200, outline: 'none' }} />
       </div>
 
@@ -1022,7 +1093,7 @@ function NoteEditor({ note, onBack, onSaved, categories, projects, goals, sector
           onCmd={cmd} onStyle={applyStyle} onColor={applyColor}
           onChecklist={insertChecklist} onList={() => insertList('bullet')}
           onAttach={handleAttachClick} onRecord={toggleRecord} isRecording={isRecording}
-          activeStyle={activeStyle} activeFormats={activeFormats} onOpenInsert={() => { saveRange(); bodyRef.current?.blur(); setShowInsertMenu(true) }} kbOffset={kbOffset}
+          activeStyle={activeStyle} activeFormats={activeFormats} onOpenInsert={() => { saveRange(); frozenKbOffset.current = kbOffset; bodyRef.current?.blur(); setShowInsertMenu(true) }} kbOffset={showInsertMenu ? frozenKbOffset.current : kbOffset}
         />,
         document.body
       )}

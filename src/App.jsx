@@ -225,6 +225,18 @@ function Shell() {
     return () => { document.removeEventListener('focusin', onFocusIn); document.removeEventListener('focusout', onFocusOut) }
   }, [])
 
+  // Any open sheet/modal (e.g. the notes insert menu) also hides the dock — some of these
+  // deliberately blur the active field first (to dismiss the keyboard), which would otherwise
+  // make the dock reappear via the focus tracking above.
+  const [hasOpenOverlay, setHasOpenOverlay] = useState(false)
+  useEffect(() => {
+    const check = () => setHasOpenOverlay(!!document.querySelector('.modal-overlay'))
+    const observer = new MutationObserver(check)
+    observer.observe(document.body, { childList: true, subtree: true })
+    check()
+    return () => observer.disconnect()
+  }, [])
+
   useEffect(() => {
     if (drawerOpen) document.documentElement.style.overflow = 'hidden'
     else document.documentElement.style.overflow = ''
@@ -278,7 +290,7 @@ function Shell() {
         </Routes>
       </div>
 
-      {!keyboardActive && (
+      {!keyboardActive && !hasOpenOverlay && (
         <nav className="bottom-nav">
           {navItems.map(({ path, label, Icon }) => {
             const active = activeNav === path
