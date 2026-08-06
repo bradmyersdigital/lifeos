@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { fmtDate, todayLocal } from '../utils'
@@ -109,7 +110,18 @@ function GoalModal({ goal, sectors, onClose, onSaved }) {
   const [startValue, setStartValue] = useState(goal?.start_value ?? '')
   const [targetValue, setTargetValue] = useState(goal?.target_value ?? '')
   const [unit, setUnit] = useState(goal?.unit || '')
+  const [imageFile, setImageFile] = useState(null)
+  const [imagePreview, setImagePreview] = useState(goal?.image_url || null)
   const [saving, setSaving] = useState(false)
+  const fileInputRef = useRef(null)
+
+  const pickImage = (e) => {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (!file) return
+    setImageFile(file)
+    setImagePreview(URL.createObjectURL(file))
+  }
 
   const handleSave = async () => {
     if (!title.trim()) return
@@ -126,16 +138,24 @@ function GoalModal({ goal, sectors, onClose, onSaved }) {
       unit: useNumeric ? (unit || null) : null,
       updated_at: new Date().toISOString(),
     }
-    let error
+    let error, goalId = goal?.id
     if (isEdit) { const r = await supabase.from('goals').update(payload).eq('id', goal.id); error = r.error }
-    else { const r = await supabase.from('goals').insert(payload); error = r.error }
+    else { const r = await supabase.from('goals').insert(payload).select().single(); error = r.error; goalId = r.data?.id }
     // New columns may not exist yet if the migration hasn't run — retry with just the
     // original fields rather than losing the whole save.
     if (error?.code === '42703' || error?.code === 'PGRST204') {
       const fallback = { goal_text: payload.goal_text, details: payload.details, updated_at: payload.updated_at }
       if (isEdit) await supabase.from('goals').update(fallback).eq('id', goal.id)
-      else await supabase.from('goals').insert(fallback)
+      else { const r = await supabase.from('goals').insert(fallback).select().single(); goalId = r.data?.id }
       console.warn('Some goal columns are missing — run the goals migration SQL to enable sector/due date/priority/status/numeric tracking.')
+    }
+    if (imageFile && goalId) {
+      const path = `${goalId}/${Date.now()}-${imageFile.name.replace(/[^a-zA-Z0-9._-]/g, '_')}`
+      const { error: upErr } = await supabase.storage.from('goal-images').upload(path, imageFile)
+      if (!upErr) {
+        const { data: pub } = supabase.storage.from('goal-images').getPublicUrl(path)
+        await supabase.from('goals').update({ image_url: pub.publicUrl }).eq('id', goalId)
+      }
     }
     setSaving(false); onSaved(); onClose()
   }
@@ -151,6 +171,18 @@ function GoalModal({ goal, sectors, onClose, onSaved }) {
       <div className="modal-sheet">
         <div className="modal-handle" />
         <div className="modal-title">{isEdit ? 'Edit goal' : 'New goal'}<div className="modal-close" onClick={onClose}>×</div></div>
+
+        <input ref={fileInputRef} type="file" accept="image/*" onChange={pickImage} style={{ display: 'none' }} />
+        <div onClick={() => fileInputRef.current?.click()} style={{ position: 'relative', height: 130, borderRadius: 14, overflow: 'hidden', marginBottom: 16, cursor: 'pointer', background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
+          {imagePreview ? (
+            <>
+              <img src={imagePreview} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              <div style={{ position: 'absolute', bottom: 8, right: 8, padding: '4px 10px', borderRadius: 20, background: 'rgba(0,0,0,0.6)', color: 'white', fontSize: 11 }}>Change photo</div>
+            </>
+          ) : (
+            <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, color: 'var(--text-dim)' }}>+ Add a photo</div>
+          )}
+        </div>
 
         <div className="field"><div className="field-label">What do you want to accomplish?</div>
           <input type="text" placeholder="e.g. Publish my app to the App Store" value={title} onChange={e => setTitle(e.target.value)} />
@@ -224,6 +256,149 @@ function GoalModal({ goal, sectors, onClose, onSaved }) {
 }
 
 // ── Detail ────────────────────────────────────────────────────────────────────────────
+// ── Immersive creation wizard — one full-screen step at a time, not a form dump.
+// A goal is a moment worth walking through, not a modal to fill out. ────────────────────
+const WIZARD_STEPS = ['title', 'sector', 'image', 'due']
+
+function WizardProgress({ step }) {
+  const idx = WIZARD_STEPS.indexOf(step)
+  return (
+    <div style={{ display: 'flex', gap: 6, marginBottom: 30 }}>
+      {WIZARD_STEPS.map((s, i) => (
+        <div key={s} style={{ flex: 1, height: 4, borderRadius: 2, background: i <= idx ? 'var(--accent)' : 'var(--border)', transition: 'background 0.2s' }} />
+      ))}
+    </div>
+  )
+}
+
+function GoalWizard({ sectors, onClose, onCreated }) {
+  const [step, setStep] = useState('title')
+  const [title, setTitle] = useState('')
+  const [sector, setSector] = useState('')
+  const [imageFile, setImageFile] = useState(null)
+  const [imagePreview, setImagePreview] = useState(null)
+  const [dueDate, setDueDate] = useState('')
+  const [saving, setSaving] = useState(false)
+  const fileInputRef = useRef(null)
+  const titleInputRef = useRef(null)
+
+  useEffect(() => { if (step === 'title') setTimeout(() => titleInputRef.current?.focus(), 300) }, [step])
+
+  const stepIndex = WIZARD_STEPS.indexOf(step)
+  const goNext = () => { const i = stepIndex; if (i < WIZARD_STEPS.length - 1) setStep(WIZARD_STEPS[i + 1]) }
+  const goBack = () => { const i = stepIndex; if (i === 0) onClose(); else setStep(WIZARD_STEPS[i - 1]) }
+  const canAdvance = step !== 'title' || title.trim().length > 0
+
+  const pickImage = (e) => {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (!file) return
+    setImageFile(file)
+    setImagePreview(URL.createObjectURL(file))
+  }
+
+  const finish = async () => {
+    if (!title.trim()) return
+    setSaving(true)
+    const { data: goal, error } = await supabase.from('goals').insert({
+      goal_text: title.trim(), sector: sector || null, due_date: dueDate || null,
+      priority: 'medium', status: 'active', updated_at: new Date().toISOString(),
+    }).select().single()
+
+    if (error || !goal) {
+      // New columns may not exist yet if the migration hasn't run — retry with the basics only
+      const { data: fallbackGoal } = await supabase.from('goals').insert({ goal_text: title.trim(), updated_at: new Date().toISOString() }).select().single()
+      setSaving(false)
+      if (fallbackGoal) { onCreated(); onClose() }
+      return
+    }
+
+    if (imageFile) {
+      const path = `${goal.id}/${Date.now()}-${imageFile.name.replace(/[^a-zA-Z0-9._-]/g, '_')}`
+      const { error: upErr } = await supabase.storage.from('goal-images').upload(path, imageFile)
+      if (!upErr) {
+        const { data: pub } = supabase.storage.from('goal-images').getPublicUrl(path)
+        await supabase.from('goals').update({ image_url: pub.publicUrl }).eq('id', goal.id)
+      }
+    }
+    setSaving(false)
+    onCreated(); onClose()
+  }
+
+  const content = (
+    <div style={{ position: 'fixed', inset: 0, zIndex: 300, background: 'var(--bg)', display: 'flex', flexDirection: 'column', padding: '24px 20px', paddingTop: 'calc(env(safe-area-inset-top, 24px) + 20px)', paddingBottom: 'calc(env(safe-area-inset-bottom, 20px) + 20px)' }}>
+      <WizardProgress step={step} />
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 30 }}>
+        <div onClick={goBack} style={{ fontSize: 22, color: 'var(--text-muted)', cursor: 'pointer', padding: 4 }}>{stepIndex === 0 ? '×' : '‹'}</div>
+        {step !== 'due' ? (
+          <div onClick={() => canAdvance && goNext()} style={{ fontSize: 22, color: canAdvance ? 'var(--accent)' : 'var(--border)', cursor: canAdvance ? 'pointer' : 'default', padding: 4 }}>→</div>
+        ) : (
+          <div onClick={finish} className="btn-primary" style={{ padding: '8px 18px', fontSize: 13, cursor: 'pointer' }}>{saving ? 'Creating…' : 'Create goal'}</div>
+        )}
+      </div>
+
+      <div style={{ flex: 1, overflowY: 'auto' }}>
+        {step === 'title' && (
+          <>
+            <div style={{ fontSize: 26, fontWeight: 700, marginBottom: 10 }}>Set a new goal</div>
+            <div style={{ fontSize: 15, color: 'var(--text-muted)', lineHeight: 1.5, marginBottom: 32 }}>What do you want to accomplish? Be as specific as you can.</div>
+            <textarea ref={titleInputRef} value={title} onChange={e => setTitle(e.target.value)} placeholder="e.g. Publish my app to the App Store"
+              onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey && title.trim()) { e.preventDefault(); goNext() } }}
+              style={{ width: '100%', background: 'transparent', border: 'none', outline: 'none', fontSize: 22, color: 'var(--text-primary)', fontFamily: "'DM Sans'", resize: 'none', height: 100 }} />
+          </>
+        )}
+
+        {step === 'sector' && (
+          <>
+            <div style={{ fontSize: 26, fontWeight: 700, marginBottom: 10 }}>Choose a sector</div>
+            <div style={{ fontSize: 15, color: 'var(--text-muted)', lineHeight: 1.5, marginBottom: 32 }}>Which part of your life is this for? You can skip this.</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {sectors.map(s => (
+                <div key={s.id || s.name} onClick={() => { setSector(s.name); goNext() }}
+                  style={{ padding: '14px 18px', borderRadius: 14, cursor: 'pointer', fontSize: 16, textAlign: 'center', background: sector === s.name ? 'var(--accent-dim)' : 'var(--bg-card)', border: `1px solid ${sector === s.name ? 'var(--accent-border)' : 'var(--border)'}`, color: sector === s.name ? 'var(--accent)' : 'var(--text-secondary)' }}>
+                  {s.name}
+                </div>
+              ))}
+            </div>
+            <div onClick={goNext} style={{ textAlign: 'center', marginTop: 20, fontSize: 13, color: 'var(--text-dim)', cursor: 'pointer' }}>Skip for now</div>
+          </>
+        )}
+
+        {step === 'image' && (
+          <>
+            <div style={{ fontSize: 26, fontWeight: 700, marginBottom: 10 }}>Add an image</div>
+            <div style={{ fontSize: 15, color: 'var(--text-muted)', lineHeight: 1.5, marginBottom: 32 }}>Pick a photo that makes you feel something — you'll see it every time you open this goal.</div>
+            <input ref={fileInputRef} type="file" accept="image/*" onChange={pickImage} style={{ display: 'none' }} />
+            {imagePreview ? (
+              <div onClick={() => fileInputRef.current?.click()} style={{ position: 'relative', borderRadius: 18, overflow: 'hidden', height: 280, cursor: 'pointer' }}>
+                <img src={imagePreview} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                <div style={{ position: 'absolute', bottom: 12, right: 12, padding: '6px 12px', borderRadius: 20, background: 'rgba(0,0,0,0.6)', color: 'white', fontSize: 12 }}>Change</div>
+              </div>
+            ) : (
+              <div onClick={() => fileInputRef.current?.click()} style={{ height: 280, borderRadius: 18, border: '1px dashed var(--border)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 10, cursor: 'pointer', color: 'var(--text-dim)' }}>
+                <svg width="30" height="30" viewBox="0 0 24 24" fill="none"><rect x="2" y="4" width="20" height="16" rx="2" stroke="currentColor" strokeWidth="1.4"/><circle cx="8" cy="10" r="1.6" stroke="currentColor" strokeWidth="1.4"/><path d="M2 17l5-5 4 4 3-3 6 6" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round"/></svg>
+                <div style={{ fontSize: 13 }}>Choose from your photos</div>
+              </div>
+            )}
+            <div onClick={goNext} style={{ textAlign: 'center', marginTop: 20, fontSize: 13, color: 'var(--text-dim)', cursor: 'pointer' }}>Skip for now</div>
+          </>
+        )}
+
+        {step === 'due' && (
+          <>
+            <div style={{ fontSize: 26, fontWeight: 700, marginBottom: 10 }}>Set a due date</div>
+            <div style={{ fontSize: 15, color: 'var(--text-muted)', lineHeight: 1.5, marginBottom: 32 }}>Optional — but goals with a deadline are easier to stay on pace with.</div>
+            <input type="date" value={dueDate} onChange={e => setDueDate(e.target.value)}
+              style={{ width: '100%', background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 14, padding: '16px 18px', color: 'var(--text-primary)', fontSize: 18, fontFamily: "'DM Sans'" }} />
+          </>
+        )}
+      </div>
+    </div>
+  )
+
+  return createPortal(content, document.body)
+}
+
 function GoalDetail({ goal, onBack, onSaved }) {
   const navigate = useNavigate()
   const [projects, setProjects] = useState([])
@@ -286,19 +461,39 @@ function GoalDetail({ goal, onBack, onSaved }) {
 
   return (
     <div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
-        <div onClick={onBack} style={{ width: 34, height: 34, borderRadius: 10, background: 'var(--bg-card)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: 18, color: 'var(--text-muted)' }}>‹</div>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 3, flexWrap: 'wrap' }}>
-            {goal.sector && <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>{goal.sector}</div>}
-            <HealthBadge level={health} />
+      {goal.image_url ? (
+        <div style={{ position: 'relative', height: 220, borderRadius: 16, overflow: 'hidden', marginBottom: 18, marginLeft: -16, marginRight: -16, marginTop: -8 }}>
+          <img src={goal.image_url} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
+          <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, rgba(0,0,0,0.35) 0%, rgba(0,0,0,0.15) 30%, rgba(0,0,0,0.8) 100%)' }} />
+          <div style={{ position: 'absolute', top: 16, left: 16, right: 16, display: 'flex', justifyContent: 'space-between' }}>
+            <div onClick={onBack} style={{ width: 34, height: 34, borderRadius: 10, background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: 18, color: 'white' }}>‹</div>
+            <div onClick={() => setEditing(true)} style={{ width: 34, height: 34, borderRadius: 10, background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+              <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M9 1.5L11 3.5L4.5 10H2.5V8L9 1.5Z" stroke="white" strokeWidth="1.3" fill="none" strokeLinecap="round" strokeLinejoin="round"/></svg>
+            </div>
           </div>
-          <div style={{ fontSize: 18, fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{goal.goal_text}</div>
+          <div style={{ position: 'absolute', bottom: 16, left: 16, right: 16 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6, flexWrap: 'wrap' }}>
+              {goal.sector && <div style={{ fontSize: 10, fontWeight: 600, color: 'rgba(255,255,255,0.85)', textTransform: 'uppercase', letterSpacing: '0.08em', padding: '2px 8px', background: 'rgba(255,255,255,0.15)', borderRadius: 20 }}>{goal.sector}</div>}
+              <HealthBadge level={health} />
+            </div>
+            <div style={{ fontSize: 22, fontWeight: 700, color: 'white', textShadow: '0 1px 6px rgba(0,0,0,0.5)' }}>{goal.goal_text}</div>
+          </div>
         </div>
-        <div onClick={() => setEditing(true)} style={{ width: 34, height: 34, borderRadius: 10, background: 'var(--bg-card)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}>
-          <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M9 1.5L11 3.5L4.5 10H2.5V8L9 1.5Z" stroke="var(--text-muted)" strokeWidth="1.3" fill="none" strokeLinecap="round" strokeLinejoin="round"/></svg>
+      ) : (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
+          <div onClick={onBack} style={{ width: 34, height: 34, borderRadius: 10, background: 'var(--bg-card)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: 18, color: 'var(--text-muted)' }}>‹</div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 3, flexWrap: 'wrap' }}>
+              {goal.sector && <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>{goal.sector}</div>}
+              <HealthBadge level={health} />
+            </div>
+            <div style={{ fontSize: 18, fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{goal.goal_text}</div>
+          </div>
+          <div onClick={() => setEditing(true)} style={{ width: 34, height: 34, borderRadius: 10, background: 'var(--bg-card)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}>
+            <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M9 1.5L11 3.5L4.5 10H2.5V8L9 1.5Z" stroke="var(--text-muted)" strokeWidth="1.3" fill="none" strokeLinecap="round" strokeLinejoin="round"/></svg>
+          </div>
         </div>
-      </div>
+      )}
 
       {goal.details && (
         <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 12, padding: 14, marginBottom: 18, fontSize: 14, color: 'var(--text-muted)', lineHeight: 1.6 }}>{goal.details}</div>
@@ -451,6 +646,24 @@ function GoalCard({ goal, projects, tasks, checkins, notes, onClick }) {
   const health = computeGoalHealth(goal, progress, lastActivity, tasks)
   const overdue = goal.due_date && goal.due_date < todayLocal() && goal.status === 'active'
 
+  if (goal.image_url) {
+    return (
+      <div onClick={onClick} style={{ position: 'relative', height: 150, borderRadius: 14, overflow: 'hidden', marginBottom: 8, cursor: 'pointer', border: '1px solid var(--border)' }}>
+        <img src={goal.image_url} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
+        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, rgba(0,0,0,0.05) 0%, rgba(0,0,0,0.75) 100%)' }} />
+        <div style={{ position: 'absolute', top: 10, left: 10 }}><HealthDot level={health} size={10} /></div>
+        <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: 14 }}>
+          <div style={{ fontSize: 16, fontWeight: 600, color: 'white', marginBottom: 8, textShadow: '0 1px 4px rgba(0,0,0,0.4)' }}>{goal.goal_text}</div>
+          <div className="prog-bar" style={{ marginBottom: 6, background: 'rgba(255,255,255,0.25)' }}><div className="prog-fill" style={{ width: progress + '%' }} /></div>
+          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+            <div style={{ fontFamily: "'DM Mono'", fontSize: 11, color: 'rgba(255,255,255,0.85)' }}>{progress}%</div>
+            {goal.due_date && <div style={{ fontSize: 11, fontFamily: "'DM Mono'", color: overdue ? 'var(--danger)' : 'rgba(255,255,255,0.85)' }}>{overdue ? 'Overdue' : `Due ${fmtDate(goal.due_date)}`}</div>}
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div onClick={onClick} style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 12, padding: 14, marginBottom: 8, cursor: 'pointer' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
@@ -561,7 +774,7 @@ export default function Goals() {
         </div>
       ))}
 
-      {addModal && <GoalModal goal={null} sectors={sectors} onClose={() => setAddModal(false)} onSaved={loadAll} />}
+      {addModal && <GoalWizard sectors={sectors} onClose={() => setAddModal(false)} onCreated={loadAll} />}
     </div>
   )
 }
