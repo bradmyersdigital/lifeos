@@ -231,7 +231,7 @@ function Shell() {
   return (
     <div className="app-shell">
       <div onClick={() => setDrawerOpen(true)} className="hamburger-btn"
-        style={{ position: 'fixed', top: 'calc(env(safe-area-inset-top, 44px) + 10px)', left: 16, zIndex: 100, width: 40, height: 40, borderRadius: 14, background: 'var(--nav-bg)', border: '1px solid var(--border)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 5, cursor: 'pointer', boxShadow: 'var(--shadow-float)' }}>
+        style={{ position: 'fixed', top: 'calc(env(safe-area-inset-top, 44px) + 10px)', left: 16, zIndex: 100, width: 40, height: 40, borderRadius: 14, background: 'var(--nav-bg)', border: '1px solid var(--border)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 5, cursor: 'pointer', boxShadow: 'var(--shadow-float)', transform: 'translateZ(0)', WebkitTransform: 'translateZ(0)' }}>
         <div style={{ width: 15, height: 1.5, background: 'var(--text-muted)', borderRadius: 2 }} />
         <div style={{ width: 15, height: 1.5, background: 'var(--text-muted)', borderRadius: 2 }} />
         <div style={{ width: 10, height: 1.5, background: 'var(--text-muted)', borderRadius: 2 }} />

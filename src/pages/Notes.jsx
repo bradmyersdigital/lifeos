@@ -77,7 +77,7 @@ function RichToolbar({ onCmd, onStyle, onColor, onChecklist, onList, onAttach, o
   const btn = (active) => ({ width: 38, height: 38, borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0, background: active ? 'var(--accent)' : 'transparent', border: 'none', color: active ? 'var(--bg)' : 'var(--text-secondary)', fontSize: 16, fontWeight: 600 })
 
   return (
-    <div style={{ position: 'fixed', left: '50%', transform: 'translateX(-50%)', width: '100%', maxWidth: 820, boxSizing: 'border-box', padding: '0 16px', bottom: kbOffset + 8, zIndex: 50 }}>
+    <div style={{ position: 'fixed', left: '50%', transform: 'translate3d(-50%, 0, 0)', WebkitTransform: 'translate3d(-50%, 0, 0)', width: '100%', maxWidth: 820, boxSizing: 'border-box', padding: '0 16px', bottom: kbOffset + 8, zIndex: 50 }}>
       {showStyles && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 2, marginBottom: 8, background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 16, padding: 6, boxShadow: '0 6px 24px rgba(0,0,0,0.35)' }}>
           {TEXT_STYLES.map(s => (
@@ -385,19 +385,41 @@ function NoteEditor({ note, onBack, onSaved, categories, projects, goals, sector
 
   const [kbOffset, setKbOffset] = useState(0)
   useEffect(() => {
+    let usingNative = false
+    let removeNativeListeners = () => {}
+
+    // Running inside the actual iOS app (via Capacitor) — use the real native keyboard height.
+    // This is exact, unlike visualViewport, which doesn't reliably track the keyboard inside a
+    // Capacitor WKWebView the way it does in Safari.
+    if (window.Capacitor?.isNativePlatform?.()) {
+      import('@capacitor/keyboard').then(({ Keyboard }) => {
+        usingNative = true
+        const NATIVE_BUFFER = 8 // small breathing room only — the native height is already exact
+        const showSub = Keyboard.addListener('keyboardWillShow', (info) => {
+          setKbOffset((info?.keyboardHeight || 0) + NATIVE_BUFFER)
+        })
+        const hideSub = Keyboard.addListener('keyboardWillHide', () => setKbOffset(0))
+        removeNativeListeners = () => { showSub.remove(); hideSub.remove() }
+      }).catch(() => { /* @capacitor/keyboard not installed yet — falls back to visualViewport below */ })
+    }
+
+    // Web/PWA fallback — also acts as the initial value until the native listeners above attach.
     const vv = window.visualViewport
-    if (!vv) return
-    // Safari's built-in prev/next/done accessory bar rides on top of the keyboard and isn't
-    // consistently reflected in visualViewport's height, so add a flat buffer to clear it.
     const ACCESSORY_BAR_BUFFER = 48
-    const update = () => {
+    const updateFromViewport = () => {
+      if (usingNative) return // native events are authoritative once available
       const raw = Math.max(0, window.innerHeight - vv.height - vv.offsetTop)
       setKbOffset(raw > 0 ? raw + ACCESSORY_BAR_BUFFER : 0)
     }
-    vv.addEventListener('resize', update)
-    vv.addEventListener('scroll', update)
-    update()
-    return () => { vv.removeEventListener('resize', update); vv.removeEventListener('scroll', update) }
+    vv?.addEventListener('resize', updateFromViewport)
+    vv?.addEventListener('scroll', updateFromViewport)
+    updateFromViewport()
+
+    return () => {
+      removeNativeListeners()
+      vv?.removeEventListener('resize', updateFromViewport)
+      vv?.removeEventListener('scroll', updateFromViewport)
+    }
   }, [])
 
   // Load body into the contentEditable on mount and whenever we swipe to a different note.
@@ -852,7 +874,7 @@ function NoteEditor({ note, onBack, onSaved, categories, projects, goals, sector
       {/* Top bar — portaled out of the scrolling container so it's genuinely fixed on iOS,
           and positioned to share the same header band as the hamburger menu */}
       {createPortal(
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 90, background: 'var(--bg)', borderBottom: '1px solid var(--border)', paddingTop: 'env(safe-area-inset-top, 44px)' }}>
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 90, background: 'var(--bg)', borderBottom: '1px solid var(--border)', paddingTop: 'env(safe-area-inset-top, 44px)', transform: 'translateZ(0)', WebkitTransform: 'translateZ(0)' }}>
           <div style={{ maxWidth: 820, margin: '0 auto', height: 62, display: 'flex', alignItems: 'center', gap: 10, paddingLeft: 64, paddingRight: 16, boxSizing: 'border-box' }}>
             <div onClick={() => { autoSave(); onBack() }} style={{ width: 34, height: 34, borderRadius: 10, background: 'var(--bg-card)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: 18, color: 'var(--text-muted)', flexShrink: 0 }}>‹</div>
             <div style={{ flex: 1, fontSize: 11, color: 'var(--text-dim)', fontFamily: "'DM Mono'" }}>
@@ -906,7 +928,7 @@ function NoteEditor({ note, onBack, onSaved, categories, projects, goals, sector
       <input placeholder="Subheading" value={pageSubtitle} onChange={e => setPageSubtitle(e.target.value)}
         style={{ width: '100%', background: 'transparent', border: 'none', outline: 'none', fontSize: 19, fontWeight: 500, color: 'var(--text-muted)', fontFamily: "'DM Sans'", marginBottom: 12, padding: 0 }} />
 
-      <div style={{ height: 1, background: 'var(--border)', opacity: 0.5, marginBottom: 16 }} />
+      <div style={{ width: 64, height: 1, background: 'var(--border)', opacity: 0.5, marginBottom: 16 }} />
 
       {/* Rich body — images/files/voice memos render inline at wherever the cursor was */}
       <div style={{ position: 'relative', perspective: 1400 }}>
