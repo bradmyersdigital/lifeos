@@ -1104,36 +1104,41 @@ function NoteEditor({ note, onBack, onSaved, categories, projects, goals, sector
         document.body
       )}
 
-      {showInsertMenu && (
+      {showInsertMenu && createPortal(
         <InsertMenu
           onClose={() => setShowInsertMenu(false)}
           onStyle={applyStyle} onList={insertList} onDivider={insertDivider} onQuote={insertQuote}
           onNewTask={openNewTask} onNewPage={addPage} onAttach={handleAttachClick} onRecord={toggleRecord}
-        />
+        />,
+        document.body
       )}
-      {newTaskModal && (
+      {newTaskModal && createPortal(
         <TaskModal mode="today" defaultNoteId={noteId}
           onClose={() => setNewTaskModal(false)}
           onSaved={() => setNewTaskModal(false)}
-        />
+        />,
+        document.body
       )}
-      {attachmentMenu && (
+      {attachmentMenu && createPortal(
         <AttachmentMenu attachment={attachmentMenu} onClose={() => setAttachmentMenu(null)}
           onRename={renameAttachment} onDownload={downloadAttachment} onShare={shareAttachment} onRemove={deleteAttachment}
-        />
+        />,
+        document.body
       )}
-      {showLinksSheet && (
+      {showLinksSheet && createPortal(
         <LinksSheet onClose={() => setShowLinksSheet(false)} onDelete={handleDelete}
           sector={sector} setSector={setSector}
           projectId={projectId} setProjectId={setProjectId}
           goalId={goalId} setGoalId={setGoalId}
           sectors={sectors} projects={projects} goals={goals}
-        />
+        />,
+        document.body
       )}
-      {showPageManager && (
+      {showPageManager && createPortal(
         <PageManagerSheet pages={pagesRef.current} currentIndex={pageIndex}
           onClose={() => setShowPageManager(false)} onJump={jumpToPage} onDelete={deletePage}
-        />
+        />,
+        document.body
       )}
     </div>
   )
