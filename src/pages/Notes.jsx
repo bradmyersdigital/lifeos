@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import { supabase } from '../lib/supabase'
 import FolderList from '../components/FolderList'
 import FolderSheet from '../components/FolderSheet'
@@ -263,6 +264,31 @@ function AttachmentMenu({ attachment, onClose, onRename, onDownload, onShare, on
 }
 
 // ── Links & category — moved off the page into a "⋯" sheet ─────────────────────
+// ── Page manager — see all pages in this note, jump to one, or delete one ──────
+function PageManagerSheet({ pages, currentIndex, onClose, onJump, onDelete }) {
+  return (
+    <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
+      <div className="modal-sheet" style={{ maxHeight: '72vh' }}>
+        <div className="modal-handle" />
+        <div className="modal-title">Pages<div className="modal-close" onClick={onClose}>×</div></div>
+        {pages.map((p, i) => (
+          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 4px', borderBottom: i < pages.length - 1 ? '1px solid var(--border)' : 'none' }}>
+            <div onClick={() => { onJump(i); onClose() }} style={{ flex: 1, cursor: 'pointer', minWidth: 0 }}>
+              <div style={{ fontSize: 14, fontWeight: 600, color: i === currentIndex ? 'var(--accent)' : 'var(--text-primary)' }}>
+                Page {i + 1}{i === currentIndex ? ' — current' : ''}
+              </div>
+              {p.subtitle && <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.subtitle}</div>}
+            </div>
+            {pages.length > 1 && (
+              <div onClick={() => onDelete(i)} style={{ fontSize: 13, color: 'var(--danger)', cursor: 'pointer', padding: '6px 10px', flexShrink: 0 }}>Delete</div>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 function LinksSheet({ onClose, onDelete, category, setCategory, sector, setSector, projectId, setProjectId, goalId, setGoalId, categories, sectors, projects, goals }) {
   return (
     <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
@@ -335,6 +361,7 @@ function NoteEditor({ note, onBack, onSaved, categories, projects, goals, sector
   const [showInsertMenu, setShowInsertMenu] = useState(false)
   const [newTaskModal, setNewTaskModal] = useState(false)
   const [showLinksSheet, setShowLinksSheet] = useState(false)
+  const [showPageManager, setShowPageManager] = useState(false)
   const [attachmentMenu, setAttachmentMenu] = useState(null) // { id, name, url, type }
   const [pageIndex, setPageIndex] = useState(0)
   const [pageCount, setPageCount] = useState(1)
@@ -454,6 +481,27 @@ function NoteEditor({ note, onBack, onSaved, categories, projects, goals, sector
     pagesRef.current.push({ subtitle: '', body: '' })
     setPageCount(pagesRef.current.length)
     flipToPage(pagesRef.current.length - 1, 'next')
+  }
+  const jumpToPage = (index) => {
+    if (index === pageIndex) return
+    flipToPage(index, index > pageIndex ? 'next' : 'prev')
+  }
+  const deletePage = (index) => {
+    if (pagesRef.current.length <= 1) return
+    const label = pagesRef.current[index]?.subtitle ? `"${pagesRef.current[index].subtitle}"` : `Page ${index + 1}`
+    if (!window.confirm(`Delete ${label}? This can't be undone.`)) return
+    clearTimeout(saveTimer.current)
+    pagesRef.current.splice(index, 1)
+    const newCount = pagesRef.current.length
+    let newIndex = pageIndex
+    if (index === pageIndex) newIndex = Math.min(pageIndex, newCount - 1)
+    else if (index < pageIndex) newIndex = pageIndex - 1
+    setPageCount(newCount)
+    setPageIndex(newIndex)
+    setPageSubtitle(pagesRef.current[newIndex]?.subtitle || '')
+    if (bodyRef.current) bodyRef.current.innerHTML = pagesRef.current[newIndex]?.body || ''
+    wireAudioCards()
+    scheduleSave()
   }
 
   // Ensures the note has a row saved in the DB — needed before attaching files/audio to a brand-new note
@@ -801,14 +849,21 @@ function NoteEditor({ note, onBack, onSaved, categories, projects, goals, sector
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column' }} onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
-      {/* Top bar — sticky so it's always reachable, even scrolled deep into a long note */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14, position: 'sticky', top: 0, zIndex: 20, background: 'var(--bg)', paddingTop: 4, paddingBottom: 4, marginLeft: -16, marginRight: -16, paddingLeft: 16, paddingRight: 16 }}>
-        <div onClick={() => { autoSave(); onBack() }} style={{ width: 34, height: 34, borderRadius: 10, background: 'var(--bg-card)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: 18, color: 'var(--text-muted)', flexShrink: 0 }}>‹</div>
-        <div style={{ flex: 1, fontSize: 11, color: 'var(--text-dim)', fontFamily: "'DM Mono'" }}>
-          {saving ? 'Saving…' : lastSaved ? `Saved ${fmtRelative(lastSaved)}` : note?.id ? `Saved` : 'New note'}
-        </div>
-        <div onClick={() => setShowLinksSheet(true)} style={{ width: 40, height: 34, borderRadius: 10, background: 'var(--bg-card)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: 20, fontWeight: 700, letterSpacing: '1px', color: 'var(--text-secondary)', flexShrink: 0 }}>⋯</div>
-      </div>
+      {/* Top bar — portaled out of the scrolling container so it's genuinely fixed on iOS,
+          and positioned to share the same header band as the hamburger menu */}
+      {createPortal(
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 90, background: 'var(--bg)', borderBottom: '1px solid var(--border)', paddingTop: 'env(safe-area-inset-top, 44px)' }}>
+          <div style={{ maxWidth: 820, margin: '0 auto', height: 62, display: 'flex', alignItems: 'center', gap: 10, paddingLeft: 64, paddingRight: 16, boxSizing: 'border-box' }}>
+            <div onClick={() => { autoSave(); onBack() }} style={{ width: 34, height: 34, borderRadius: 10, background: 'var(--bg-card)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: 18, color: 'var(--text-muted)', flexShrink: 0 }}>‹</div>
+            <div style={{ flex: 1, fontSize: 11, color: 'var(--text-dim)', fontFamily: "'DM Mono'" }}>
+              {saving ? 'Saving…' : lastSaved ? `Saved ${fmtRelative(lastSaved)}` : note?.id ? `Saved` : 'New note'}
+            </div>
+            <div onClick={() => setShowLinksSheet(true)} style={{ width: 40, height: 34, borderRadius: 10, background: 'var(--bg-card)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: 20, fontWeight: 700, letterSpacing: '1px', color: 'var(--text-secondary)', flexShrink: 0 }}>⋯</div>
+          </div>
+        </div>,
+        document.body
+      )}
+      <div style={{ height: 14 }} />
 
       {isRecording && (
         <RecordingBar seconds={recordSeconds} levels={levels} isPaused={isPaused}
@@ -828,11 +883,17 @@ function NoteEditor({ note, onBack, onSaved, categories, projects, goals, sector
       {(pageCount > 1 || isFocused) && (
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 12 }}>
           {Array.from({ length: pageCount }).map((_, i) => (
-            <div key={i} onClick={() => flipToPage(i, i > pageIndex ? 'next' : 'prev')}
+            <div key={i} onClick={() => jumpToPage(i)}
               style={{ width: pageIndex === i ? 20 : 7, height: 7, borderRadius: 4, background: pageIndex === i ? 'var(--accent)' : 'var(--border)', cursor: 'pointer', transition: 'all 0.2s' }} />
           ))}
           <div onMouseDown={keepFocus} onClick={addPage} style={{ marginLeft: 6, fontSize: 11, color: 'var(--accent)', cursor: 'pointer', fontWeight: 500 }}>+ Page</div>
-          {pageCount > 1 && <div style={{ marginLeft: 'auto', fontSize: 11, color: 'var(--text-dim)', fontFamily: "'DM Mono'" }}>Page {pageIndex + 1} of {pageCount}</div>}
+          {pageCount > 1 && (
+            <div onClick={() => { syncCurrentPage(); setShowPageManager(true) }}
+              style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, color: 'var(--text-muted)', fontFamily: "'DM Mono'", cursor: 'pointer', background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 20, padding: '4px 10px' }}>
+              Page {pageIndex + 1} of {pageCount}
+              <svg width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M9 1.5L11 3.5L4.5 10H2.5V8L9 1.5Z" stroke="currentColor" strokeWidth="1.2" fill="none" strokeLinecap="round" strokeLinejoin="round"/></svg>
+            </div>
+          )}
         </div>
       )}
 
@@ -843,7 +904,9 @@ function NoteEditor({ note, onBack, onSaved, categories, projects, goals, sector
 
       {/* Subheading — its own text per page */}
       <input placeholder="Subheading" value={pageSubtitle} onChange={e => setPageSubtitle(e.target.value)}
-        style={{ width: '100%', background: 'transparent', border: 'none', outline: 'none', fontSize: 15, fontWeight: 500, color: 'var(--text-muted)', fontFamily: "'DM Sans'", marginBottom: 12, padding: 0 }} />
+        style={{ width: '100%', background: 'transparent', border: 'none', outline: 'none', fontSize: 19, fontWeight: 500, color: 'var(--text-muted)', fontFamily: "'DM Sans'", marginBottom: 12, padding: 0 }} />
+
+      <div style={{ height: 1, background: 'var(--border)', opacity: 0.5, marginBottom: 16 }} />
 
       {/* Rich body — images/files/voice memos render inline at wherever the cursor was */}
       <div style={{ position: 'relative', perspective: 1400 }}>
@@ -867,13 +930,14 @@ function NoteEditor({ note, onBack, onSaved, categories, projects, goals, sector
       {isFocused && <div style={{ height: '42vh', flexShrink: 0 }} />}
 
 
-      {(isFocused || showInsertMenu) && (
+      {(isFocused || showInsertMenu) && createPortal(
         <RichToolbar
           onCmd={cmd} onStyle={applyStyle} onColor={applyColor}
           onChecklist={insertChecklist} onList={() => insertList('bullet')}
           onAttach={handleAttachClick} onRecord={toggleRecord} isRecording={isRecording}
           activeStyle={activeStyle} activeFormats={activeFormats} onOpenInsert={() => { saveRange(); bodyRef.current?.blur(); setShowInsertMenu(true) }} kbOffset={kbOffset}
-        />
+        />,
+        document.body
       )}
 
       {showInsertMenu && (
@@ -901,6 +965,11 @@ function NoteEditor({ note, onBack, onSaved, categories, projects, goals, sector
           projectId={projectId} setProjectId={setProjectId}
           goalId={goalId} setGoalId={setGoalId}
           categories={categories} sectors={sectors} projects={projects} goals={goals}
+        />
+      )}
+      {showPageManager && (
+        <PageManagerSheet pages={pagesRef.current} currentIndex={pageIndex}
+          onClose={() => setShowPageManager(false)} onJump={jumpToPage} onDelete={deletePage}
         />
       )}
     </div>
