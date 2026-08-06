@@ -41,7 +41,7 @@ export function ProjectModal({ onClose, onSaved, project, defaultSector, default
 
   useEffect(() => {
     supabase.from('sectors').select('name').order('sort_order').order('name').then(({ data }) => setSectors(data || []))
-    supabase.from('goals').select('id, goal_text, timeframe').order('timeframe').then(({ data }) => setGoals(data || []))
+    supabase.from('goals').select('id, goal_text, sector').order('sector').then(({ data }) => setGoals(data || []))
   }, [])
 
   const handleSave = async () => {
@@ -139,7 +139,7 @@ export function ProjectModal({ onClose, onSaved, project, defaultSector, default
           <div className="field-label">Link to goal</div>
           <select value={goalId} onChange={e => setGoalId(e.target.value)}>
             <option value="">No goal linked</option>
-            {goals.map(g => <option key={g.id} value={g.id}>{g.timeframe?.replace('month','mo ').replace('year','yr ')} — {g.goal_text?.substring(0,40)}{g.goal_text?.length>40?'…':''}</option>)}
+            {goals.map(g => <option key={g.id} value={g.id}>{g.sector ? g.sector + ' — ' : ''}{g.goal_text?.substring(0,40)}{g.goal_text?.length>40?'…':''}</option>)}
           </select>
         </div>
         <div style={{ display: 'flex', gap: 10, marginTop: 18 }}>

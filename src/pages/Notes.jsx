@@ -387,7 +387,7 @@ function LinksSheet({ onClose, onDelete, sector, setSector, projectId, setProjec
           <div className="field-label">Goal</div>
           <select value={goalId} onChange={e => setGoalId(e.target.value)}>
             <option value="">None</option>
-            {goals.map(g => <option key={g.id} value={g.id}>{g.timeframe} — {g.goal_text?.substring(0,40)}</option>)}
+            {goals.map(g => <option key={g.id} value={g.id}>{g.sector ? g.sector + ' — ' : ''}{g.goal_text?.substring(0,40)}</option>)}
           </select>
         </div>
 
@@ -1289,7 +1289,7 @@ export default function Notes() {
     const [notesRes, projRes, goalsRes, sectorsRes, catsRes] = await Promise.all([
       supabase.from('notes').select('*, projects(name)').order('pinned', { ascending: false }).order('updated_at', { ascending: false }),
       supabase.from('projects').select('id, name').eq('status', 'active'),
-      supabase.from('goals').select('id, goal_text, timeframe').order('timeframe'),
+      supabase.from('goals').select('id, goal_text, sector').order('sector'),
       supabase.from('sectors').select('*').order('sort_order').order('name'),
       supabase.from('note_categories').select('*').order('name'),
     ])
