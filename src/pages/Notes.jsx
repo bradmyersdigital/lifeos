@@ -204,7 +204,6 @@ function InsertMenu({ onClose, onStyle, onList, onDivider, onQuote, onNewTask, o
           <div ref={setSectionRef('Essentials')} data-section="Essentials" style={{ marginBottom: 26 }}>
             {sectionHeader('Essentials')}
             <div style={grid}>
-              <InsertTile icon="☑️" label="New task" onClick={() => { onNewTask(); onClose() }} />
               <InsertTile icon="📖" label="New page" onClick={() => { onNewPage(); onClose() }} />
               <InsertTile icon="—" label="Divider" onClick={() => { onDivider(); onClose() }} />
               <InsertTile icon="❝" label="Quote" onClick={() => { onQuote(); onClose() }} />
@@ -337,24 +336,13 @@ function PageManagerSheet({ pages, currentIndex, onClose, onJump, onDelete }) {
   )
 }
 
-function LinksSheet({ onClose, onDelete, category, setCategory, sector, setSector, projectId, setProjectId, goalId, setGoalId, categories, sectors, projects, goals }) {
+function LinksSheet({ onClose, onDelete, sector, setSector, projectId, setProjectId, goalId, setGoalId, sectors, projects, goals }) {
   return (
     <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
       <div className="modal-sheet">
         <div className="modal-handle" />
-        <div className="modal-title">Note actions<div className="modal-close" onClick={onClose}>×</div></div>
-
-        <div className="field" style={{ marginBottom: 18 }}>
-          <div className="field-label">Category</div>
-          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-            <div onClick={() => setCategory('')} style={{ padding: '5px 12px', borderRadius: 20, fontSize: 12, fontWeight: 500, cursor: 'pointer', border: '1px solid', background: !category ? 'var(--accent-dim)' : 'var(--bg-input)', borderColor: !category ? 'var(--accent-border)' : 'var(--border)', color: !category ? 'var(--accent)' : 'var(--text-dim)' }}>None</div>
-            {categories.map(cat => (
-              <div key={cat.name} onClick={() => setCategory(cat.name)}
-                style={{ padding: '5px 12px', borderRadius: 20, fontSize: 12, fontWeight: 500, cursor: 'pointer', border: '1px solid', background: category === cat.name ? cat.color + '22' : 'var(--bg-input)', borderColor: category === cat.name ? cat.color : 'var(--border)', color: category === cat.name ? cat.color : 'var(--text-dim)' }}>
-                {cat.name}
-              </div>
-            ))}
-          </div>
+        <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 8 }}>
+          <div className="modal-close" onClick={onClose}>×</div>
         </div>
 
         <div className="field" style={{ marginBottom: 18 }}>
@@ -409,14 +397,22 @@ function NoteEditor({ note, onBack, onSaved, categories, projects, goals, sector
     if (!isFocused) return
     const scrollEl = document.querySelector('.page-scroll')
     if (!scrollEl) return
-    let lastTop = scrollEl.scrollTop
-    const onScroll = () => {
-      const delta = scrollEl.scrollTop - lastTop
-      lastTop = scrollEl.scrollTop
-      if (Math.abs(delta) > 12) bodyRef.current?.blur()
+    let startY = null
+    const onTouchStart = (e) => { startY = e.touches[0].clientY }
+    const onTouchMove = (e) => {
+      if (startY == null) return
+      const dy = e.touches[0].clientY - startY
+      if (Math.abs(dy) > 60) { bodyRef.current?.blur(); startY = null }
     }
-    scrollEl.addEventListener('scroll', onScroll, { passive: true })
-    return () => scrollEl.removeEventListener('scroll', onScroll)
+    const onTouchEnd = () => { startY = null }
+    scrollEl.addEventListener('touchstart', onTouchStart, { passive: true })
+    scrollEl.addEventListener('touchmove', onTouchMove, { passive: true })
+    scrollEl.addEventListener('touchend', onTouchEnd, { passive: true })
+    return () => {
+      scrollEl.removeEventListener('touchstart', onTouchStart)
+      scrollEl.removeEventListener('touchmove', onTouchMove)
+      scrollEl.removeEventListener('touchend', onTouchEnd)
+    }
   }, [isFocused])
   const [showInsertMenu, setShowInsertMenu] = useState(false)
   const [newTaskModal, setNewTaskModal] = useState(false)
@@ -444,7 +440,6 @@ function NoteEditor({ note, onBack, onSaved, categories, projects, goals, sector
   const touchStart = useRef(null)
 
   const [kbOffset, setKbOffset] = useState(0)
-  const frozenKbOffset = useRef(0)
   useEffect(() => {
     let usingNative = false
     let removeNativeListeners = () => {}
@@ -1085,15 +1080,15 @@ function NoteEditor({ note, onBack, onSaved, categories, projects, goals, sector
       <input ref={fileInputRef} type="file" onChange={handleFileChosen} style={{ display: 'none' }} />
 
       {/* Extra scroll room so typed content and the toolbar never fight over the same space above the keyboard */}
-      {isFocused && <div style={{ height: '42vh', flexShrink: 0 }} />}
+      {isFocused && <div style={{ height: '55vh', flexShrink: 0 }} />}
 
 
-      {(isFocused || showInsertMenu) && createPortal(
+      {isFocused && !showInsertMenu && createPortal(
         <RichToolbar
           onCmd={cmd} onStyle={applyStyle} onColor={applyColor}
           onChecklist={insertChecklist} onList={() => insertList('bullet')}
           onAttach={handleAttachClick} onRecord={toggleRecord} isRecording={isRecording}
-          activeStyle={activeStyle} activeFormats={activeFormats} onOpenInsert={() => { saveRange(); frozenKbOffset.current = kbOffset; bodyRef.current?.blur(); setShowInsertMenu(true) }} kbOffset={showInsertMenu ? frozenKbOffset.current : kbOffset}
+          activeStyle={activeStyle} activeFormats={activeFormats} onOpenInsert={() => { saveRange(); bodyRef.current?.blur(); setShowInsertMenu(true) }} kbOffset={kbOffset}
         />,
         document.body
       )}
@@ -1118,11 +1113,10 @@ function NoteEditor({ note, onBack, onSaved, categories, projects, goals, sector
       )}
       {showLinksSheet && (
         <LinksSheet onClose={() => setShowLinksSheet(false)} onDelete={handleDelete}
-          category={category} setCategory={setCategory}
           sector={sector} setSector={setSector}
           projectId={projectId} setProjectId={setProjectId}
           goalId={goalId} setGoalId={setGoalId}
-          categories={categories} sectors={sectors} projects={projects} goals={goals}
+          sectors={sectors} projects={projects} goals={goals}
         />
       )}
       {showPageManager && (
