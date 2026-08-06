@@ -226,6 +226,7 @@ body { overflow: hidden; }
 .ndl-audio-name, .ndl-file-name { font-size: 14px; color: var(--text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .ndl-audio-dur { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--text-dim); margin-top: 2px; }
 .ndl-audio-menu, .ndl-file-menu { color: var(--text-dim); cursor: pointer; padding: 4px 6px; flex-shrink: 0; font-size: 16px; }
+.ndl-ink { color: var(--text-primary); }
 .ndl-file-icon { font-size: 16px; flex-shrink: 0; }
 @keyframes ndlPageFlipNext { from { transform: rotateY(0deg); opacity: 1; } to { transform: rotateY(-100deg); opacity: 0.3; } }
 @keyframes ndlPageFlipPrev { from { transform: rotateY(0deg); opacity: 1; } to { transform: rotateY(100deg); opacity: 0.3; } }

@@ -26,7 +26,16 @@ const TEXT_STYLES = [
   { tag: 'H4', label: 'Extra small heading', preview: { fontSize: 15, fontWeight: 600, color: 'var(--text-muted)' } },
   { tag: 'PRE',label: 'Monospace',      preview: { fontSize: 14, fontWeight: 400, fontFamily: "'DM Mono'" } },
 ]
-const TEXT_COLORS = ['#e8e8ea', '#d4520f', '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#a78bfa']
+const TEXT_COLORS = [
+  { hex: '#e8e8ea', label: 'Default' },
+  { hex: '#000000', label: 'Black', adaptive: true },
+  { hex: '#d4520f', label: 'Orange' },
+  { hex: '#3b82f6', label: 'Blue' },
+  { hex: '#10b981', label: 'Green' },
+  { hex: '#f59e0b', label: 'Yellow' },
+  { hex: '#ef4444', label: 'Red' },
+  { hex: '#a78bfa', label: 'Purple' },
+]
 
 function plainToHtml(text) {
   if (!text) return ''
@@ -49,6 +58,8 @@ function escHtml(s) {
 // Notes can have multiple "pages" (flip through them like a notebook). This marker only ever
 // exists in the serialized body_html string for storage — it's never a real node in the DOM.
 const PAGE_BREAK = '<!--NDL_PAGE_BREAK-->'
+// Separates a page's subheading from its body within one page's serialized chunk.
+const SUBTITLE_SEP = '<!--NDL_SUBTITLE_END-->'
 // Inline attachment cards — embedded directly in the note body at the cursor, not tacked onto the bottom.
 const imageCardHtml = (a) => `<img class="ndl-img" src="${a.url}" data-attachment-id="${a.id}" alt="${escHtml(a.name || '')}" /><div><br></div>`
 const fileCardHtml = (a) => `<div class="ndl-file" contenteditable="false" data-attachment-id="${a.id}" data-url="${a.url}"><span class="ndl-file-icon">📎</span><span class="ndl-file-name">${escHtml(a.name)}</span><span class="ndl-file-menu">⋯</span></div><div><br></div>`
@@ -79,7 +90,8 @@ function RichToolbar({ onCmd, onStyle, onColor, onChecklist, onList, onAttach, o
       {showColors && (
         <div style={{ display: 'flex', gap: 8, marginBottom: 8, background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 16, padding: 10, justifyContent: 'center', boxShadow: '0 6px 24px rgba(0,0,0,0.35)' }}>
           {TEXT_COLORS.map(c => (
-            <div key={c} onMouseDown={keepFocus} onClick={() => { onColor(c); setShowColors(false) }} style={{ width: 26, height: 26, borderRadius: '50%', background: c, cursor: 'pointer', border: '2px solid var(--bg-card)', boxShadow: '0 0 0 1px var(--border)' }} />
+            <div key={c.hex + c.label} onMouseDown={keepFocus} onClick={() => { onColor(c); setShowColors(false) }}
+              style={{ width: 26, height: 26, borderRadius: '50%', background: c.adaptive ? 'linear-gradient(135deg, #000 50%, #fff 50%)' : c.hex, cursor: 'pointer', border: '2px solid var(--bg-card)', boxShadow: '0 0 0 1px var(--border)' }} />
           ))}
         </div>
       )}
@@ -303,7 +315,7 @@ function LinksSheet({ onClose, onDelete, category, setCategory, sector, setSecto
 }
 
 // ── Note Editor ──────────────────────────────────────────────────────────────
-function NoteEditor({ note, onBack, onSaved, categories, projects, goals, sectors, notesInCategory, onNavigate }) {
+function NoteEditor({ note, onBack, onSaved, categories, projects, goals, sectors }) {
   const [title, setTitle] = useState(note?.title || '')
   const [category, setCategory] = useState(note?.category || '')
   const [sector, setSector] = useState(note?.sector || '')
@@ -326,9 +338,10 @@ function NoteEditor({ note, onBack, onSaved, categories, projects, goals, sector
   const [attachmentMenu, setAttachmentMenu] = useState(null) // { id, name, url, type }
   const [pageIndex, setPageIndex] = useState(0)
   const [pageCount, setPageCount] = useState(1)
+  const [pageSubtitle, setPageSubtitle] = useState('')
   const [flipDir, setFlipDir] = useState(null) // 'next' | 'prev' | null while animating
   const [flipSnapshot, setFlipSnapshot] = useState(null)
-  const pagesRef = useRef([''])
+  const pagesRef = useRef([{ subtitle: '', body: '' }])
   const saveTimer = useRef(null)
   const bodyRef = useRef(null)
   const fileInputRef = useRef(null)
@@ -373,10 +386,14 @@ function NoteEditor({ note, onBack, onSaved, categories, projects, goals, sector
     {
       const rawHtml = note?.body_html || plainToHtml(note?.body || note?.text || '')
       const split = rawHtml.split(PAGE_BREAK)
-      pagesRef.current = split.length ? split : ['']
+      pagesRef.current = (split.length ? split : ['']).map(chunk => {
+        const [subtitle, ...rest] = chunk.split(SUBTITLE_SEP)
+        return rest.length ? { subtitle, body: rest.join(SUBTITLE_SEP) } : { subtitle: '', body: chunk }
+      })
       setPageCount(pagesRef.current.length)
       setPageIndex(0)
-      if (bodyRef.current) bodyRef.current.innerHTML = pagesRef.current[0] || ''
+      setPageSubtitle(pagesRef.current[0]?.subtitle || '')
+      if (bodyRef.current) bodyRef.current.innerHTML = pagesRef.current[0]?.body || ''
     }
     wireAudioCards()
     loadAttachments(note?.id)
@@ -397,21 +414,35 @@ function NoteEditor({ note, onBack, onSaved, categories, projects, goals, sector
     if (!title) return
     scheduleSave()
     return () => clearTimeout(saveTimer.current)
-  }, [title, category, sector, projectId, goalId])
+  }, [title, category, sector, projectId, goalId, pageSubtitle])
+
+  const pageIndexRef = useRef(0)
+  const pageSubtitleRef = useRef('')
+  useEffect(() => { pageIndexRef.current = pageIndex }, [pageIndex])
+  useEffect(() => { pageSubtitleRef.current = pageSubtitle }, [pageSubtitle])
 
   // Pulls the live DOM content of the page you're currently on back into the pages array —
   // needed before saving or flipping away, since only the active page is ever a real contentEditable.
-  const syncCurrentPage = () => { pagesRef.current[pageIndex] = bodyRef.current?.innerHTML || '' }
-  const buildFullHtml = () => { syncCurrentPage(); return pagesRef.current.join(PAGE_BREAK) }
+  // Uses pageIndexRef (not the pageIndex closure) so a debounced autosave firing after a page
+  // flip can't write the new page's content into the old page's slot.
+  const syncCurrentPage = () => {
+    pagesRef.current[pageIndexRef.current] = { subtitle: pageSubtitleRef.current, body: bodyRef.current?.innerHTML || '' }
+  }
+  const buildFullHtml = () => {
+    syncCurrentPage()
+    return pagesRef.current.map(p => (p.subtitle || '') + SUBTITLE_SEP + (p.body || '')).join(PAGE_BREAK)
+  }
 
   const flipToPage = (targetIndex, dir) => {
     if (targetIndex < 0 || targetIndex >= pagesRef.current.length || targetIndex === pageIndex) return
+    clearTimeout(saveTimer.current)
     syncCurrentPage()
-    setFlipSnapshot(pagesRef.current[pageIndex])
+    setFlipSnapshot(pagesRef.current[pageIndex]?.body || '')
     setFlipDir(dir)
     setTimeout(() => {
       setPageIndex(targetIndex)
-      if (bodyRef.current) bodyRef.current.innerHTML = pagesRef.current[targetIndex] || ''
+      setPageSubtitle(pagesRef.current[targetIndex]?.subtitle || '')
+      if (bodyRef.current) bodyRef.current.innerHTML = pagesRef.current[targetIndex]?.body || ''
       wireAudioCards()
       setFlipDir(null)
       setFlipSnapshot(null)
@@ -420,7 +451,7 @@ function NoteEditor({ note, onBack, onSaved, categories, projects, goals, sector
   }
   const addPage = () => {
     syncCurrentPage()
-    pagesRef.current.push('')
+    pagesRef.current.push({ subtitle: '', body: '' })
     setPageCount(pagesRef.current.length)
     flipToPage(pagesRef.current.length - 1, 'next')
   }
@@ -498,6 +529,14 @@ function NoteEditor({ note, onBack, onSaved, categories, projects, goals, sector
       try { sel.addRange(savedRangeRef.current) } catch { /* range no longer valid — falls back to end of note */ }
     }
   }
+  // Only restores the saved range when the selection isn't already live in the body (e.g. after
+  // the insert menu blurred it to show the keyboard). If it's already live, leave it alone —
+  // forcing a restore on every click was what broke stacking bold+italic on the same selection.
+  const ensureSelection = () => {
+    const sel = window.getSelection()
+    if (sel && sel.rangeCount > 0 && bodyRef.current?.contains(sel.anchorNode)) return
+    restoreRange()
+  }
 
   const updateActiveFormats = () => {
     saveRange()
@@ -518,20 +557,47 @@ function NoteEditor({ note, onBack, onSaved, categories, projects, goals, sector
     return () => document.removeEventListener('selectionchange', updateActiveFormats)
   }, [isFocused])
 
-  const cmd = (command, value = null) => { restoreRange(); document.execCommand(command, false, value); scheduleSave(); updateActiveFormats() }
-  const applyStyle = (tag) => { restoreRange(); document.execCommand('formatBlock', false, tag); setActiveStyle(tag); scheduleSave() }
-  const applyColor = (hex) => { restoreRange(); document.execCommand('foreColor', false, hex); scheduleSave() }
+  // Wraps the current selection in a span with the given class, instead of a literal execCommand
+  // color — used for the "black" swatch so it resolves through CSS (theme-adaptive) instead of
+  // baking in a literal #000 that goes invisible against the dark theme's background.
+  const wrapSelectionWithClass = (className) => {
+    const sel = window.getSelection()
+    if (!sel || sel.rangeCount === 0 || sel.isCollapsed) return
+    const range = sel.getRangeAt(0)
+    const span = document.createElement('span')
+    span.className = className
+    try {
+      range.surroundContents(span)
+    } catch {
+      const contents = range.extractContents()
+      span.appendChild(contents)
+      range.insertNode(span)
+    }
+    sel.removeAllRanges()
+    const newRange = document.createRange()
+    newRange.selectNodeContents(span)
+    sel.addRange(newRange)
+  }
+
+  const cmd = (command, value = null) => { ensureSelection(); document.execCommand(command, false, value); scheduleSave(); updateActiveFormats() }
+  const applyStyle = (tag) => { ensureSelection(); document.execCommand('formatBlock', false, tag); setActiveStyle(tag); scheduleSave() }
+  const applyColor = (color) => {
+    ensureSelection()
+    if (color.adaptive) wrapSelectionWithClass('ndl-ink')
+    else document.execCommand('foreColor', false, color.hex)
+    scheduleSave()
+  }
   const insertList = (type = 'bullet') => {
-    restoreRange()
+    ensureSelection()
     if (type === 'checklist') { insertChecklist(); return }
     document.execCommand(type === 'numbered' ? 'insertOrderedList' : 'insertUnorderedList')
     scheduleSave()
   }
-  const insertDivider = () => { restoreRange(); document.execCommand('insertHorizontalRule'); scheduleSave() }
-  const insertQuote = () => { restoreRange(); document.execCommand('formatBlock', false, 'BLOCKQUOTE'); scheduleSave() }
+  const insertDivider = () => { ensureSelection(); document.execCommand('insertHorizontalRule'); scheduleSave() }
+  const insertQuote = () => { ensureSelection(); document.execCommand('formatBlock', false, 'BLOCKQUOTE'); scheduleSave() }
   const openNewTask = async () => { await ensureSaved(); setNewTaskModal(true) }
   const insertChecklist = () => {
-    restoreRange()
+    ensureSelection()
     document.execCommand('insertHTML', false,
       '<div class="ndl-check" data-checked="false"><span class="ndl-box" contenteditable="false">\u2610</span><span> </span></div><div><br></div>')
     scheduleSave()
@@ -719,16 +785,6 @@ function NoteEditor({ note, onBack, onSaved, categories, projects, goals, sector
   const stopRecording = () => { recordCancelledRef.current = false; mediaRecorderRef.current?.stop() }
   const cancelRecording = () => { recordCancelledRef.current = true; mediaRecorderRef.current?.stop() }
 
-  // ── Jump between different notes in this folder — chevron buttons only, not swipe ──
-  const currentIndex = notesInCategory?.findIndex(n => n.id === noteId) ?? -1
-  const canSwipe = notesInCategory && notesInCategory.length > 1 && currentIndex !== -1
-  const goToOffset = async (offset) => {
-    if (!canSwipe) return
-    const nextIndex = currentIndex + offset
-    if (nextIndex < 0 || nextIndex >= notesInCategory.length) return
-    await autoSave()
-    onNavigate?.(notesInCategory[nextIndex])
-  }
   // ── Swipe flips between pages of THIS note, like turning a page in a notebook ──
   const onTouchStart = (e) => { touchStart.current = { x: e.touches[0].clientX, y: e.touches[0].clientY } }
   const onTouchEnd = (e) => {
@@ -750,14 +806,7 @@ function NoteEditor({ note, onBack, onSaved, categories, projects, goals, sector
         <div onClick={() => { autoSave(); onBack() }} style={{ width: 34, height: 34, borderRadius: 10, background: 'var(--bg-card)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: 18, color: 'var(--text-muted)', flexShrink: 0 }}>‹</div>
         <div style={{ flex: 1, fontSize: 11, color: 'var(--text-dim)', fontFamily: "'DM Mono'" }}>
           {saving ? 'Saving…' : lastSaved ? `Saved ${fmtRelative(lastSaved)}` : note?.id ? `Saved` : 'New note'}
-          {canSwipe && <span> · {currentIndex + 1} of {notesInCategory.length}</span>}
         </div>
-        {canSwipe && (
-          <div style={{ display: 'flex', gap: 4 }}>
-            <div onClick={() => goToOffset(-1)} style={{ width: 28, height: 28, borderRadius: 8, background: currentIndex === 0 ? 'var(--bg)' : 'var(--bg-card)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: currentIndex === 0 ? 'default' : 'pointer', fontSize: 14, color: currentIndex === 0 ? 'var(--border)' : 'var(--text-muted)' }}>‹</div>
-            <div onClick={() => goToOffset(1)} style={{ width: 28, height: 28, borderRadius: 8, background: currentIndex === notesInCategory.length - 1 ? 'var(--bg)' : 'var(--bg-card)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: currentIndex === notesInCategory.length - 1 ? 'default' : 'pointer', fontSize: 14, color: currentIndex === notesInCategory.length - 1 ? 'var(--border)' : 'var(--text-muted)' }}>›</div>
-          </div>
-        )}
         <div onClick={() => setShowLinksSheet(true)} style={{ width: 40, height: 34, borderRadius: 10, background: 'var(--bg-card)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: 20, fontWeight: 700, letterSpacing: '1px', color: 'var(--text-secondary)', flexShrink: 0 }}>⋯</div>
       </div>
 
@@ -775,14 +824,9 @@ function NoteEditor({ note, onBack, onSaved, categories, projects, goals, sector
         {linkedGoal && <div style={{ padding: '2px 8px', borderRadius: 20, fontSize: 10, color: 'var(--purple)', background: 'var(--purple-dim)', border: '1px solid var(--purple-border)' }}>🎯 {linkedGoal.goal_text?.substring(0,20)}…</div>}
       </div>
 
-      {/* Title */}
-      <textarea placeholder="Title" value={title} onChange={e => setTitle(e.target.value)} rows={1}
-        style={{ width: '100%', background: 'transparent', border: 'none', outline: 'none', fontSize: 26, fontWeight: 600, color: 'var(--text-primary)', fontFamily: "'DM Sans'", resize: 'none', marginBottom: 10, lineHeight: 1.3, padding: 0 }}
-        onInput={e => { e.target.style.height = 'auto'; e.target.style.height = e.target.scrollHeight + 'px' }} />
-
       {/* Page dots — this note's own pages, flipped through by swiping */}
       {(pageCount > 1 || isFocused) && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 12 }}>
           {Array.from({ length: pageCount }).map((_, i) => (
             <div key={i} onClick={() => flipToPage(i, i > pageIndex ? 'next' : 'prev')}
               style={{ width: pageIndex === i ? 20 : 7, height: 7, borderRadius: 4, background: pageIndex === i ? 'var(--accent)' : 'var(--border)', cursor: 'pointer', transition: 'all 0.2s' }} />
@@ -791,6 +835,15 @@ function NoteEditor({ note, onBack, onSaved, categories, projects, goals, sector
           {pageCount > 1 && <div style={{ marginLeft: 'auto', fontSize: 11, color: 'var(--text-dim)', fontFamily: "'DM Mono'" }}>Page {pageIndex + 1} of {pageCount}</div>}
         </div>
       )}
+
+      {/* Title — constant across all of this note's pages */}
+      <textarea placeholder="Title" value={title} onChange={e => setTitle(e.target.value)} rows={1}
+        style={{ width: '100%', background: 'transparent', border: 'none', outline: 'none', fontSize: 26, fontWeight: 600, color: 'var(--text-primary)', fontFamily: "'DM Sans'", resize: 'none', marginBottom: 4, lineHeight: 1.3, padding: 0 }}
+        onInput={e => { e.target.style.height = 'auto'; e.target.style.height = e.target.scrollHeight + 'px' }} />
+
+      {/* Subheading — its own text per page */}
+      <input placeholder="Subheading" value={pageSubtitle} onChange={e => setPageSubtitle(e.target.value)}
+        style={{ width: '100%', background: 'transparent', border: 'none', outline: 'none', fontSize: 15, fontWeight: 500, color: 'var(--text-muted)', fontFamily: "'DM Sans'", marginBottom: 12, padding: 0 }} />
 
       {/* Rich body — images/files/voice memos render inline at wherever the cursor was */}
       <div style={{ position: 'relative', perspective: 1400 }}>
@@ -998,8 +1051,6 @@ export default function Notes() {
   if (view === 'note') {
     return (
       <NoteEditor note={activeNote} categories={categories} projects={projects} goals={goals} sectors={sectors}
-        notesInCategory={activeCat ? filterNotesForCat(notes, activeCat.name) : null}
-        onNavigate={(nextNote) => setActiveNote(nextNote)}
         onBack={() => { setView(activeCat ? 'category' : 'categories'); loadAll() }}
         onSaved={loadAll}
       />
