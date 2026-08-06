@@ -59,6 +59,9 @@ function escHtml(s) {
 // Notes can have multiple "pages" (flip through them like a notebook). This marker only ever
 // exists in the serialized body_html string for storage — it's never a real node in the DOM.
 const PAGE_BREAK = '<!--NDL_PAGE_BREAK-->'
+// Matches the portaled note header's own height — sheets use this so they attach below the
+// header instead of covering it.
+const HEADER_CLEARANCE = 'calc(env(safe-area-inset-top, 44px) + 62px)'
 // Separates a page's subheading from its body within one page's serialized chunk.
 const SUBTITLE_SEP = '<!--NDL_SUBTITLE_END-->'
 // Inline attachment cards — embedded directly in the note body at the cursor, not tacked onto the bottom.
@@ -201,8 +204,8 @@ function InsertMenu({ onClose, onStyle, onList, onDivider, onQuote, onNewTask, o
   const grid = { display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 14 }
 
   return (
-    <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className="modal-sheet" style={{ maxHeight: '72vh', display: 'flex', flexDirection: 'column', transform: `translateY(${dragY}px)`, transition: dragY ? 'none' : 'transform 0.25s ease' }}>
+    <div className="modal-overlay" style={{ top: HEADER_CLEARANCE }} onClick={e => e.target === e.currentTarget && onClose()}>
+      <div className="modal-sheet" style={{ maxHeight: `calc(100dvh - ${HEADER_CLEARANCE} - 12px)`, display: 'flex', flexDirection: 'column', transform: `translateY(${dragY}px)`, transition: dragY ? 'none' : 'transform 0.25s ease' }}>
         <div className="modal-handle" onTouchStart={onHandleTouchStart} onTouchMove={onHandleTouchMove} onTouchEnd={onHandleTouchEnd} style={{ touchAction: 'none' }} />
         <div style={{ display: 'flex', gap: 6, overflowX: 'auto', marginBottom: 16, paddingBottom: 2, flexShrink: 0 }}>
           {INSERT_TABS.map(t => (
@@ -310,8 +313,8 @@ function AttachmentMenu({ attachment, onClose, onRename, onDownload, onShare, on
   const canShare = typeof navigator !== 'undefined' && !!navigator.share
   const row = { padding: '13px 4px', cursor: 'pointer', fontSize: 15, color: 'var(--text-secondary)', borderBottom: '1px solid var(--border)' }
   return (
-    <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className="modal-sheet" style={{ paddingBottom: 24 }}>
+    <div className="modal-overlay" style={{ top: HEADER_CLEARANCE }} onClick={e => e.target === e.currentTarget && onClose()}>
+      <div className="modal-sheet" style={{ paddingBottom: 24, maxHeight: `calc(100dvh - ${HEADER_CLEARANCE} - 12px)`, overflowY: 'auto' }}>
         <div className="modal-handle" />
         <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 8, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{attachment.name || 'Attachment'}</div>
         <div onClick={() => { onRename(attachment); onClose() }} style={row}>Rename</div>
@@ -327,8 +330,8 @@ function AttachmentMenu({ attachment, onClose, onRename, onDownload, onShare, on
 // ── Page manager — see all pages in this note, jump to one, or delete one ──────
 function PageManagerSheet({ pages, currentIndex, onClose, onJump, onDelete }) {
   return (
-    <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className="modal-sheet" style={{ maxHeight: '72vh' }}>
+    <div className="modal-overlay" style={{ top: HEADER_CLEARANCE }} onClick={e => e.target === e.currentTarget && onClose()}>
+      <div className="modal-sheet" style={{ maxHeight: `calc(100dvh - ${HEADER_CLEARANCE} - 12px)` }}>
         <div className="modal-handle" />
         <div className="modal-title">Pages<div className="modal-close" onClick={onClose}>×</div></div>
         {pages.map((p, i) => (
@@ -351,8 +354,8 @@ function PageManagerSheet({ pages, currentIndex, onClose, onJump, onDelete }) {
 
 function LinksSheet({ onClose, onDelete, sector, setSector, projectId, setProjectId, goalId, setGoalId, sectors, projects, goals }) {
   return (
-    <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className="modal-sheet">
+    <div className="modal-overlay" style={{ top: HEADER_CLEARANCE }} onClick={e => e.target === e.currentTarget && onClose()}>
+      <div className="modal-sheet" style={{ maxHeight: `calc(100dvh - ${HEADER_CLEARANCE} - 12px)`, overflowY: 'auto' }}>
         <div className="modal-handle" />
         <div style={{ height: 8 }} />
 
@@ -409,13 +412,18 @@ function NoteEditor({ note, onBack, onSaved, categories, projects, goals, sector
     const scrollEl = document.querySelector('.page-scroll')
     if (!scrollEl) return
     let startY = null
-    const onTouchStart = (e) => { startY = e.touches[0].clientY }
+    let selectionActive = false
+    const onTouchStart = (e) => {
+      const sel = window.getSelection()
+      selectionActive = !!(sel && !sel.isCollapsed && bodyRef.current?.contains(sel.anchorNode))
+      startY = e.touches[0].clientY
+    }
     const onTouchMove = (e) => {
-      if (startY == null) return
+      if (startY == null || selectionActive) return
       const dy = e.touches[0].clientY - startY
       if (Math.abs(dy) > 180) { bodyRef.current?.blur(); startY = null }
     }
-    const onTouchEnd = () => { startY = null }
+    const onTouchEnd = () => { startY = null; selectionActive = false }
     scrollEl.addEventListener('touchstart', onTouchStart, { passive: true })
     scrollEl.addEventListener('touchmove', onTouchMove, { passive: true })
     scrollEl.addEventListener('touchend', onTouchEnd, { passive: true })
@@ -1091,7 +1099,7 @@ function NoteEditor({ note, onBack, onSaved, categories, projects, goals, sector
       <input ref={fileInputRef} type="file" onChange={handleFileChosen} style={{ display: 'none' }} />
 
       {/* Extra scroll room so typed content and the toolbar never fight over the same space above the keyboard */}
-      <div style={{ height: isFocused ? '100vh' : '18vh', flexShrink: 0, transition: 'height 0.25s ease' }} />
+      <div style={{ height: '100vh', flexShrink: 0 }} />
 
 
       {isFocused && !showInsertMenu && createPortal(
