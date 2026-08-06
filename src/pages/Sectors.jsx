@@ -67,6 +67,7 @@ function SectorModal({ sector, onClose, onSaved }) {
 
 function SectorDetail({ sector, onEditTask: onEditTaskRaw, onAddTask, onEditNote, onBack }) {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   // open a task but tell it to return to THIS sector (via ?open=<name>)
   const onEditTask = (task) => navigate(`/task/${task.id}`, { state: { task, from: `/sectors?open=${encodeURIComponent(sector.name)}` } })
   const [tasks, setTasks] = useState([])
@@ -76,6 +77,15 @@ function SectorDetail({ sector, onEditTask: onEditTaskRaw, onAddTask, onEditNote
   const [taskModal, setTaskModal] = useState(null)
   const [selectedProject, setSelectedProject] = useState(null)
   const today = todayLocal()
+
+  // Restore the specific project within this sector (e.g. after backing out of a note opened from it)
+  useEffect(() => {
+    const openProjectId = searchParams.get('openProject')
+    if (openProjectId && projects.length) {
+      const match = projects.find(p => String(p.id) === String(openProjectId))
+      if (match) setSelectedProject(match)
+    }
+  }, [searchParams, projects])
 
   useEffect(() => {
     supabase.from('tasks').select('*, projects(name)').eq('sector', sector.name).order('start_date').order('time_block').then(({ data }) => setTasks(data || []))
@@ -120,13 +130,14 @@ function SectorDetail({ sector, onEditTask: onEditTaskRaw, onAddTask, onEditNote
   }
 
   if (selectedProject) {
+    const onEditNoteHere = (opts) => onEditNote({ ...opts, from: `/sectors?open=${encodeURIComponent(sector.name)}&openProject=${selectedProject.id}` })
     return (
       <ProjectDetail
         project={selectedProject}
         onBack={() => setSelectedProject(null)}
         onAddTask={onAddTask}
         onEditTask={onEditTask}
-        onEditNote={onEditNote}
+        onEditNote={onEditNoteHere}
         onRefresh={reload}
       />
     )

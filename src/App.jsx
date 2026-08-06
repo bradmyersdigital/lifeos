@@ -249,7 +249,10 @@ function Shell() {
   const openAdd = (mode, ctx = {}) => navigate('/task/new', { state: { mode: mode || 'today', ...ctx, from: location.pathname + location.search } })
   const openEdit = (task) => navigate(`/task/${task.id}`, { state: { task, from: location.pathname + location.search } })
   const openAddEvent = () => navigate('/event/new', { state: { from: location.pathname + location.search } })
-  const openNote = (opts = {}) => navigate('/notes', { state: { ...opts, from: location.pathname + location.search } })
+  const openNote = (opts = {}) => {
+    const { from, ...rest } = opts
+    navigate('/notes', { state: { ...rest, from: from || (location.pathname + location.search) } })
+  }
   const onSaved = () => setRefreshKey(k => k + 1)
 
   const navItems = [HOME, ...navPaths.map(byPath).filter(Boolean).slice(0, NAV_SLOTS)]

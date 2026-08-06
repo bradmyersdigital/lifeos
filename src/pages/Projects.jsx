@@ -4,6 +4,7 @@ import { useSearchParams } from 'react-router-dom'
 import { fmtDate , todayLocal } from '../utils'
 import FolderList, { FolderHeader } from '../components/FolderList'
 import FolderSheet from '../components/FolderSheet'
+import { firstPageSubtitle } from './Notes'
 
 const IMPORTANCE = ['Low', 'Medium', 'High', 'Urgent']
 const IMP_STYLES = {
@@ -329,13 +330,22 @@ export function ProjectDetail({ project, onBack, onAddTask, onEditTask, onEditNo
       </div>
       {notes.length===0&&<div style={{ textAlign:'center',padding:'16px',color:'var(--text-dim)',fontSize:13,border:'1px dashed var(--border)',borderRadius:12,marginBottom:18 }}>No notes yet</div>}
       <div style={{ display:'flex',flexDirection:'column',gap:8 }}>
-        {notes.map(note=>(
-          <div key={note.id} onClick={()=>onEditNote({ openNoteId: note.id })} style={{ background:'var(--bg-card)',border:'1px solid var(--border)',borderRadius:12,padding:14,cursor:'pointer' }}>
-            <div style={{ fontSize:14,fontWeight:600,color:'var(--text-primary)',marginBottom:2 }}>{note.title || 'Untitled'}</div>
-            <div style={{ fontSize:13,color:'var(--text-secondary)',lineHeight:1.5,overflow:'hidden',textOverflow:'ellipsis',display:'-webkit-box',WebkitLineClamp:2,WebkitBoxOrient:'vertical' }}>{note.text}</div>
-            <div style={{ fontSize:11,color:'var(--text-dim)',fontFamily:"'DM Mono'",marginTop:6 }}>{new Date(note.created_at).toLocaleDateString()}</div>
-          </div>
-        ))}
+        {notes.map(note=>{
+          const subtitle = firstPageSubtitle(note.body_html)
+          return (
+            <div key={note.id} onClick={()=>onEditNote({ openNoteId: note.id })} style={{ background:'var(--bg-card)',border:'1px solid var(--border)',borderRadius:12,padding:14,cursor:'pointer' }}>
+              <div style={{ fontSize:14,fontWeight:600,color:'var(--text-primary)',marginBottom:2 }}>{note.title || 'Untitled'}</div>
+              {subtitle && <div style={{ fontSize:13,color:'var(--text-secondary)',lineHeight:1.5,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',marginBottom:4 }}>{subtitle}</div>}
+              <div style={{ fontSize:11,color:'var(--text-dim)',fontFamily:"'DM Mono'",marginBottom: (project.name || note.sector) ? 6 : 0 }}>{new Date(note.created_at).toLocaleDateString()}</div>
+              {(project.name || note.sector) && (
+                <div style={{ display:'flex',gap:8,alignItems:'center',flexWrap:'wrap' }}>
+                  {project.name && <div style={{ fontSize:10,color:'var(--accent)',background:'var(--accent-dim)',border:'1px solid var(--accent-border)',borderRadius:20,padding:'1px 7px' }}>📋 {project.name}</div>}
+                  {note.sector && <div style={{ fontSize:10,color:'var(--text-muted)',background:'var(--bg-input)',border:'1px solid var(--border)',borderRadius:20,padding:'1px 7px' }}>{note.sector}</div>}
+                </div>
+              )}
+            </div>
+          )
+        })}
       </div>
       </>)}
 
@@ -434,7 +444,10 @@ export default function Projects({ onAddTask, onEditTask, onEditNote }) {
     setProjects(data || [])
   }
 
-  if (selected) return <ProjectDetail project={selected} onBack={()=>setSelected(null)} onAddTask={onAddTask} onEditTask={onEditTask} onEditNote={onEditNote} onRefresh={loadProjects} />
+  if (selected) {
+    const onEditNoteHere = (opts) => onEditNote({ ...opts, from: `/projects?open=${selected.id}` })
+    return <ProjectDetail project={selected} onBack={()=>setSelected(null)} onAddTask={onAddTask} onEditTask={onEditTask} onEditNote={onEditNoteHere} onRefresh={loadProjects} />
+  }
 
   const inFolder = (p) => {
     if (!folder) return true

@@ -65,6 +65,13 @@ const PAGE_BREAK = '<!--NDL_PAGE_BREAK-->'
 const HEADER_CLEARANCE = 'calc(env(safe-area-inset-top, 44px) + 62px)'
 // Separates a page's subheading from its body within one page's serialized chunk.
 const SUBTITLE_SEP = '<!--NDL_SUBTITLE_END-->'
+// Used by preview cards (here and in Projects.jsx) to show a note's first-page subheading
+// without needing to know about the page/subtitle storage format.
+export function firstPageSubtitle(bodyHtml) {
+  if (!bodyHtml) return ''
+  const firstPage = bodyHtml.split(PAGE_BREAK)[0] || ''
+  return firstPage.split(SUBTITLE_SEP)[0] || ''
+}
 // Inline attachment cards — embedded directly in the note body at the cursor, not tacked onto the bottom.
 const imageCardHtml = (a) => `<img class="ndl-img" src="${a.url}" data-attachment-id="${a.id}" alt="${escHtml(a.name || '')}" /><div><br></div>`
 const fileCardHtml = (a) => `<div class="ndl-file" contenteditable="false" data-attachment-id="${a.id}" data-url="${a.url}"><span class="ndl-file-icon">📎</span><span class="ndl-file-name">${escHtml(a.name)}</span><span class="ndl-file-menu">⋯</span></div><div><br></div>`
@@ -1208,21 +1215,23 @@ function CategoryView({ categoryName, categoryColor, categoryLabel, notes, onBac
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
         {catNotes.map(note => {
-          const preview = (note.body || note.text || '').replace(/\n/g, ' ').substring(0, 80)
+          const subtitle = firstPageSubtitle(note.body_html)
           return (
             <div key={note.id} onClick={() => onOpenNote(note)} style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 14, padding: 16, cursor: 'pointer' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 6 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: subtitle ? 2 : 6 }}>
                 <div style={{ fontSize: 16, fontWeight: 600, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1, marginRight: 10 }}>
-                  {note.title || preview.substring(0, 40) || 'Untitled'}
+                  {note.title || 'Untitled'}
                 </div>
                 {note.pinned && <div style={{ fontSize: 14 }}>📌</div>}
               </div>
-              {note.title && preview && <div style={{ fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.5, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginBottom: 8 }}>{preview}</div>}
-              <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-                <div style={{ fontSize: 11, color: 'var(--text-dim)', fontFamily: "'DM Mono'" }}>{fmtRelative(note.updated_at || note.created_at)}</div>
-                {note.sector && <div style={{ fontSize: 10, color: 'var(--text-muted)', background: 'var(--bg-input)', border: '1px solid var(--border)', borderRadius: 20, padding: '1px 7px' }}>{note.sector}</div>}
-                {note.projects?.name && <div style={{ fontSize: 10, color: 'var(--accent)', background: 'var(--accent-dim)', border: '1px solid var(--accent-border)', borderRadius: 20, padding: '1px 7px' }}>📋 {note.projects.name}</div>}
-              </div>
+              {subtitle && <div style={{ fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.5, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginBottom: 6 }}>{subtitle}</div>}
+              <div style={{ fontSize: 11, color: 'var(--text-dim)', fontFamily: "'DM Mono'", marginBottom: 6 }}>{fmtRelative(note.updated_at || note.created_at)}</div>
+              {(note.projects?.name || note.sector) && (
+                <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                  {note.projects?.name && <div style={{ fontSize: 10, color: 'var(--accent)', background: 'var(--accent-dim)', border: '1px solid var(--accent-border)', borderRadius: 20, padding: '1px 7px' }}>📋 {note.projects.name}</div>}
+                  {note.sector && <div style={{ fontSize: 10, color: 'var(--text-muted)', background: 'var(--bg-input)', border: '1px solid var(--border)', borderRadius: 20, padding: '1px 7px' }}>{note.sector}</div>}
+                </div>
+              )}
             </div>
           )
         })}
