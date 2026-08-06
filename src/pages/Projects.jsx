@@ -153,41 +153,12 @@ export function ProjectModal({ onClose, onSaved, project, defaultSector, default
   )
 }
 
-function NoteModal({ projectId, note, onClose, onSaved }) {
-  const [text, setText] = useState(note?.text || '')
-  const [saving, setSaving] = useState(false)
-  const handleSave = async () => {
-    if (!text.trim()) return; setSaving(true)
-    if (note) await supabase.from('notes').update({ text: text.trim() }).eq('id', note.id)
-    else await supabase.from('notes').insert({ text: text.trim(), project_id: projectId, category: 'Projects' })
-    setSaving(false); onSaved(); onClose()
-  }
-  return (
-    <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className="modal-sheet doc-page">
-        <div className="modal-handle" />
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 22, position: 'sticky', top: 14, background: 'var(--bg)', zIndex: 5, paddingBottom: 8 }}>
-          <div onClick={onClose} style={{ width: 34, height: 34, borderRadius: 10, background: 'var(--bg-card)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: 18, color: 'var(--text-muted)', flexShrink: 0 }}>‹</div>
-          <div style={{ fontSize: 20, fontWeight: 600, letterSpacing: '-0.3px' }}>{note ? 'Edit note' : 'New note'}</div>
-        </div>
-        <div className="field"><div className="field-label">Note</div><textarea placeholder="Add a note..." value={text} onChange={e => setText(e.target.value)} style={{ height: 120 }} /></div>
-        <div style={{ display: 'flex', gap: 10, marginTop: 18 }}>
-          {note && <button onClick={async () => { await supabase.from('notes').delete().eq('id', note.id); onSaved(); onClose() }} style={{ flex: 1, padding: 11, borderRadius: 10, background: 'var(--danger-dim)', border: '1px solid var(--danger-border)', color: 'var(--danger)', fontSize: 14, fontWeight: 500, cursor: 'pointer', fontFamily: "'DM Sans'" }}>Delete</button>}
-          <button className="btn-ghost" style={{ flex: 1 }} onClick={onClose}>Cancel</button>
-          <button className="btn-primary" style={{ flex: 2 }} onClick={handleSave} disabled={saving}>{saving ? 'Saving…' : note ? 'Save' : 'Add note'}</button>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-export function ProjectDetail({ project, onBack, onAddTask, onEditTask, onRefresh }) {
+export function ProjectDetail({ project, onBack, onAddTask, onEditTask, onEditNote, onRefresh }) {
   const [tasks, setTasks] = useState([])
   const [notes, setNotes] = useState([])
   const [shopping, setShopping] = useState([])
   const [newShop, setNewShop] = useState('')
   const [editModal, setEditModal] = useState(false)
-  const [noteModal, setNoteModal] = useState(null)
   const [taskTab, setTaskTab] = useState('active')  // 'active' | 'completed'
   const [bodyTab, setBodyTab] = useState('tasks')    // 'tasks' | 'notes' | 'shopping'
   const today = todayLocal()
@@ -354,13 +325,14 @@ export function ProjectDetail({ project, onBack, onAddTask, onEditTask, onRefres
       {bodyTab === 'notes' && (<>
       <div style={{ display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:10 }}>
         <div className="section-label" style={{ margin:0 }}>Notes</div>
-        <div onClick={()=>setNoteModal('new')} style={{ fontSize:12,color:'var(--accent)',cursor:'pointer',padding:'4px 10px',background:'var(--accent-dim)',border:'1px solid var(--accent-border)',borderRadius:8 }}>+ Add note</div>
+        <div onClick={()=>onEditNote({ newNoteProjectId: project.id, newNoteSector: project.sector })} style={{ fontSize:12,color:'var(--accent)',cursor:'pointer',padding:'4px 10px',background:'var(--accent-dim)',border:'1px solid var(--accent-border)',borderRadius:8 }}>+ Add note</div>
       </div>
       {notes.length===0&&<div style={{ textAlign:'center',padding:'16px',color:'var(--text-dim)',fontSize:13,border:'1px dashed var(--border)',borderRadius:12,marginBottom:18 }}>No notes yet</div>}
       <div style={{ display:'flex',flexDirection:'column',gap:8 }}>
         {notes.map(note=>(
-          <div key={note.id} onClick={()=>setNoteModal(note)} style={{ background:'var(--bg-card)',border:'1px solid var(--border)',borderRadius:12,padding:14,cursor:'pointer' }}>
-            <div style={{ fontSize:14,color:'var(--text-secondary)',lineHeight:1.5 }}>{note.text}</div>
+          <div key={note.id} onClick={()=>onEditNote({ openNoteId: note.id })} style={{ background:'var(--bg-card)',border:'1px solid var(--border)',borderRadius:12,padding:14,cursor:'pointer' }}>
+            <div style={{ fontSize:14,fontWeight:600,color:'var(--text-primary)',marginBottom:2 }}>{note.title || 'Untitled'}</div>
+            <div style={{ fontSize:13,color:'var(--text-secondary)',lineHeight:1.5,overflow:'hidden',textOverflow:'ellipsis',display:'-webkit-box',WebkitLineClamp:2,WebkitBoxOrient:'vertical' }}>{note.text}</div>
             <div style={{ fontSize:11,color:'var(--text-dim)',fontFamily:"'DM Mono'",marginTop:6 }}>{new Date(note.created_at).toLocaleDateString()}</div>
           </div>
         ))}
@@ -400,12 +372,11 @@ export function ProjectDetail({ project, onBack, onAddTask, onEditTask, onRefres
       </>)}
 
       {editModal&&<ProjectModal project={project} onClose={()=>setEditModal(false)} onSaved={()=>{onRefresh();onBack()}} />}
-      {noteModal&&<NoteModal projectId={project.id} note={noteModal==='new'?null:noteModal} onClose={()=>setNoteModal(null)} onSaved={loadDetail} />}
     </div>
   )
 }
 
-export default function Projects({ onAddTask, onEditTask }) {
+export default function Projects({ onAddTask, onEditTask, onEditNote }) {
   const [projects, setProjects] = useState([])
   const [sectors, setSectors] = useState([])
   const [selected, setSelected] = useState(null)
@@ -463,7 +434,7 @@ export default function Projects({ onAddTask, onEditTask }) {
     setProjects(data || [])
   }
 
-  if (selected) return <ProjectDetail project={selected} onBack={()=>setSelected(null)} onAddTask={onAddTask} onEditTask={onEditTask} onRefresh={loadProjects} />
+  if (selected) return <ProjectDetail project={selected} onBack={()=>setSelected(null)} onAddTask={onAddTask} onEditTask={onEditTask} onEditNote={onEditNote} onRefresh={loadProjects} />
 
   const inFolder = (p) => {
     if (!folder) return true

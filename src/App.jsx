@@ -249,6 +249,7 @@ function Shell() {
   const openAdd = (mode, ctx = {}) => navigate('/task/new', { state: { mode: mode || 'today', ...ctx, from: location.pathname + location.search } })
   const openEdit = (task) => navigate(`/task/${task.id}`, { state: { task, from: location.pathname + location.search } })
   const openAddEvent = () => navigate('/event/new', { state: { from: location.pathname + location.search } })
+  const openNote = (opts = {}) => navigate('/notes', { state: { ...opts, from: location.pathname + location.search } })
   const onSaved = () => setRefreshKey(k => k + 1)
 
   const navItems = [HOME, ...navPaths.map(byPath).filter(Boolean).slice(0, NAV_SLOTS)]
@@ -273,8 +274,8 @@ function Shell() {
           <Route path="/"         element={<Home key={refreshKey} onAddTask={openAdd} onEditTask={openEdit} onAddEvent={openAddEvent} />} />
           <Route path="/week"     element={<Week key={refreshKey} onAddTask={openAdd} onEditTask={openEdit} />} />
           <Route path="/tasks"    element={<Tasks key={refreshKey} onAddTask={openAdd} onEditTask={openEdit} />} />
-          <Route path="/sectors"  element={<Sectors key={refreshKey} onAddTask={openAdd} onEditTask={openEdit} />} />
-          <Route path="/projects" element={<Projects key={refreshKey} onAddTask={openAdd} onEditTask={openEdit} />} />
+          <Route path="/sectors"  element={<Sectors key={refreshKey} onAddTask={openAdd} onEditTask={openEdit} onEditNote={openNote} />} />
+          <Route path="/projects" element={<Projects key={refreshKey} onAddTask={openAdd} onEditTask={openEdit} onEditNote={openNote} />} />
           <Route path="/notes"    element={<Notes key={refreshKey} />} />
           <Route path="/habits"   element={<Habits key={refreshKey} />} />
           <Route path="/finance"  element={<Finance key={refreshKey} />} />

@@ -65,7 +65,7 @@ function SectorModal({ sector, onClose, onSaved }) {
   )
 }
 
-function SectorDetail({ sector, onEditTask: onEditTaskRaw, onAddTask, onBack }) {
+function SectorDetail({ sector, onEditTask: onEditTaskRaw, onAddTask, onEditNote, onBack }) {
   const navigate = useNavigate()
   // open a task but tell it to return to THIS sector (via ?open=<name>)
   const onEditTask = (task) => navigate(`/task/${task.id}`, { state: { task, from: `/sectors?open=${encodeURIComponent(sector.name)}` } })
@@ -126,6 +126,7 @@ function SectorDetail({ sector, onEditTask: onEditTaskRaw, onAddTask, onBack }) 
         onBack={() => setSelectedProject(null)}
         onAddTask={onAddTask}
         onEditTask={onEditTask}
+        onEditNote={onEditNote}
         onRefresh={reload}
       />
     )
@@ -275,7 +276,7 @@ function SectorSwipeRow({ children, onEdit, onDelete }) {
   )
 }
 
-export default function Sectors({ onAddTask, onEditTask }) {
+export default function Sectors({ onAddTask, onEditTask, onEditNote }) {
   const [sectors, setSectors] = useState([])
   const [selected, setSelected] = useState(null)
   const [searchParams, setSearchParams] = useSearchParams()
@@ -317,7 +318,7 @@ export default function Sectors({ onAddTask, onEditTask }) {
     }
   }
 
-  if (selected) return <SectorDetail sector={selected} onEditTask={onEditTask} onAddTask={onAddTask} onBack={() => setSelected(null)} />
+  if (selected) return <SectorDetail sector={selected} onEditTask={onEditTask} onAddTask={onAddTask} onEditNote={onEditNote} onBack={() => setSelected(null)} />
 
   return (
     <div>

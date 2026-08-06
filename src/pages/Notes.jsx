@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import FolderList from '../components/FolderList'
 import FolderSheet from '../components/FolderSheet'
@@ -556,6 +557,16 @@ function NoteEditor({ note, onBack, onSaved, categories, projects, goals, sector
     syncCurrentPage()
     return pagesRef.current.map(p => (p.subtitle || '') + SUBTITLE_SEP + (p.body || '')).join(PAGE_BREAK)
   }
+  // Plain-text preview (used for list previews/search) — built per-page and joined with real
+  // line breaks, since PAGE_BREAK is an invisible HTML comment and won't separate anything
+  // if the whole multi-page HTML blob is converted to text in one pass.
+  const buildPlainText = () => {
+    syncCurrentPage()
+    return pagesRef.current
+      .map(p => [p.subtitle, htmlToPlain(p.body || '')].filter(Boolean).join('\n'))
+      .filter(Boolean)
+      .join('\n\n')
+  }
 
   const flipToPage = (targetIndex, dir) => {
     if (targetIndex < 0 || targetIndex >= pagesRef.current.length || targetIndex === pageIndex) return
@@ -605,8 +616,9 @@ function NoteEditor({ note, onBack, onSaved, categories, projects, goals, sector
   const ensureSaved = async () => {
     if (noteId) return noteId
     const html = buildFullHtml()
+    const plain = buildPlainText()
     const { data } = await supabase.from('notes').insert({
-      title: title.trim() || null, body: htmlToPlain(html) || null, text: htmlToPlain(html) || null,
+      title: title.trim() || null, body: plain || null, text: plain || null,
       body_html: html || null, category: category || null, sector: sector || null,
       project_id: projectId || null, goal_id: goalId || null, updated_at: new Date().toISOString(),
     }).select().single()
@@ -617,7 +629,7 @@ function NoteEditor({ note, onBack, onSaved, categories, projects, goals, sector
   const autoSave = async () => {
     setSaving(true)
     const html = buildFullHtml()
-    const plain = htmlToPlain(html)
+    const plain = buildPlainText()
     const payload = {
       title: title.trim() || null,
       body: plain || null,
@@ -1221,6 +1233,8 @@ function CategoryView({ categoryName, categoryColor, categoryLabel, notes, onBac
 
 // ── Main Notes ───────────────────────────────────────────────────────────────
 export default function Notes() {
+  const location = useLocation()
+  const navigate = useNavigate()
   const [notes, setNotes] = useState([])
   const [categories, setCategories] = useState([])
   const [projects, setProjects] = useState([])
@@ -1229,6 +1243,7 @@ export default function Notes() {
   const [view, setView] = useState('categories') // 'categories' | 'category' | 'note'
   const [activeCat, setActiveCat] = useState(null) // { name, color }
   const [activeNote, setActiveNote] = useState(null)
+  const [originFrom, setOriginFrom] = useState(null) // where to go back to, if this note was opened from elsewhere (e.g. a project's Notes tab)
   const [showManage, setShowManage] = useState(false)
   const [showFolderSheet, setShowFolderSheet] = useState(false)
   const [showNewCat, setShowNewCat] = useState(false)
@@ -1237,6 +1252,29 @@ export default function Notes() {
   const [editingCat, setEditingCat] = useState(null)
 
   useEffect(() => { loadAll() }, [])
+
+  // Deep-linking in from elsewhere (e.g. a project's or sector's Notes tab): open a specific
+  // existing note, or start a new one pre-filled with that project/sector, directly — bypassing
+  // the normal folder-browsing flow. Consumed once per navigation so it doesn't re-trigger on
+  // every subsequent notes reload while editing.
+  const consumedNavState = useRef(null)
+  useEffect(() => {
+    const state = location.state
+    if (!state || consumedNavState.current === state) return
+    if (state.openNoteId) {
+      const note = notes.find(n => n.id === state.openNoteId)
+      if (!note) return // notes haven't loaded yet — retry once they do
+      consumedNavState.current = state
+      setOriginFrom(state.from || null)
+      setActiveNote(note)
+      setView('note')
+    } else if (state.newNoteProjectId || state.newNoteSector) {
+      consumedNavState.current = state
+      setOriginFrom(state.from || null)
+      setActiveNote({ project_id: state.newNoteProjectId || null, sector: state.newNoteSector || null })
+      setView('note')
+    }
+  }, [location.state, notes])
 
   const loadAll = async () => {
     const [notesRes, projRes, goalsRes, sectorsRes, catsRes] = await Promise.all([
@@ -1296,7 +1334,10 @@ export default function Notes() {
   if (view === 'note') {
     return (
       <NoteEditor note={activeNote} categories={categories} projects={projects} goals={goals} sectors={sectors}
-        onBack={() => { setView(activeCat ? 'category' : 'categories'); loadAll() }}
+        onBack={() => {
+          if (originFrom) { navigate(originFrom); return }
+          setView(activeCat ? 'category' : 'categories'); loadAll()
+        }}
         onSaved={loadAll}
       />
     )
