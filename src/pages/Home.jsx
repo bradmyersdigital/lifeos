@@ -483,7 +483,8 @@ export default function Home({ onAddTask, onEditTask, onAddEvent }) {
             return (
               <div key={date} onClick={() => navigate('/week', { state: { openDate: date } })} style={{ background: isToday ? 'var(--accent-dim)' : 'var(--bg-card)', border: `1px solid ${isToday ? 'var(--accent-border)' : 'var(--border)'}`, borderRadius: 10, padding: '8px 3px', textAlign: 'center', cursor: 'pointer' }}>
                 <div style={{ fontSize: 9, color: isToday ? 'var(--accent)' : 'var(--text-dim)', fontWeight: 600, textTransform: 'uppercase', marginBottom: 3 }}>{DAY_NAMES[i]}</div>
-                <div style={{ fontSize: 15, fontWeight: 500, color: isToday ? 'var(--accent)' : 'var(--text-muted)', marginBottom: 5 }}>{d.getDate()}</div>
+                <div style={{ fontSize: 15, fontWeight: 500, color: isToday ? 'var(--accent)' : 'var(--text-muted)', marginBottom: isToday ? 2 : 5 }}>{d.getDate()}</div>
+                {isToday && <div style={{ width: 4, height: 4, borderRadius: '50%', background: 'var(--accent)', margin: '0 auto 3px' }} />}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 3, alignItems: 'center', minHeight: 32, justifyContent: 'center' }}>
                   <div style={{ fontSize: 8, fontWeight: 600, color: dayEvents.length ? 'var(--success)' : 'var(--text-dim)', opacity: dayEvents.length ? 1 : 0.35, whiteSpace: 'nowrap' }}>
                     {dayEvents.length} Event{dayEvents.length === 1 ? '' : 's'}

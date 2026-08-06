@@ -62,7 +62,7 @@ const keepFocus = (e) => e.preventDefault()
 function RichToolbar({ onCmd, onStyle, onColor, onChecklist, onList, onAttach, onRecord, isRecording, activeStyle, activeFormats, onOpenInsert, kbOffset }) {
   const [showStyles, setShowStyles] = useState(false)
   const [showColors, setShowColors] = useState(false)
-  const btn = (active) => ({ width: 32, height: 32, borderRadius: 9, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0, background: active ? 'var(--accent)' : 'var(--bg)', border: `1px solid ${active ? 'var(--accent)' : 'var(--border)'}`, color: active ? 'var(--bg)' : 'var(--text-muted)', fontSize: 14, fontWeight: 600 })
+  const btn = (active) => ({ width: 38, height: 38, borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0, background: active ? 'var(--accent)' : 'transparent', border: 'none', color: active ? 'var(--bg)' : 'var(--text-secondary)', fontSize: 16, fontWeight: 600 })
 
   return (
     <div style={{ position: 'fixed', left: '50%', transform: 'translateX(-50%)', width: '100%', maxWidth: 820, boxSizing: 'border-box', padding: '0 16px', bottom: kbOffset + 8, zIndex: 50 }}>
@@ -83,29 +83,29 @@ function RichToolbar({ onCmd, onStyle, onColor, onChecklist, onList, onAttach, o
           ))}
         </div>
       )}
-      <div style={{ display: 'flex', gap: 6, overflowX: 'auto', background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 22, padding: 6, boxShadow: '0 6px 24px rgba(0,0,0,0.35)' }}>
-        <div style={{ ...btn(false), background: 'var(--accent-dim)', borderColor: 'var(--accent-border)', color: 'var(--accent)' }} onMouseDown={keepFocus} onClick={onOpenInsert}>
-          <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><line x1="7.5" y1="1" x2="7.5" y2="14" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/><line x1="1" y1="7.5" x2="14" y2="7.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/></svg>
+      <div style={{ display: 'flex', gap: 4, overflowX: 'auto', background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 24, padding: 6, boxShadow: '0 6px 24px rgba(0,0,0,0.35)' }}>
+        <div style={{ ...btn(false), background: 'var(--accent-dim)', color: 'var(--accent)' }} onMouseDown={keepFocus} onClick={onOpenInsert}>
+          <svg width="17" height="17" viewBox="0 0 15 15" fill="none"><line x1="7.5" y1="1" x2="7.5" y2="14" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/><line x1="1" y1="7.5" x2="14" y2="7.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/></svg>
         </div>
-        <div style={{ ...btn(showStyles), width: 'auto', padding: '0 10px' }} onMouseDown={keepFocus} onClick={() => { setShowStyles(!showStyles); setShowColors(false) }}>Aa</div>
+        <div style={{ ...btn(showStyles), width: 'auto', padding: '0 11px' }} onMouseDown={keepFocus} onClick={() => { setShowStyles(!showStyles); setShowColors(false) }}>Aa</div>
         <div style={btn(activeFormats?.bold)} onMouseDown={keepFocus} onClick={() => onCmd('bold')}><b>B</b></div>
         <div style={{ ...btn(activeFormats?.italic), fontStyle: 'italic' }} onMouseDown={keepFocus} onClick={() => onCmd('italic')}>I</div>
         <div style={{ ...btn(activeFormats?.underline), textDecoration: 'underline' }} onMouseDown={keepFocus} onClick={() => onCmd('underline')}>U</div>
         <div style={{ ...btn(activeFormats?.strikeThrough), textDecoration: 'line-through' }} onMouseDown={keepFocus} onClick={() => onCmd('strikeThrough')}>S</div>
         <div style={btn(showColors)} onMouseDown={keepFocus} onClick={() => { setShowColors(!showColors); setShowStyles(false) }}>
-          <div style={{ width: 15, height: 15, borderRadius: '50%', background: 'linear-gradient(135deg,#d4520f,#3b82f6,#10b981)' }} />
+          <div style={{ width: 17, height: 17, borderRadius: '50%', background: 'linear-gradient(135deg,#d4520f,#3b82f6,#10b981)' }} />
         </div>
         <div style={btn(false)} onMouseDown={keepFocus} onClick={onList}>
-          <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><circle cx="2" cy="3" r="1.3" fill="currentColor"/><circle cx="2" cy="7.5" r="1.3" fill="currentColor"/><circle cx="2" cy="12" r="1.3" fill="currentColor"/><line x1="5.5" y1="3" x2="14" y2="3" stroke="currentColor" strokeWidth="1.4"/><line x1="5.5" y1="7.5" x2="14" y2="7.5" stroke="currentColor" strokeWidth="1.4"/><line x1="5.5" y1="12" x2="14" y2="12" stroke="currentColor" strokeWidth="1.4"/></svg>
+          <svg width="17" height="17" viewBox="0 0 15 15" fill="none"><circle cx="2" cy="3" r="1.3" fill="currentColor"/><circle cx="2" cy="7.5" r="1.3" fill="currentColor"/><circle cx="2" cy="12" r="1.3" fill="currentColor"/><line x1="5.5" y1="3" x2="14" y2="3" stroke="currentColor" strokeWidth="1.4"/><line x1="5.5" y1="7.5" x2="14" y2="7.5" stroke="currentColor" strokeWidth="1.4"/><line x1="5.5" y1="12" x2="14" y2="12" stroke="currentColor" strokeWidth="1.4"/></svg>
         </div>
         <div style={btn(false)} onMouseDown={keepFocus} onClick={onChecklist}>
-          <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><rect x="1.5" y="1.5" width="10" height="10" rx="2.5" stroke="currentColor" strokeWidth="1.4"/><polyline points="4,6.5 6,8.5 9.5,4" stroke="currentColor" strokeWidth="1.4" fill="none" strokeLinecap="round" strokeLinejoin="round"/></svg>
+          <svg width="17" height="17" viewBox="0 0 15 15" fill="none"><rect x="1.5" y="1.5" width="10" height="10" rx="2.5" stroke="currentColor" strokeWidth="1.4"/><polyline points="4,6.5 6,8.5 9.5,4" stroke="currentColor" strokeWidth="1.4" fill="none" strokeLinecap="round" strokeLinejoin="round"/></svg>
         </div>
         <div style={btn(false)} onMouseDown={keepFocus} onClick={onAttach}>
-          <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M13 6.5L7.2 12.3a3 3 0 01-4.24-4.24L8.8 2.2a2 2 0 012.83 2.83L5.8 10.9a1 1 0 01-1.42-1.42L9.5 4.35" stroke="currentColor" strokeWidth="1.3" fill="none" strokeLinecap="round"/></svg>
+          <svg width="17" height="17" viewBox="0 0 15 15" fill="none"><path d="M13 6.5L7.2 12.3a3 3 0 01-4.24-4.24L8.8 2.2a2 2 0 012.83 2.83L5.8 10.9a1 1 0 01-1.42-1.42L9.5 4.35" stroke="currentColor" strokeWidth="1.3" fill="none" strokeLinecap="round"/></svg>
         </div>
         <div style={btn(isRecording)} onMouseDown={keepFocus} onClick={onRecord}>
-          <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="4.5" y="1" width="5" height="8" rx="2.5" stroke="currentColor" strokeWidth="1.3"/><path d="M2 7.5a5 5 0 0010 0M7 12.5v1.5" stroke="currentColor" strokeWidth="1.3" fill="none" strokeLinecap="round"/></svg>
+          <svg width="16" height="16" viewBox="0 0 14 14" fill="none"><rect x="4.5" y="1" width="5" height="8" rx="2.5" stroke="currentColor" strokeWidth="1.3"/><path d="M2 7.5a5 5 0 0010 0M7 12.5v1.5" stroke="currentColor" strokeWidth="1.3" fill="none" strokeLinecap="round"/></svg>
         </div>
       </div>
     </div>
@@ -347,7 +347,13 @@ function NoteEditor({ note, onBack, onSaved, categories, projects, goals, sector
   useEffect(() => {
     const vv = window.visualViewport
     if (!vv) return
-    const update = () => setKbOffset(Math.max(0, window.innerHeight - vv.height - vv.offsetTop))
+    // Safari's built-in prev/next/done accessory bar rides on top of the keyboard and isn't
+    // consistently reflected in visualViewport's height, so add a flat buffer to clear it.
+    const ACCESSORY_BAR_BUFFER = 48
+    const update = () => {
+      const raw = Math.max(0, window.innerHeight - vv.height - vv.offsetTop)
+      setKbOffset(raw > 0 ? raw + ACCESSORY_BAR_BUFFER : 0)
+    }
     vv.addEventListener('resize', update)
     vv.addEventListener('scroll', update)
     update()
@@ -861,6 +867,8 @@ function filterNotesForCat(notes, categoryName) {
 
 function CategoryView({ categoryName, categoryColor, categoryLabel, notes, onBack, onOpenNote, onNewNote }) {
   const catNotes = filterNotesForCat(notes, categoryName)
+  const isSector = categoryName.startsWith('__sector__')
+  const sectorName = isSector ? categoryName.slice('__sector__'.length) : null
 
   const label =
     categoryName === '__all__' ? 'All Notes' :
