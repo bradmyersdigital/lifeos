@@ -182,6 +182,19 @@ function InsertMenu({ onClose, onStyle, onList, onDivider, onQuote, onNewTask, o
     return () => observer.disconnect()
   }, [])
 
+  const [bottomSpacer, setBottomSpacer] = useState(0)
+  useEffect(() => {
+    const measure = () => {
+      const scrollEl = scrollRef.current
+      const lastSection = sectionRefs.current['Advanced']
+      if (!scrollEl || !lastSection) return
+      setBottomSpacer(Math.max(0, scrollEl.clientHeight - lastSection.offsetHeight - 24))
+    }
+    const raf = requestAnimationFrame(measure) // wait one frame so section heights are laid out first
+    window.addEventListener('resize', measure)
+    return () => { cancelAnimationFrame(raf); window.removeEventListener('resize', measure) }
+  }, [])
+
   const sectionHeader = (label) => (
     <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 12 }}>{label}</div>
   )
@@ -259,7 +272,7 @@ function InsertMenu({ onClose, onStyle, onList, onDivider, onQuote, onNewTask, o
             </div>
           </div>
           {/* Lets the last section scroll all the way up to the top band, same as every other section */}
-          <div style={{ height: '50vh' }} />
+          <div style={{ height: bottomSpacer }} />
         </div>
       </div>
     </div>
@@ -341,9 +354,6 @@ function LinksSheet({ onClose, onDelete, sector, setSector, projectId, setProjec
     <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
       <div className="modal-sheet">
         <div className="modal-handle" />
-        <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 8 }}>
-          <div className="modal-close" onClick={onClose}>×</div>
-        </div>
 
         <div className="field" style={{ marginBottom: 18 }}>
           <div className="field-label">Project</div>
@@ -1080,7 +1090,7 @@ function NoteEditor({ note, onBack, onSaved, categories, projects, goals, sector
       <input ref={fileInputRef} type="file" onChange={handleFileChosen} style={{ display: 'none' }} />
 
       {/* Extra scroll room so typed content and the toolbar never fight over the same space above the keyboard */}
-      {isFocused && <div style={{ height: '55vh', flexShrink: 0 }} />}
+      <div style={{ height: isFocused ? '55vh' : '18vh', flexShrink: 0, transition: 'height 0.25s ease' }} />
 
 
       {isFocused && !showInsertMenu && createPortal(
