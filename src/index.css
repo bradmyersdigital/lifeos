@@ -236,6 +236,7 @@ body { overflow: hidden; }
 .rich-body ul { margin: 4px 0; padding-left: 22px; }
 .rich-body li { margin-bottom: 4px; }
 .ndl-check { display: flex; align-items: flex-start; gap: 8px; margin: 4px 0; }
+.ndl-check-text { flex: 1; min-width: 0; }
 .ndl-box { cursor: pointer; flex-shrink: 0; user-select: none; }
 
 .field { margin-bottom: 16px; }

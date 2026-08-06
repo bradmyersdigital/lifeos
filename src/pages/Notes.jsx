@@ -139,9 +139,12 @@ function InsertTile({ icon, label, disabled, onClick }) {
 }
 
 function InsertMenu({ onClose, onStyle, onList, onDivider, onQuote, onNewTask, onNewPage, onAttach, onRecord }) {
-  const [tab, setTab] = useState('Essentials')
+  const [activeSection, setActiveSection] = useState('Essentials')
   const [dragY, setDragY] = useState(0)
   const dragStart = useRef(null)
+  const scrollRef = useRef(null)
+  const sectionRefs = useRef({})
+  const programmaticScroll = useRef(false)
   const soon = (label) => () => alert(`${label} is on the roadmap — not built yet.`)
 
   const onHandleTouchStart = (e) => { dragStart.current = e.touches[0].clientY }
@@ -156,22 +159,51 @@ function InsertMenu({ onClose, onStyle, onList, onDivider, onQuote, onNewTask, o
     dragStart.current = null
   }
 
+  // Tapping a pill scrolls the sheet to that section instead of switching a hidden tab.
+  const jumpToSection = (name) => {
+    setActiveSection(name)
+    programmaticScroll.current = true
+    sectionRefs.current[name]?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    setTimeout(() => { programmaticScroll.current = false }, 600)
+  }
+  const setSectionRef = (name) => (el) => { sectionRefs.current[name] = el }
+
+  // Scrollspy: as the sheet scrolls, whichever section has crossed into the top band of the
+  // scroll area becomes "active," highlighting the matching pill — same as Evernote's menu.
+  useEffect(() => {
+    const root = scrollRef.current
+    if (!root) return
+    const observer = new IntersectionObserver((entries) => {
+      if (programmaticScroll.current) return
+      const visible = entries.filter(e => e.isIntersecting).sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top)
+      if (visible[0]) setActiveSection(visible[0].target.dataset.section)
+    }, { root, threshold: 0, rootMargin: '0px 0px -70% 0px' })
+    Object.values(sectionRefs.current).forEach(el => el && observer.observe(el))
+    return () => observer.disconnect()
+  }, [])
+
+  const sectionHeader = (label) => (
+    <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 12 }}>{label}</div>
+  )
+  const grid = { display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 14 }
+
   return (
     <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
       <div className="modal-sheet" style={{ maxHeight: '72vh', display: 'flex', flexDirection: 'column', transform: `translateY(${dragY}px)`, transition: dragY ? 'none' : 'transform 0.25s ease' }}>
         <div className="modal-handle" onTouchStart={onHandleTouchStart} onTouchMove={onHandleTouchMove} onTouchEnd={onHandleTouchEnd} style={{ touchAction: 'none' }} />
-        <div style={{ display: 'flex', gap: 6, overflowX: 'auto', marginBottom: 16, paddingBottom: 2 }}>
+        <div style={{ display: 'flex', gap: 6, overflowX: 'auto', marginBottom: 16, paddingBottom: 2, flexShrink: 0 }}>
           {INSERT_TABS.map(t => (
-            <div key={t} onMouseDown={keepFocus} onClick={() => setTab(t)}
-              style={{ padding: '7px 14px', borderRadius: 20, fontSize: 13, fontWeight: 500, cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0, background: tab === t ? 'var(--accent-dim)' : 'var(--bg-card)', border: `1px solid ${tab === t ? 'var(--accent-border)' : 'var(--border)'}`, color: tab === t ? 'var(--accent)' : 'var(--text-muted)' }}>
+            <div key={t} onMouseDown={keepFocus} onClick={() => jumpToSection(t)}
+              style={{ padding: '7px 14px', borderRadius: 20, fontSize: 13, fontWeight: 500, cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0, background: activeSection === t ? 'var(--accent-dim)' : 'var(--bg-card)', border: `1px solid ${activeSection === t ? 'var(--accent-border)' : 'var(--border)'}`, color: activeSection === t ? 'var(--accent)' : 'var(--text-muted)' }}>
               {t}
             </div>
           ))}
         </div>
 
-        <div style={{ overflowY: 'auto' }}>
-          {tab === 'Essentials' && (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 14 }}>
+        <div ref={scrollRef} style={{ overflowY: 'auto', flex: 1 }}>
+          <div ref={setSectionRef('Essentials')} data-section="Essentials" style={{ marginBottom: 26 }}>
+            {sectionHeader('Essentials')}
+            <div style={grid}>
               <InsertTile icon="☑️" label="New task" onClick={() => { onNewTask(); onClose() }} />
               <InsertTile icon="📖" label="New page" onClick={() => { onNewPage(); onClose() }} />
               <InsertTile icon="—" label="Divider" onClick={() => { onDivider(); onClose() }} />
@@ -179,23 +211,35 @@ function InsertMenu({ onClose, onStyle, onList, onDivider, onQuote, onNewTask, o
               <InsertTile icon="🔗" label="Link to note" disabled onClick={soon('Link to note')} />
               <InsertTile icon="📑" label="Table of contents" disabled onClick={soon('Table of contents')} />
             </div>
-          )}
-          {tab === 'Text Styles' && (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 14 }}>
+          </div>
+
+          <div ref={setSectionRef('Text Styles')} data-section="Text Styles" style={{ marginBottom: 26 }}>
+            {sectionHeader('Text Styles')}
+            <div style={grid}>
               {TEXT_STYLES.map(s => (
                 <InsertTile key={s.tag} icon={s.tag === 'PRE' ? 'Aa' : s.tag === 'P' ? 'Aa' : s.tag} label={s.label} onClick={() => { onStyle(s.tag); onClose() }} />
               ))}
             </div>
-          )}
-          {tab === 'Lists' && (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 14 }}>
-              <InsertTile icon="•≡" label="Bullet list" onClick={() => { onList('bullet'); onClose() }} />
-              <InsertTile icon="☑≡" label="Checklist" onClick={() => { onList('checklist'); onClose() }} />
-              <InsertTile icon="1≡" label="Numbered list" onClick={() => { onList('numbered'); onClose() }} />
+          </div>
+
+          <div ref={setSectionRef('Lists')} data-section="Lists" style={{ marginBottom: 26 }}>
+            {sectionHeader('Lists')}
+            <div style={grid}>
+              <InsertTile
+                icon={<svg width="19" height="19" viewBox="0 0 15 15" fill="none"><circle cx="2" cy="3" r="1.3" fill="currentColor"/><circle cx="2" cy="7.5" r="1.3" fill="currentColor"/><circle cx="2" cy="12" r="1.3" fill="currentColor"/><line x1="5.5" y1="3" x2="14" y2="3" stroke="currentColor" strokeWidth="1.4"/><line x1="5.5" y1="7.5" x2="14" y2="7.5" stroke="currentColor" strokeWidth="1.4"/><line x1="5.5" y1="12" x2="14" y2="12" stroke="currentColor" strokeWidth="1.4"/></svg>}
+                label="Bullet list" onClick={() => { onList('bullet'); onClose() }} />
+              <InsertTile
+                icon={<svg width="19" height="19" viewBox="0 0 15 15" fill="none"><rect x="1.5" y="1.5" width="10" height="10" rx="2.5" stroke="currentColor" strokeWidth="1.4"/><polyline points="4,6.5 6,8.5 9.5,4" stroke="currentColor" strokeWidth="1.4" fill="none" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+                label="Checklist" onClick={() => { onList('checklist'); onClose() }} />
+              <InsertTile
+                icon={<svg width="19" height="19" viewBox="0 0 15 15" fill="none"><text x="0" y="4.6" fontSize="4.2" fontFamily="'DM Mono', monospace" fill="currentColor">1</text><text x="0" y="9.1" fontSize="4.2" fontFamily="'DM Mono', monospace" fill="currentColor">2</text><text x="0" y="13.6" fontSize="4.2" fontFamily="'DM Mono', monospace" fill="currentColor">3</text><line x1="5.5" y1="3" x2="14" y2="3" stroke="currentColor" strokeWidth="1.4"/><line x1="5.5" y1="7.5" x2="14" y2="7.5" stroke="currentColor" strokeWidth="1.4"/><line x1="5.5" y1="12" x2="14" y2="12" stroke="currentColor" strokeWidth="1.4"/></svg>}
+                label="Numbered list" onClick={() => { onList('numbered'); onClose() }} />
             </div>
-          )}
-          {tab === 'Media' && (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 14 }}>
+          </div>
+
+          <div ref={setSectionRef('Media')} data-section="Media" style={{ marginBottom: 26 }}>
+            {sectionHeader('Media')}
+            <div style={grid}>
               <InsertTile icon="🖼️" label="Image" onClick={() => { onAttach(); onClose() }} />
               <InsertTile icon="📎" label="File" onClick={() => { onAttach(); onClose() }} />
               <InsertTile icon="🎙️" label="Voice memo" onClick={() => { onRecord(); onClose() }} />
@@ -203,16 +247,18 @@ function InsertMenu({ onClose, onStyle, onList, onDivider, onQuote, onNewTask, o
               <InsertTile icon="🖊️" label="Sketch" disabled onClick={soon('Sketch')} />
               <InsertTile icon="📄" label="Scan" disabled onClick={soon('Document scan')} />
             </div>
-          )}
-          {tab === 'Advanced' && (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 14 }}>
+          </div>
+
+          <div ref={setSectionRef('Advanced')} data-section="Advanced" style={{ marginBottom: 8 }}>
+            {sectionHeader('Advanced')}
+            <div style={grid}>
               <InsertTile icon="▦" label="Table" disabled onClick={soon('Table')} />
               <InsertTile icon="💬" label="Callout" disabled onClick={soon('Callout')} />
               <InsertTile icon="▸" label="Toggle" disabled onClick={soon('Toggle')} />
               <InsertTile icon="{ }" label="Code block" disabled onClick={soon('Code block')} />
               <InsertTile icon="⇄" label="Mermaid diagram" disabled onClick={soon('Mermaid diagram')} />
             </div>
-          )}
+          </div>
         </div>
       </div>
     </div>
@@ -669,7 +715,20 @@ function NoteEditor({ note, onBack, onSaved, categories, projects, goals, sector
   const insertChecklist = () => {
     ensureSelection()
     document.execCommand('insertHTML', false,
-      '<div class="ndl-check" data-checked="false"><span class="ndl-box" contenteditable="false">\u2610</span><span> </span></div><div><br></div>')
+      '<div class="ndl-check" data-checked="false"><span class="ndl-box" contenteditable="false">\u2610</span><span class="ndl-check-text">\u200b</span></div>')
+    // Explicitly place the cursor in the new item's text span (not wherever the browser's
+    // default insertHTML cursor placement happens to land) so typing continues right next
+    // to the checkbox instead of jumping to a new line below it.
+    const checks = bodyRef.current?.querySelectorAll('.ndl-check')
+    const textSpan = checks?.[checks.length - 1]?.querySelector('.ndl-check-text')
+    if (textSpan) {
+      const range = document.createRange()
+      range.selectNodeContents(textSpan)
+      range.collapse(false)
+      const sel = window.getSelection()
+      sel.removeAllRanges()
+      sel.addRange(range)
+    }
     scheduleSave()
   }
   const wireAudioCards = () => {
@@ -856,13 +915,19 @@ function NoteEditor({ note, onBack, onSaved, categories, projects, goals, sector
   const cancelRecording = () => { recordCancelledRef.current = true; mediaRecorderRef.current?.stop() }
 
   // ── Swipe flips between pages of THIS note, like turning a page in a notebook ──
-  const onTouchStart = (e) => { touchStart.current = { x: e.touches[0].clientX, y: e.touches[0].clientY } }
+  // Ignores touches that start inside any open sheet/menu (insert menu, page manager, etc.)
+  // so scrolling or dragging inside those doesn't get misread as a page-flip attempt.
+  const onTouchStart = (e) => {
+    if (e.target.closest?.('.modal-overlay')) { touchStart.current = null; return }
+    touchStart.current = { x: e.touches[0].clientX, y: e.touches[0].clientY }
+  }
   const onTouchEnd = (e) => {
     if (!touchStart.current) return
+    if (e.target.closest?.('.modal-overlay')) { touchStart.current = null; return }
     const dx = e.changedTouches[0].clientX - touchStart.current.x
     const dy = e.changedTouches[0].clientY - touchStart.current.y
     touchStart.current = null
-    if (Math.abs(dx) > 70 && Math.abs(dy) < 50) flipToPage(pageIndex + (dx < 0 ? 1 : -1), dx < 0 ? 'next' : 'prev')
+    if (Math.abs(dx) > 90 && Math.abs(dy) < 35) flipToPage(pageIndex + (dx < 0 ? 1 : -1), dx < 0 ? 'next' : 'prev')
   }
 
   const catColor = categories.find(c => c.name === category)?.color || 'var(--text-dim)'
