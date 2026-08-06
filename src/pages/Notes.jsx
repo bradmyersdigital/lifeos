@@ -354,6 +354,7 @@ function LinksSheet({ onClose, onDelete, sector, setSector, projectId, setProjec
     <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
       <div className="modal-sheet">
         <div className="modal-handle" />
+        <div style={{ height: 8 }} />
 
         <div className="field" style={{ marginBottom: 18 }}>
           <div className="field-label">Project</div>
@@ -412,7 +413,7 @@ function NoteEditor({ note, onBack, onSaved, categories, projects, goals, sector
     const onTouchMove = (e) => {
       if (startY == null) return
       const dy = e.touches[0].clientY - startY
-      if (Math.abs(dy) > 60) { bodyRef.current?.blur(); startY = null }
+      if (Math.abs(dy) > 180) { bodyRef.current?.blur(); startY = null }
     }
     const onTouchEnd = () => { startY = null }
     scrollEl.addEventListener('touchstart', onTouchStart, { passive: true })
@@ -1090,7 +1091,7 @@ function NoteEditor({ note, onBack, onSaved, categories, projects, goals, sector
       <input ref={fileInputRef} type="file" onChange={handleFileChosen} style={{ display: 'none' }} />
 
       {/* Extra scroll room so typed content and the toolbar never fight over the same space above the keyboard */}
-      <div style={{ height: isFocused ? '55vh' : '18vh', flexShrink: 0, transition: 'height 0.25s ease' }} />
+      <div style={{ height: isFocused ? '100vh' : '18vh', flexShrink: 0, transition: 'height 0.25s ease' }} />
 
 
       {isFocused && !showInsertMenu && createPortal(
