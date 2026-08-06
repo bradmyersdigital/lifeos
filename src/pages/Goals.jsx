@@ -258,7 +258,7 @@ function GoalModal({ goal, sectors, onClose, onSaved }) {
 // ── Detail ────────────────────────────────────────────────────────────────────────────
 // ── Immersive creation wizard — one full-screen step at a time, not a form dump.
 // A goal is a moment worth walking through, not a modal to fill out. ────────────────────
-const WIZARD_STEPS = ['title', 'sector', 'image', 'due']
+const WIZARD_STEPS = ['title', 'sector', 'image', 'link', 'due']
 
 function WizardProgress({ step }) {
   const idx = WIZARD_STEPS.indexOf(step)
@@ -278,11 +278,22 @@ function GoalWizard({ sectors, onClose, onCreated }) {
   const [imageFile, setImageFile] = useState(null)
   const [imagePreview, setImagePreview] = useState(null)
   const [dueDate, setDueDate] = useState('')
+  const [linkProjects, setLinkProjects] = useState([])
+  const [linkTasks, setLinkTasks] = useState([])
+  const [selectedProjectIds, setSelectedProjectIds] = useState([])
+  const [selectedTaskIds, setSelectedTaskIds] = useState([])
   const [saving, setSaving] = useState(false)
   const fileInputRef = useRef(null)
   const titleInputRef = useRef(null)
 
   useEffect(() => { if (step === 'title') setTimeout(() => titleInputRef.current?.focus(), 300) }, [step])
+  useEffect(() => {
+    supabase.from('projects').select('id, name').is('goal_id', null).eq('status', 'active').order('name').then(({ data, error }) => setLinkProjects(error ? [] : (data || [])))
+    supabase.from('tasks').select('id, name, start_date').is('goal_id', null).eq('completed', false).order('start_date').limit(30).then(({ data, error }) => setLinkTasks(error ? [] : (data || [])))
+  }, [])
+
+  const toggleProjectLink = (id) => setSelectedProjectIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id])
+  const toggleTaskLink = (id) => setSelectedTaskIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id])
 
   const stepIndex = WIZARD_STEPS.indexOf(step)
   const goNext = () => { const i = stepIndex; if (i < WIZARD_STEPS.length - 1) setStep(WIZARD_STEPS[i + 1]) }
@@ -300,29 +311,48 @@ function GoalWizard({ sectors, onClose, onCreated }) {
   const finish = async () => {
     if (!title.trim()) return
     setSaving(true)
-    const { data: goal, error } = await supabase.from('goals').insert({
-      goal_text: title.trim(), sector: sector || null, due_date: dueDate || null,
-      priority: 'medium', status: 'active', updated_at: new Date().toISOString(),
-    }).select().single()
+    try {
+      let goalId = null
+      const { data: goal, error } = await supabase.from('goals').insert({
+        goal_text: title.trim(), sector: sector || null, due_date: dueDate || null,
+        priority: 'medium', status: 'active', updated_at: new Date().toISOString(),
+      }).select().single()
 
-    if (error || !goal) {
-      // New columns may not exist yet if the migration hasn't run — retry with the basics only
-      const { data: fallbackGoal } = await supabase.from('goals').insert({ goal_text: title.trim(), updated_at: new Date().toISOString() }).select().single()
-      setSaving(false)
-      if (fallbackGoal) { onCreated(); onClose() }
-      return
-    }
-
-    if (imageFile) {
-      const path = `${goal.id}/${Date.now()}-${imageFile.name.replace(/[^a-zA-Z0-9._-]/g, '_')}`
-      const { error: upErr } = await supabase.storage.from('goal-images').upload(path, imageFile)
-      if (!upErr) {
-        const { data: pub } = supabase.storage.from('goal-images').getPublicUrl(path)
-        await supabase.from('goals').update({ image_url: pub.publicUrl }).eq('id', goal.id)
+      if (error || !goal) {
+        // New columns may not exist yet if the migration hasn't run — retry with the basics only
+        const { data: fallbackGoal, error: fbError } = await supabase.from('goals').insert({ goal_text: title.trim(), updated_at: new Date().toISOString() }).select().single()
+        if (fbError || !fallbackGoal) {
+          console.error('Goal creation failed:', error, fbError)
+          alert('Could not create the goal: ' + (fbError?.message || error?.message || 'unknown error') + '\n\nCheck that the goals migration SQL has been run.')
+          return
+        }
+        goalId = fallbackGoal.id
+      } else {
+        goalId = goal.id
       }
+
+      if (imageFile && goalId) {
+        const path = `${goalId}/${Date.now()}-${imageFile.name.replace(/[^a-zA-Z0-9._-]/g, '_')}`
+        const { error: upErr } = await supabase.storage.from('goal-images').upload(path, imageFile)
+        if (!upErr) {
+          const { data: pub } = supabase.storage.from('goal-images').getPublicUrl(path)
+          await supabase.from('goals').update({ image_url: pub.publicUrl }).eq('id', goalId)
+        } else {
+          console.warn('Goal image upload failed (goal was still created):', upErr.message)
+        }
+      }
+
+      if (selectedProjectIds.length) await supabase.from('projects').update({ goal_id: goalId }).in('id', selectedProjectIds)
+      if (selectedTaskIds.length) await supabase.from('tasks').update({ goal_id: goalId }).in('id', selectedTaskIds)
+
+      onCreated()
+      onClose()
+    } catch (err) {
+      console.error('Unexpected error creating goal:', err)
+      alert('Something went wrong creating the goal: ' + err.message)
+    } finally {
+      setSaving(false)
     }
-    setSaving(false)
-    onCreated(); onClose()
   }
 
   const content = (
@@ -381,6 +411,51 @@ function GoalWizard({ sectors, onClose, onCreated }) {
               </div>
             )}
             <div onClick={goNext} style={{ textAlign: 'center', marginTop: 20, fontSize: 13, color: 'var(--text-dim)', cursor: 'pointer' }}>Skip for now</div>
+          </>
+        )}
+
+        {step === 'link' && (
+          <>
+            <div style={{ fontSize: 26, fontWeight: 700, marginBottom: 10 }}>Link existing work</div>
+            <div style={{ fontSize: 15, color: 'var(--text-muted)', lineHeight: 1.5, marginBottom: 28 }}>Already have a project or task for this? Link it now — optional, you can always do this later.</div>
+
+            {linkProjects.length > 0 && (
+              <div style={{ marginBottom: 22 }}>
+                <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.08em', color: 'var(--text-dim)', textTransform: 'uppercase', marginBottom: 10 }}>Projects</div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  {linkProjects.map(p => (
+                    <div key={p.id} onClick={() => toggleProjectLink(p.id)} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 14px', borderRadius: 12, cursor: 'pointer', background: selectedProjectIds.includes(p.id) ? 'var(--accent-dim)' : 'var(--bg-card)', border: `1px solid ${selectedProjectIds.includes(p.id) ? 'var(--accent-border)' : 'var(--border)'}` }}>
+                      <div style={{ width: 18, height: 18, borderRadius: 5, border: `1.5px solid ${selectedProjectIds.includes(p.id) ? 'var(--accent)' : 'var(--border-hover)'}`, background: selectedProjectIds.includes(p.id) ? 'var(--accent)' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                        {selectedProjectIds.includes(p.id) && <svg width="10" height="10" viewBox="0 0 10 10"><polyline points="1,5 4,8 9,1.5" stroke="white" strokeWidth="1.6" fill="none" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+                      </div>
+                      <div style={{ fontSize: 14, color: 'var(--text-secondary)' }}>{p.name}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {linkTasks.length > 0 && (
+              <div style={{ marginBottom: 22 }}>
+                <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.08em', color: 'var(--text-dim)', textTransform: 'uppercase', marginBottom: 10 }}>Tasks</div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  {linkTasks.map(t => (
+                    <div key={t.id} onClick={() => toggleTaskLink(t.id)} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 14px', borderRadius: 12, cursor: 'pointer', background: selectedTaskIds.includes(t.id) ? 'var(--accent-dim)' : 'var(--bg-card)', border: `1px solid ${selectedTaskIds.includes(t.id) ? 'var(--accent-border)' : 'var(--border)'}` }}>
+                      <div style={{ width: 18, height: 18, borderRadius: 5, border: `1.5px solid ${selectedTaskIds.includes(t.id) ? 'var(--accent)' : 'var(--border-hover)'}`, background: selectedTaskIds.includes(t.id) ? 'var(--accent)' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                        {selectedTaskIds.includes(t.id) && <svg width="10" height="10" viewBox="0 0 10 10"><polyline points="1,5 4,8 9,1.5" stroke="white" strokeWidth="1.6" fill="none" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+                      </div>
+                      <div style={{ flex: 1, fontSize: 14, color: 'var(--text-secondary)' }}>{t.name}</div>
+                      {t.start_date && <div style={{ fontSize: 11, color: 'var(--text-dim)', fontFamily: "'DM Mono'" }}>{fmtDate(t.start_date)}</div>}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {linkProjects.length === 0 && linkTasks.length === 0 && (
+              <div style={{ textAlign: 'center', padding: '20px', color: 'var(--text-dim)', fontSize: 13, border: '1px dashed var(--border)', borderRadius: 12 }}>Nothing unlinked to attach right now — you can link things later from the goal.</div>
+            )}
+            <div onClick={goNext} style={{ textAlign: 'center', marginTop: 20, fontSize: 13, color: 'var(--text-dim)', cursor: 'pointer' }}>Continue</div>
           </>
         )}
 
@@ -648,7 +723,7 @@ function GoalCard({ goal, projects, tasks, checkins, notes, onClick }) {
 
   if (goal.image_url) {
     return (
-      <div onClick={onClick} style={{ position: 'relative', height: 150, borderRadius: 14, overflow: 'hidden', marginBottom: 8, cursor: 'pointer', border: '1px solid var(--border)' }}>
+      <div onClick={onClick} style={{ position: 'relative', height: 150, borderRadius: 14, overflow: 'hidden', cursor: 'pointer', border: '1px solid var(--border)' }}>
         <img src={goal.image_url} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
         <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, rgba(0,0,0,0.05) 0%, rgba(0,0,0,0.75) 100%)' }} />
         <div style={{ position: 'absolute', top: 10, left: 10 }}><HealthDot level={health} size={10} /></div>
@@ -665,7 +740,7 @@ function GoalCard({ goal, projects, tasks, checkins, notes, onClick }) {
   }
 
   return (
-    <div onClick={onClick} style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 12, padding: 14, marginBottom: 8, cursor: 'pointer' }}>
+    <div onClick={onClick} style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 12, padding: 14, cursor: 'pointer' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1, minWidth: 0 }}>
           <HealthDot level={health} />
@@ -693,7 +768,7 @@ export default function Goals() {
   const [notesByGoal, setNotesByGoal] = useState({})
   const [selected, setSelected] = useState(null)
   const [addModal, setAddModal] = useState(false)
-  const [showArchived, setShowArchived] = useState(false)
+  const [activeTab, setActiveTab] = useState('All')
 
   useEffect(() => { loadAll() }, [])
 
@@ -724,10 +799,17 @@ export default function Goals() {
     return <GoalDetail goal={selected} onBack={() => setSelected(null)} onSaved={() => { loadAll() }} />
   }
 
-  const visibleGoals = goals.filter(g => showArchived ? g.status === 'archived' : g.status !== 'archived')
-  const bySector = {}
-  visibleGoals.forEach(g => { (bySector[g.sector || '__none__'] ||= []).push(g) })
-  const sectorOrder = [...sectors.map(s => s.name), '__none__'].filter(name => bySector[name]?.length)
+  const nonArchived = goals.filter(g => g.status !== 'archived')
+  const archivedGoals = goals.filter(g => g.status === 'archived')
+  const sectorNames = sectors.map(s => s.name).filter(name => nonArchived.some(g => g.sector === name))
+  const hasNoSector = nonArchived.some(g => !g.sector)
+  const tabs = ['All', ...sectorNames, ...(hasNoSector ? ['No sector'] : []), ...(archivedGoals.length ? ['Archived'] : [])]
+
+  const visibleGoals =
+    activeTab === 'All' ? nonArchived
+    : activeTab === 'No sector' ? nonArchived.filter(g => !g.sector)
+    : activeTab === 'Archived' ? archivedGoals
+    : nonArchived.filter(g => g.sector === activeTab)
 
   const sortGoals = (list) => [...list].sort((a, b) => {
     const ha = computeGoalHealth(a, computeGoalProgress(a, projectsByGoal[a.id]||[], tasksByGoal[a.id]||[], checkinsByGoal[a.id]||[]), computeLastActivity(a, tasksByGoal[a.id]||[], checkinsByGoal[a.id]||[], notesByGoal[a.id]||[]), tasksByGoal[a.id]||[])
@@ -737,42 +819,40 @@ export default function Goals() {
 
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24 }}>
-        <div>
-          <div style={{ fontSize: 20, fontWeight: 500 }}>Goals</div>
-          <div style={{ fontSize: 13, color: 'var(--text-dim)', marginTop: 3 }}>Your long-term direction</div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 22 }}>
+        <div style={{ fontSize: 32, lineHeight: 1.15 }}>
+          <div style={{ fontWeight: 400, color: 'var(--text-secondary)' }}>My</div>
+          <div style={{ fontWeight: 800, color: 'var(--text-primary)' }}>goals.</div>
         </div>
-        <div onClick={() => setAddModal(true)} className="action-btn" style={{ background: 'var(--accent-dim)', border: '1px solid var(--accent-border)', color: 'var(--accent-text)' }}>
+        <div onClick={() => setAddModal(true)} style={{ width: 36, height: 36, borderRadius: 10, background: 'var(--accent-dim)', border: '1px solid var(--accent-border)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}>
           <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><line x1="7.5" y1="1" x2="7.5" y2="14" stroke="var(--accent-text)" strokeWidth="1.8" strokeLinecap="round"/><line x1="1" y1="7.5" x2="14" y2="7.5" stroke="var(--accent-text)" strokeWidth="1.8" strokeLinecap="round"/></svg>
-          New goal
         </div>
       </div>
 
-      <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
-        <div onClick={() => setShowArchived(false)} style={{ fontSize: 12, fontWeight: 500, padding: '5px 12px', borderRadius: 20, cursor: 'pointer', background: !showArchived ? 'var(--accent-dim)' : 'var(--bg-card)', border: `1px solid ${!showArchived ? 'var(--accent-border)' : 'var(--border)'}`, color: !showArchived ? 'var(--accent)' : 'var(--text-dim)' }}>Active</div>
-        <div onClick={() => setShowArchived(true)} style={{ fontSize: 12, fontWeight: 500, padding: '5px 12px', borderRadius: 20, cursor: 'pointer', background: showArchived ? 'var(--accent-dim)' : 'var(--bg-card)', border: `1px solid ${showArchived ? 'var(--accent-border)' : 'var(--border)'}`, color: showArchived ? 'var(--accent)' : 'var(--text-dim)' }}>Archived</div>
+      <div style={{ display: 'flex', gap: 18, marginBottom: 22, overflowX: 'auto', paddingBottom: 2 }}>
+        {tabs.map(tab => (
+          <div key={tab} onClick={() => setActiveTab(tab)} style={{ cursor: 'pointer', flexShrink: 0 }}>
+            <div style={{ fontSize: 15, fontWeight: activeTab === tab ? 600 : 400, color: activeTab === tab ? 'var(--text-primary)' : 'var(--text-dim)' }}>{tab}</div>
+            <div style={{ width: 5, height: 5, borderRadius: '50%', background: activeTab === tab ? 'var(--accent)' : 'transparent', margin: '4px auto 0' }} />
+          </div>
+        ))}
       </div>
 
       {visibleGoals.length === 0 && (
         <div onClick={() => setAddModal(true)} style={{ textAlign: 'center', padding: '40px 20px', color: 'var(--text-dim)', fontSize: 14, border: '1px dashed var(--border)', borderRadius: 14, cursor: 'pointer' }}>
-          No goals yet — tap to set your first one
+          {activeTab === 'All' ? 'No goals yet — tap to set your first one' : 'Nothing here yet'}
         </div>
       )}
 
-      {sectorOrder.map(sectorName => (
-        <div key={sectorName} style={{ marginBottom: 26 }}>
-          <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.08em', color: 'var(--text-dim)', textTransform: 'uppercase', marginBottom: 10 }}>
-            {sectorName === '__none__' ? 'No sector' : sectorName}
-          </div>
-          {sortGoals(bySector[sectorName]).map(goal => (
-            <GoalCard key={goal.id} goal={goal}
-              projects={projectsByGoal[goal.id] || []} tasks={tasksByGoal[goal.id] || []}
-              checkins={checkinsByGoal[goal.id] || []} notes={notesByGoal[goal.id] || []}
-              onClick={() => setSelected(goal)}
-            />
-          ))}
-        </div>
-      ))}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+        {sortGoals(visibleGoals).map(goal => (
+          <GoalCard key={goal.id} goal={goal}
+            projects={projectsByGoal[goal.id] || []} tasks={tasksByGoal[goal.id] || []}
+            checkins={checkinsByGoal[goal.id] || []} notes={notesByGoal[goal.id] || []}
+            onClick={() => setSelected(goal)}
+          />
+        ))}
+      </div>
 
       {addModal && <GoalWizard sectors={sectors} onClose={() => setAddModal(false)} onCreated={loadAll} />}
     </div>
