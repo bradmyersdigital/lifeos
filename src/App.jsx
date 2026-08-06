@@ -211,6 +211,20 @@ function Shell() {
   const [navPaths, setNavPaths] = usePersistedPaths('lifeos_nav', DEFAULT_NAV)
   const [order, setOrder] = usePersistedPaths('lifeos_menu_order', DEFAULT_ORDER, { fill: true })
 
+  // The bottom nav is fixed near the viewport bottom. When the keyboard opens and the
+  // webview's effective viewport shrinks, that "bottom" naturally lands right above the
+  // keyboard — exactly where an editing toolbar (e.g. in Notes) also wants to sit. Hiding
+  // the nav whenever a text field or contentEditable is focused removes that collision.
+  const [keyboardActive, setKeyboardActive] = useState(false)
+  useEffect(() => {
+    const isEditable = (el) => el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable)
+    const onFocusIn = (e) => { if (isEditable(e.target)) setKeyboardActive(true) }
+    const onFocusOut = (e) => { if (isEditable(e.target)) setKeyboardActive(false) }
+    document.addEventListener('focusin', onFocusIn)
+    document.addEventListener('focusout', onFocusOut)
+    return () => { document.removeEventListener('focusin', onFocusIn); document.removeEventListener('focusout', onFocusOut) }
+  }, [])
+
   useEffect(() => {
     if (drawerOpen) document.documentElement.style.overflow = 'hidden'
     else document.documentElement.style.overflow = ''
@@ -264,18 +278,19 @@ function Shell() {
         </Routes>
       </div>
 
-      <nav className="bottom-nav">
-        {navItems.map(({ path, label, Icon }) => {
-          const active = activeNav === path
-          return (
-            <div key={path} className={`nav-item${active ? ' active' : ''}`} onClick={() => navigate(path)}>
-              <Icon active={active} />
-              <span>{label}</span>
-            </div>
-          )
-        })}
-      </nav>
-
+      {!keyboardActive && (
+        <nav className="bottom-nav">
+          {navItems.map(({ path, label, Icon }) => {
+            const active = activeNav === path
+            return (
+              <div key={path} className={`nav-item${active ? ' active' : ''}`} onClick={() => navigate(path)}>
+                <Icon active={active} />
+                <span>{label}</span>
+              </div>
+            )
+          })}
+        </nav>
+      )}
 
     </div>
   )
