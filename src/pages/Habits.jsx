@@ -362,11 +362,12 @@ export default function Habits() {
         <div onClick={() => setHabitModal('new')} style={{ display: 'flex', alignItems: 'center', gap: 5, background: 'var(--accent-dim)', border: '1px solid var(--accent-border)', borderRadius: 10, padding: '7px 12px', cursor: 'pointer', fontSize: 13, color: 'var(--accent)', fontWeight: 500 }}>+ Add</div>
       </div>
 
-      {/* View tabs — full width row */}
-      <div style={{ display: 'flex', background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 12, overflow: 'hidden', marginBottom: 16 }}>
+      {/* View tabs */}
+      <div style={{ display: 'flex', gap: 20, marginBottom: 20 }}>
         {[['today','Today'],['calendar','Calendar'],['routines','Routines'],['stats','Stats']].map(([v,label]) => (
-          <div key={v} onClick={() => setView(v)} style={{ flex: 1, textAlign: 'center', padding: '10px 4px', fontSize: 13, fontWeight: 500, cursor: 'pointer', background: view === v ? 'var(--accent-dim)' : 'transparent', color: view === v ? 'var(--accent)' : 'var(--text-muted)', transition: 'all 0.15s' }}>
-            {label}
+          <div key={v} onClick={() => setView(v)} style={{ cursor: 'pointer' }}>
+            <div style={{ fontSize: 14, fontWeight: view === v ? 600 : 400, color: view === v ? 'var(--text-primary)' : 'var(--text-dim)' }}>{label}</div>
+            <div style={{ width: 5, height: 5, borderRadius: '50%', background: view === v ? 'var(--accent)' : 'transparent', margin: '4px auto 0' }} />
           </div>
         ))}
       </div>

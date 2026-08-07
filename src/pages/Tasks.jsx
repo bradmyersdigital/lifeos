@@ -15,8 +15,8 @@ export default function Tasks({ onAddTask, onEditTask }) {
   const [tasks, setTasks] = useState([])
   const [sectors, setSectors] = useState([])
   const [filter, setFilter] = useState('today')
+  const [sectorFilter, setSectorFilter] = useState('All')
   const [search, setSearch] = useState('')
-  const [collapsed, setCollapsed] = useState({})
   const dragItem = useRef(null)
   const dragOver = useRef(null)
   const today = todayLocal()
@@ -37,8 +37,6 @@ export default function Tasks({ onAddTask, onEditTask }) {
     await supabase.from('tasks').update({ completed: updated }).eq('id', task.id)
     setTasks(prev => prev.map(t => t.id === task.id ? { ...t, completed: updated } : t))
   }
-
-  const toggleCollapse = key => setCollapsed(prev => ({ ...prev, [key]: !prev[key] }))
 
   const handleDragStart = idx => { dragItem.current = idx }
   const handleDragEnter = idx => { dragOver.current = idx }
@@ -89,6 +87,12 @@ export default function Tasks({ onAddTask, onEditTask }) {
     tasks: filtered.filter(t => t.sector === s.name),
   }))
 
+  const sectorTabs = ['All', ...sectorNames, ...(unassigned.length ? ['Unassigned'] : [])]
+  const sectorFilteredTasks =
+    sectorFilter === 'All' ? null // handled by the grouped view below
+    : sectorFilter === 'Unassigned' ? unassigned
+    : filtered.filter(t => t.sector === sectorFilter)
+
   const TaskRow = ({ task }) => {
     const urg = URG_STYLE[task.urgency] || URG_STYLE.medium
     const isOverdue = task.start_date < today && !task.completed
@@ -128,13 +132,25 @@ export default function Tasks({ onAddTask, onEditTask }) {
 
       </div>
 
-      <div style={{ display: 'flex', background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 12, overflow: 'hidden', marginBottom: 16 }}>
+      <div style={{ display: 'flex', gap: 20, marginBottom: 18 }}>
         {['all','today','upcoming','overdue','done'].map(f => (
-          <div key={f} onClick={() => setFilter(f)} style={{ flex: 1, textAlign: 'center', padding: '10px 4px', fontSize: 13, fontWeight: 500, cursor: 'pointer', background: filter === f ? 'var(--accent-dim)' : 'transparent', color: filter === f ? 'var(--accent)' : 'var(--text-muted)', transition: 'all 0.15s' }}>
-            {f.charAt(0).toUpperCase() + f.slice(1)}
+          <div key={f} onClick={() => setFilter(f)} style={{ cursor: 'pointer' }}>
+            <div style={{ fontSize: 14, fontWeight: filter === f ? 600 : 400, color: filter === f ? 'var(--text-primary)' : 'var(--text-dim)' }}>{f.charAt(0).toUpperCase() + f.slice(1)}</div>
+            <div style={{ width: 5, height: 5, borderRadius: '50%', background: filter === f ? 'var(--accent)' : 'transparent', margin: '4px auto 0' }} />
           </div>
         ))}
       </div>
+
+      {sectorTabs.length > 1 && (
+        <div style={{ display: 'flex', gap: 18, marginBottom: 20, overflowX: 'auto', paddingBottom: 4, WebkitOverflowScrolling: 'touch' }}>
+          {sectorTabs.map(s => (
+            <div key={s} onClick={() => setSectorFilter(s)} style={{ cursor: 'pointer', flexShrink: 0 }}>
+              <div style={{ fontSize: 14, fontWeight: sectorFilter === s ? 600 : 400, color: sectorFilter === s ? 'var(--text-primary)' : 'var(--text-dim)', whiteSpace: 'nowrap' }}>{s}</div>
+              <div style={{ width: 5, height: 5, borderRadius: '50%', background: sectorFilter === s ? 'var(--accent)' : 'transparent', margin: '4px auto 0' }} />
+            </div>
+          ))}
+        </div>
+      )}
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 8, marginBottom: 20 }}>
         {[['Total', counts.total, 'var(--text-primary)'],['Today', counts.today, 'var(--text-primary)'],['Overdue', counts.overdue, 'var(--danger)'],['Done', counts.done, 'var(--success)']].map(([label, val, color]) => (
@@ -152,45 +168,46 @@ export default function Tasks({ onAddTask, onEditTask }) {
         </div>
       )}
 
-      {sectorGroups.map(({ key, label, icon, color, tasks: st }, idx) => {
-        if (st.length === 0 && filter !== 'all') return null
-        return (
-          <div key={key} style={{ marginBottom: 20 }}>
-            <div
-              draggable
-              onDragStart={() => handleDragStart(idx)}
-              onDragEnter={() => handleDragEnter(idx)}
-              onDragEnd={handleDragEnd}
-              onDragOver={e => e.preventDefault()}
-              style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8, cursor: 'grab', userSelect: 'none' }}
-              onClick={() => toggleCollapse(key)}
-            >
-              <div style={{ width: 20, display: "flex", justifyContent: "center" }}><IconOrEmoji value={icon} size={18} /></div>
-              <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)', flex: 1 }}>{label}</div>
-              <div style={{ fontFamily: "'DM Mono'", fontSize: 11, color: 'var(--text-dim)' }}>{st.length} tasks</div>
-              <div style={{ color: 'var(--text-dim)', fontSize: 13, transform: collapsed[key] ? 'rotate(-90deg)' : 'none', transition: 'transform 0.2s' }}>›</div>
-            </div>
-            {!collapsed[key] && (
-              st.length === 0
+      {sectorFilter !== 'All' ? (
+        sectorFilteredTasks.length === 0
+          ? <div style={{ padding: 14, textAlign: 'center', fontSize: 13, color: 'var(--border-hover)', border: '1px dashed var(--border)', borderRadius: 12 }}>No tasks here</div>
+          : sectorFilteredTasks.map(task => <TaskRow key={task.id} task={task} />)
+      ) : (<>
+        {sectorGroups.map(({ key, label, icon, color, tasks: st }, idx) => {
+          if (st.length === 0 && filter !== 'all') return null
+          return (
+            <div key={key} style={{ marginBottom: 20 }}>
+              <div
+                draggable
+                onDragStart={() => handleDragStart(idx)}
+                onDragEnter={() => handleDragEnter(idx)}
+                onDragEnd={handleDragEnd}
+                onDragOver={e => e.preventDefault()}
+                style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8, cursor: 'grab', userSelect: 'none' }}
+              >
+                <div style={{ width: 20, display: "flex", justifyContent: "center" }}><IconOrEmoji value={icon} size={18} /></div>
+                <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)', flex: 1 }}>{label}</div>
+                <div style={{ fontFamily: "'DM Mono'", fontSize: 11, color: 'var(--text-dim)' }}>{st.length} tasks</div>
+              </div>
+              {st.length === 0
                 ? <div style={{ padding: 14, textAlign: 'center', fontSize: 13, color: 'var(--border-hover)', border: '1px dashed var(--border)', borderRadius: 12 }}>No tasks — add one above</div>
-                : st.map(task => <TaskRow key={task.id} task={task} />)
-            )}
-          </div>
-        )
-      })}
+                : st.map(task => <TaskRow key={task.id} task={task} />)}
+            </div>
+          )
+        })}
 
-      {/* Unassigned */}
-      {unassigned.length > 0 && (
-        <div style={{ marginBottom: 20 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8, cursor: 'pointer' }} onClick={() => toggleCollapse('__unassigned')}>
-            <div style={{ fontSize: 16 }}>📌</div>
-            <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-muted)', flex: 1 }}>Unassigned</div>
-            <div style={{ fontFamily: "'DM Mono'", fontSize: 11, color: 'var(--text-dim)' }}>{unassigned.length} tasks</div>
-            <div style={{ color: 'var(--text-dim)', fontSize: 13, transform: collapsed['__unassigned'] ? 'rotate(-90deg)' : 'none', transition: 'transform 0.2s' }}>›</div>
+        {/* Unassigned */}
+        {unassigned.length > 0 && (
+          <div style={{ marginBottom: 20 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+              <div style={{ fontSize: 16 }}>📌</div>
+              <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-muted)', flex: 1 }}>Unassigned</div>
+              <div style={{ fontFamily: "'DM Mono'", fontSize: 11, color: 'var(--text-dim)' }}>{unassigned.length} tasks</div>
+            </div>
+            {unassigned.map(task => <TaskRow key={task.id} task={task} />)}
           </div>
-          {!collapsed['__unassigned'] && unassigned.map(task => <TaskRow key={task.id} task={task} />)}
-        </div>
-      )}
+        )}
+      </>)}
     </div>
   )
 }

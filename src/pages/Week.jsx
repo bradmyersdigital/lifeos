@@ -118,6 +118,8 @@ export default function Week({ onAddTask, onEditTask }) {
   // Swipe to page. Attached to the calendar surface only — on the root it
   // fired anywhere on the page, including the filters and header.
   const touchStartY = useRef(null)
+  const [flipDir, setFlipDir] = useState(null)
+  const [flipNonce, setFlipNonce] = useState(0)
   const handleTouchStart = (e) => {
     touchStartX.current = e.touches[0].clientX
     touchStartY.current = e.touches[0].clientY
@@ -129,7 +131,7 @@ export default function Week({ onAddTask, onEditTask }) {
     // must be clearly horizontal, or a diagonal scroll flips the month
     if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 1.6) {
       if (view === 'day') setDayOffset(o => o + (dx < 0 ? 1 : -1))
-      else if (view === 'week') setWeekOffset(o => o + (dx < 0 ? 1 : -1))
+      else if (view === 'week') { setWeekOffset(o => o + (dx < 0 ? 1 : -1)); setFlipDir(dx < 0 ? 'next' : 'prev'); setFlipNonce(n => n + 1) }
       else setMonthOffset(o => o + (dx < 0 ? 1 : -1))
     }
     touchStartX.current = null
@@ -246,12 +248,12 @@ export default function Week({ onAddTask, onEditTask }) {
 
       {/* ── DAY + WEEK VIEW (same row renderer, different date list) ── */}
       {(view === 'week' || view === 'day') && (
-        <div onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
+        <div key={view === 'week' ? flipNonce : 'static'} className={view === 'week' ? `week-flip-wrap ${flipDir === 'next' ? 'week-flip-next' : flipDir === 'prev' ? 'week-flip-prev' : ''}` : ''} onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
           {(view === 'day' ? [dayDate] : weekDates).map((date, i) => {
             const isPast = date < todayStr
             const isToday = date === todayStr
             const d = new Date(date + 'T00:00:00')
-            const items = allItemsForDay(date)
+            const items = allItemsForDay(date).filter(it => !(view === 'week' && it._type !== 'event' && it.completed))
             return (
               <div key={date} style={{ marginBottom: 16 }}>
                 {/* Day header */}

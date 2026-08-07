@@ -870,14 +870,11 @@ export default function Finance() {
       </div>
 
       {/* Tabs */}
-      <div style={{ display: 'flex', gap: 6, marginBottom: 20, overflowX: 'auto', WebkitOverflowScrolling: 'touch', paddingBottom: 2 }}>
+      <div style={{ display: 'flex', gap: 20, marginBottom: 20 }}>
         {TABS.map(([id, label]) => (
-          <div key={id} onClick={() => setTab(id)}
-            style={{ flexShrink: 0, padding: '8px 16px', borderRadius: 20, fontSize: 13.5, fontWeight: 500, cursor: 'pointer',
-              background: tab === id ? 'var(--accent-dim)' : 'var(--bg-card)',
-              border: `1px solid ${tab === id ? 'var(--accent-border)' : 'var(--border)'}`,
-              color: tab === id ? 'var(--accent)' : 'var(--text-muted)' }}>
-            {label}
+          <div key={id} onClick={() => setTab(id)} style={{ cursor: 'pointer' }}>
+            <div style={{ fontSize: 14, fontWeight: tab === id ? 600 : 400, color: tab === id ? 'var(--text-primary)' : 'var(--text-dim)' }}>{label}</div>
+            <div style={{ width: 5, height: 5, borderRadius: '50%', background: tab === id ? 'var(--accent)' : 'transparent', margin: '4px auto 0' }} />
           </div>
         ))}
       </div>
