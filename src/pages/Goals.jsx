@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { fmtDate, todayLocal } from '../utils'
 import TaskModal from '../components/TaskModal'
@@ -258,7 +258,7 @@ function GoalModal({ goal, sectors, onClose, onSaved }) {
 // ── Detail ────────────────────────────────────────────────────────────────────────────
 // ── Immersive creation wizard — one full-screen step at a time, not a form dump.
 // A goal is a moment worth walking through, not a modal to fill out. ────────────────────
-const WIZARD_STEPS = ['title', 'why', 'sector', 'image', 'connect', 'due']
+const WIZARD_STEPS = ['title', 'why', 'sector', 'image', 'connect', 'habits', 'due']
 
 function WizardProgress({ step }) {
   const idx = WIZARD_STEPS.indexOf(step)
@@ -461,8 +461,8 @@ function GoalWizard({ sectors, onClose, onCreated }) {
 
         {step === 'connect' && (
           <>
-            <div style={{ fontSize: 26, fontWeight: 700, marginBottom: 10 }}>Connect your systems</div>
-            <div style={{ fontSize: 15, color: 'var(--text-muted)', lineHeight: 1.5, marginBottom: 28 }}>Already have work for this? Link it. Want a habit to carry you there? Build one now — all optional.</div>
+            <div style={{ fontSize: 26, fontWeight: 700, marginBottom: 10 }}>Link existing work</div>
+            <div style={{ fontSize: 15, color: 'var(--text-muted)', lineHeight: 1.5, marginBottom: 28 }}>Already have a project or task for this? Link it now — optional, you can always do this later.</div>
 
             {linkProjects.length > 0 && (
               <div style={{ marginBottom: 22 }}>
@@ -497,54 +497,61 @@ function GoalWizard({ sectors, onClose, onCreated }) {
               </div>
             )}
 
-            {/* Habit stacking — implementation intentions, tied to real habits not a shadow list */}
-            <div style={{ marginBottom: 10 }}>
-              <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.08em', color: 'var(--text-dim)', textTransform: 'uppercase', marginBottom: 10 }}>Build a supporting habit</div>
-              {linkHabits.length > 0 && (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 10 }}>
-                  {linkHabits.map(h => (
-                    <div key={h.id} onClick={() => toggleHabitLink(h.id)} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 14px', borderRadius: 12, cursor: 'pointer', background: selectedHabitIds.includes(h.id) ? 'var(--accent-dim)' : 'var(--bg-card)', border: `1px solid ${selectedHabitIds.includes(h.id) ? 'var(--accent-border)' : 'var(--border)'}` }}>
-                      <div style={{ width: 18, height: 18, borderRadius: 5, border: `1.5px solid ${selectedHabitIds.includes(h.id) ? 'var(--accent)' : 'var(--border-hover)'}`, background: selectedHabitIds.includes(h.id) ? 'var(--accent)' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                        {selectedHabitIds.includes(h.id) && <svg width="10" height="10" viewBox="0 0 10 10"><polyline points="1,5 4,8 9,1.5" stroke="white" strokeWidth="1.6" fill="none" strokeLinecap="round" strokeLinejoin="round"/></svg>}
-                      </div>
-                      <div style={{ fontSize: 16 }}>{h.icon}</div>
-                      <div style={{ fontSize: 14, color: 'var(--text-secondary)' }}>{h.name}</div>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {!showNewHabit ? (
-                <div onClick={() => setShowNewHabit(true)} style={{ padding: '12px 14px', borderRadius: 12, border: '1px dashed var(--border)', textAlign: 'center', fontSize: 13, color: 'var(--accent)', cursor: 'pointer' }}>+ Create a new habit for this goal</div>
-              ) : (
-                <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 14, padding: 14 }}>
-                  <div style={{ fontSize: 12, color: 'var(--text-dim)', marginBottom: 10, lineHeight: 1.5 }}>Implementation intentions work better than vague plans — pair the new habit to something you already do.</div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8, flexWrap: 'wrap' }}>
-                    <div onClick={() => setNewHabitTiming('After')} style={{ padding: '6px 12px', borderRadius: 20, fontSize: 12, fontWeight: 500, cursor: 'pointer', background: newHabitTiming === 'After' ? 'var(--accent-dim)' : 'var(--bg-input)', border: `1px solid ${newHabitTiming === 'After' ? 'var(--accent-border)' : 'var(--border)'}`, color: newHabitTiming === 'After' ? 'var(--accent)' : 'var(--text-dim)' }}>After</div>
-                    <div onClick={() => setNewHabitTiming('Before')} style={{ padding: '6px 12px', borderRadius: 20, fontSize: 12, fontWeight: 500, cursor: 'pointer', background: newHabitTiming === 'Before' ? 'var(--accent-dim)' : 'var(--bg-input)', border: `1px solid ${newHabitTiming === 'Before' ? 'var(--accent-border)' : 'var(--border)'}`, color: newHabitTiming === 'Before' ? 'var(--accent)' : 'var(--text-dim)' }}>Before</div>
-                    <input type="text" value={newHabitAnchor} onChange={e => setNewHabitAnchor(e.target.value)} placeholder="I brew my coffee…"
-                      style={{ flex: 1, minWidth: 120, background: 'var(--bg-input)', border: '1px solid var(--border)', borderRadius: 20, padding: '6px 12px', color: 'var(--text-primary)', fontSize: 12, fontFamily: "'DM Sans'" }} />
-                  </div>
-                  <div style={{ fontSize: 12, color: 'var(--text-dim)', marginBottom: 8 }}>I will…</div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
-                    <div style={{ display: 'flex', gap: 4 }}>
-                      {HABIT_ICONS.slice(0,5).map(ic => (
-                        <div key={ic} onClick={() => setNewHabitIcon(ic)} style={{ width: 30, height: 30, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, cursor: 'pointer', background: newHabitIcon === ic ? 'var(--accent-dim)' : 'var(--bg-input)', border: `1px solid ${newHabitIcon === ic ? 'var(--accent-border)' : 'var(--border)'}` }}>{ic}</div>
-                      ))}
-                    </div>
-                    <input type="text" value={newHabitName} onChange={e => setNewHabitName(e.target.value)} placeholder="meditate for one minute"
-                      style={{ flex: 1, background: 'var(--bg-input)', border: '1px solid var(--border)', borderRadius: 10, padding: '8px 12px', color: 'var(--text-primary)', fontSize: 13, fontFamily: "'DM Sans'" }} />
-                  </div>
-                  {newHabitName.trim() && (
-                    <div style={{ fontSize: 12, color: 'var(--accent)', fontStyle: 'italic', lineHeight: 1.5 }}>
-                      "{newHabitTiming} {newHabitAnchor.trim() || '…'}, I will {newHabitName.trim()}"
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-
+            {linkProjects.length === 0 && linkTasks.length === 0 && (
+              <div style={{ textAlign: 'center', padding: '20px', color: 'var(--text-dim)', fontSize: 13, border: '1px dashed var(--border)', borderRadius: 12 }}>Nothing unlinked to attach right now — you can link things later from the goal.</div>
+            )}
             <div onClick={goNext} style={{ textAlign: 'center', marginTop: 20, fontSize: 13, color: 'var(--text-dim)', cursor: 'pointer' }}>Continue</div>
+          </>
+        )}
+
+        {step === 'habits' && (
+          <>
+            <div style={{ fontSize: 26, fontWeight: 700, marginBottom: 10 }}>Build a supporting habit</div>
+            <div style={{ fontSize: 15, color: 'var(--text-muted)', lineHeight: 1.5, marginBottom: 28 }}>Goals tell you what you want. Habits are the system that gets you there — optional, but worth it.</div>
+
+            {linkHabits.length > 0 && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 16 }}>
+                {linkHabits.map(h => (
+                  <div key={h.id} onClick={() => toggleHabitLink(h.id)} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 14px', borderRadius: 12, cursor: 'pointer', background: selectedHabitIds.includes(h.id) ? 'var(--accent-dim)' : 'var(--bg-card)', border: `1px solid ${selectedHabitIds.includes(h.id) ? 'var(--accent-border)' : 'var(--border)'}` }}>
+                    <div style={{ width: 18, height: 18, borderRadius: 5, border: `1.5px solid ${selectedHabitIds.includes(h.id) ? 'var(--accent)' : 'var(--border-hover)'}`, background: selectedHabitIds.includes(h.id) ? 'var(--accent)' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                      {selectedHabitIds.includes(h.id) && <svg width="10" height="10" viewBox="0 0 10 10"><polyline points="1,5 4,8 9,1.5" stroke="white" strokeWidth="1.6" fill="none" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+                    </div>
+                    <div style={{ fontSize: 16 }}>{h.icon}</div>
+                    <div style={{ fontSize: 14, color: 'var(--text-secondary)' }}>{h.name}</div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {!showNewHabit ? (
+              <div onClick={() => setShowNewHabit(true)} style={{ padding: '14px', borderRadius: 14, border: '1px dashed var(--border)', textAlign: 'center', fontSize: 14, color: 'var(--accent)', cursor: 'pointer' }}>+ Create a new habit for this goal</div>
+            ) : (
+              <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 14, padding: 16 }}>
+                <div style={{ fontSize: 13, color: 'var(--text-dim)', marginBottom: 14, lineHeight: 1.5 }}>Implementation intentions work better than vague plans — pair the new habit to something you already do.</div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10, flexWrap: 'wrap' }}>
+                  <div onClick={() => setNewHabitTiming('After')} style={{ padding: '7px 14px', borderRadius: 20, fontSize: 13, fontWeight: 500, cursor: 'pointer', background: newHabitTiming === 'After' ? 'var(--accent-dim)' : 'var(--bg-input)', border: `1px solid ${newHabitTiming === 'After' ? 'var(--accent-border)' : 'var(--border)'}`, color: newHabitTiming === 'After' ? 'var(--accent)' : 'var(--text-dim)' }}>After</div>
+                  <div onClick={() => setNewHabitTiming('Before')} style={{ padding: '7px 14px', borderRadius: 20, fontSize: 13, fontWeight: 500, cursor: 'pointer', background: newHabitTiming === 'Before' ? 'var(--accent-dim)' : 'var(--bg-input)', border: `1px solid ${newHabitTiming === 'Before' ? 'var(--accent-border)' : 'var(--border)'}`, color: newHabitTiming === 'Before' ? 'var(--accent)' : 'var(--text-dim)' }}>Before</div>
+                  <input type="text" value={newHabitAnchor} onChange={e => setNewHabitAnchor(e.target.value)} placeholder="I brew my coffee…"
+                    style={{ flex: 1, minWidth: 120, background: 'var(--bg-input)', border: '1px solid var(--border)', borderRadius: 20, padding: '7px 14px', color: 'var(--text-primary)', fontSize: 13, fontFamily: "'DM Sans'" }} />
+                </div>
+                <div style={{ fontSize: 13, color: 'var(--text-dim)', marginBottom: 10 }}>I will…</div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
+                  <div style={{ display: 'flex', gap: 5 }}>
+                    {HABIT_ICONS.slice(0,5).map(ic => (
+                      <div key={ic} onClick={() => setNewHabitIcon(ic)} style={{ width: 34, height: 34, borderRadius: 9, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 17, cursor: 'pointer', background: newHabitIcon === ic ? 'var(--accent-dim)' : 'var(--bg-input)', border: `1px solid ${newHabitIcon === ic ? 'var(--accent-border)' : 'var(--border)'}` }}>{ic}</div>
+                    ))}
+                  </div>
+                  <input type="text" value={newHabitName} onChange={e => setNewHabitName(e.target.value)} placeholder="meditate for one minute"
+                    style={{ flex: 1, background: 'var(--bg-input)', border: '1px solid var(--border)', borderRadius: 10, padding: '9px 12px', color: 'var(--text-primary)', fontSize: 14, fontFamily: "'DM Sans'" }} />
+                </div>
+                {newHabitName.trim() && (
+                  <div style={{ fontSize: 13, color: 'var(--accent)', fontStyle: 'italic', lineHeight: 1.5 }}>
+                    "{newHabitTiming} {newHabitAnchor.trim() || '…'}, I will {newHabitName.trim()}"
+                  </div>
+                )}
+              </div>
+            )}
+            <div onClick={goNext} style={{ textAlign: 'center', marginTop: 20, fontSize: 13, color: 'var(--text-dim)', cursor: 'pointer' }}>{showNewHabit || selectedHabitIds.length ? 'Continue' : 'Skip for now'}</div>
           </>
         )}
 
@@ -572,20 +579,30 @@ function GoalDetail({ goal, onBack, onSaved }) {
   const [notes, setNotes] = useState([])
   const [allTasks, setAllTasks] = useState([])
   const [allHabits, setAllHabits] = useState([])
+  const [allProjects, setAllProjects] = useState([])
+  const [allNotes, setAllNotes] = useState([])
   const [editing, setEditing] = useState(false)
   const [addTaskModal, setAddTaskModal] = useState(false)
   const [linkingTask, setLinkingTask] = useState(false)
   const [linkingHabit, setLinkingHabit] = useState(false)
+  const [linkingProject, setLinkingProject] = useState(false)
+  const [linkingNote, setLinkingNote] = useState(false)
   const [checkinValue, setCheckinValue] = useState('')
   const [sectors, setSectors] = useState([])
   const [bodyTab, setBodyTab] = useState('tasks') // 'tasks' | 'projects' | 'habits' | 'notes'
   const [taskTab, setTaskTab] = useState('active') // 'active' | 'completed'
+  const today = todayLocal()
 
   const load = () => {
-    supabase.from('projects').select('*, tasks(*)').eq('goal_id', goal.id).then(({ data }) => setProjects(data || []))
+    supabase.from('projects').select('*, tasks(*)').eq('goal_id', goal.id).then(({ data, error }) => {
+      if (error) console.error('Goal detail: failed to load linked projects for', goal.id, error)
+      setProjects(data || [])
+    })
+    supabase.from('projects').select('id, name').is('goal_id', null).eq('status', 'active').order('name').then(({ data, error }) => setAllProjects(error ? [] : (data || [])))
     supabase.from('tasks').select('*').eq('goal_id', goal.id).then(({ data }) => setTasks(data || []))
     supabase.from('tasks').select('*').is('goal_id', null).eq('completed', false).order('start_date').limit(30).then(({ data }) => setAllTasks(data || []))
     supabase.from('notes').select('id, title, updated_at').eq('goal_id', goal.id).then(({ data }) => setNotes(data || []))
+    supabase.from('notes').select('id, title, updated_at').is('goal_id', null).order('updated_at', { ascending: false }).limit(30).then(({ data, error }) => setAllNotes(error ? [] : (data || [])))
     supabase.from('habits').select('*').eq('goal_id', goal.id).then(({ data, error }) => setHabits(error ? [] : (data || [])))
     supabase.from('habits').select('*').is('goal_id', null).order('sort_order').then(({ data, error }) => setAllHabits(error ? [] : (data || [])))
     supabase.from('goal_checkins').select('*').eq('goal_id', goal.id).order('logged_at', { ascending: false }).then(({ data, error }) => setCheckins(error ? [] : (data || [])))
@@ -598,6 +615,13 @@ function GoalDetail({ goal, onBack, onSaved }) {
   const health = computeGoalHealth(goal, progress, lastActivity, tasks)
   const usesNumeric = goal.target_value != null && goal.start_value != null
 
+  // Opens a task for editing and comes back to this exact goal afterward
+  const onEditTask = (task) => navigate(`/task/${task.id}`, { state: { task, from: `/goals?open=${goal.id}` } })
+  const toggleTask = async (task) => {
+    const updated = !task.completed
+    await supabase.from('tasks').update({ completed: updated }).eq('id', task.id)
+    setTasks(prev => prev.map(t => t.id === task.id ? { ...t, completed: updated } : t))
+  }
   const linkTask = async (taskId) => {
     await supabase.from('tasks').update({ goal_id: goal.id }).eq('id', taskId)
     load(); setLinkingTask(false)
@@ -605,6 +629,19 @@ function GoalDetail({ goal, onBack, onSaved }) {
   const unlinkTask = async (taskId) => {
     await supabase.from('tasks').update({ goal_id: null }).eq('id', taskId)
     load()
+  }
+  const linkProject = async (projectId) => {
+    const { error } = await supabase.from('projects').update({ goal_id: goal.id }).eq('id', projectId)
+    if (error) { console.error('Failed to link project:', error); alert('Could not link that project: ' + error.message) }
+    load(); setLinkingProject(false)
+  }
+  const unlinkProject = async (projectId) => {
+    await supabase.from('projects').update({ goal_id: null }).eq('id', projectId)
+    load()
+  }
+  const linkNote = async (noteId) => {
+    await supabase.from('notes').update({ goal_id: goal.id }).eq('id', noteId)
+    load(); setLinkingNote(false)
   }
   const linkHabit = async (habitId) => {
     await supabase.from('habits').update({ goal_id: goal.id }).eq('id', habitId)
@@ -765,14 +802,17 @@ function GoalDetail({ goal, onBack, onSaved }) {
           return (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
               {shown.map(task => {
-                const isOverdue = task.start_date && task.start_date < todayLocal() && !task.completed
+                const isOverdue = task.start_date && task.start_date < today && !task.completed
                 return (
-                  <div key={task.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '11px 14px', background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 12, opacity: task.completed ? 0.4 : 1 }}>
+                  <div key={task.id} onClick={() => onEditTask(task)} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '11px 14px', background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 12, opacity: task.completed ? 0.4 : 1, cursor: 'pointer' }}>
+                    <div onClick={e => { e.stopPropagation(); toggleTask(task) }} style={{ width: 20, height: 20, borderRadius: '50%', border: `1.5px solid ${task.completed ? 'var(--accent)' : 'var(--border-hover)'}`, background: task.completed ? 'var(--accent)' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                      {task.completed && <svg width="9" height="9" viewBox="0 0 9 9"><polyline points="1,4.5 3.5,7 8,2" stroke="white" strokeWidth="1.5" fill="none" strokeLinecap="round"/></svg>}
+                    </div>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ fontSize: 14, color: task.completed ? 'var(--text-dim)' : 'var(--text-secondary)', textDecoration: task.completed ? 'line-through' : 'none' }}>{task.name}</div>
                       {task.start_date && <div style={{ fontSize: 11, color: isOverdue ? 'var(--danger)' : 'var(--text-dim)', fontFamily: "'DM Mono'", marginTop: 2 }}>{fmtDate(task.start_date)}</div>}
                     </div>
-                    <div onClick={() => unlinkTask(task.id)} style={{ fontSize: 11, color: 'var(--text-dim)', cursor: 'pointer', padding: '3px 8px', background: 'var(--border)', borderRadius: 6, flexShrink: 0 }}>unlink</div>
+                    <div onClick={e => { e.stopPropagation(); unlinkTask(task.id) }} style={{ fontSize: 11, color: 'var(--text-dim)', cursor: 'pointer', padding: '3px 8px', background: 'var(--border)', borderRadius: 6, flexShrink: 0 }}>unlink</div>
                   </div>
                 )
               })}
@@ -782,15 +822,29 @@ function GoalDetail({ goal, onBack, onSaved }) {
       </>)}
 
       {bodyTab === 'projects' && (<>
-        <div className="section-label" style={{ margin: '0 0 10px' }}>Linked projects</div>
-        {projects.length === 0 && <div style={{ textAlign: 'center', padding: '20px', color: 'var(--text-dim)', fontSize: 13, border: '1px dashed var(--border)', borderRadius: 12 }}>No projects linked yet</div>}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+          <div className="section-label" style={{ margin: 0 }}>Linked projects</div>
+          <div onClick={() => setLinkingProject(!linkingProject)} style={{ fontSize: 12, color: 'var(--text-dim)', cursor: 'pointer', padding: '4px 10px', background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 8 }}>Link existing</div>
+        </div>
+        {linkingProject && (
+          <div style={{ background: 'var(--bg-input)', border: '1px solid var(--border)', borderRadius: 12, padding: 12, marginBottom: 14 }}>
+            {allProjects.length === 0 && <div style={{ fontSize: 12, color: 'var(--text-dim)' }}>No unlinked projects available</div>}
+            {allProjects.map(p => (
+              <div key={p.id} onClick={() => linkProject(p.id)} style={{ padding: '8px 10px', borderRadius: 9, cursor: 'pointer', fontSize: 13, color: 'var(--text-secondary)', marginBottom: 4, background: 'var(--bg-card)', border: '1px solid var(--border)' }}>{p.name}</div>
+            ))}
+          </div>
+        )}
+        {projects.length === 0 && !linkingProject && <div style={{ textAlign: 'center', padding: '20px', color: 'var(--text-dim)', fontSize: 13, border: '1px dashed var(--border)', borderRadius: 12 }}>No projects linked yet</div>}
         {projects.map(p => (
-          <div key={p.id} onClick={() => navigate(`/projects?open=${p.id}`)} style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 12, padding: 14, marginBottom: 6, cursor: 'pointer' }}>
+          <div key={p.id} style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 12, padding: 14, marginBottom: 6 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-              <div style={{ fontSize: 14, color: 'var(--text-secondary)' }}>{p.name}</div>
-              <div style={{ fontFamily: "'DM Mono'", fontSize: 12, color: 'var(--text-dim)' }}>{computeProjectPct(p)}%</div>
+              <div onClick={() => navigate(`/projects?open=${p.id}`)} style={{ fontSize: 14, color: 'var(--text-secondary)', cursor: 'pointer', flex: 1 }}>{p.name}</div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <div style={{ fontFamily: "'DM Mono'", fontSize: 12, color: 'var(--text-dim)' }}>{computeProjectPct(p)}%</div>
+                <div onClick={() => unlinkProject(p.id)} style={{ fontSize: 11, color: 'var(--text-dim)', cursor: 'pointer', padding: '3px 8px', background: 'var(--border)', borderRadius: 6 }}>unlink</div>
+              </div>
             </div>
-            <div className="prog-bar"><div className="prog-fill" style={{ width: computeProjectPct(p) + '%' }} /></div>
+            <div className="prog-bar" onClick={() => navigate(`/projects?open=${p.id}`)} style={{ cursor: 'pointer' }}><div className="prog-fill" style={{ width: computeProjectPct(p) + '%' }} /></div>
           </div>
         ))}
       </>)}
@@ -826,10 +880,24 @@ function GoalDetail({ goal, onBack, onSaved }) {
       </>)}
 
       {bodyTab === 'notes' && (<>
-        <div className="section-label" style={{ margin: '0 0 10px' }}>Notes</div>
-        {notes.length === 0 && <div style={{ textAlign: 'center', padding: '20px', color: 'var(--text-dim)', fontSize: 13, border: '1px dashed var(--border)', borderRadius: 12 }}>No notes linked yet</div>}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+          <div className="section-label" style={{ margin: 0 }}>Notes</div>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <div onClick={() => navigate('/notes', { state: { newNoteGoalId: goal.id, from: `/goals?open=${goal.id}` } })} style={{ fontSize: 12, color: 'var(--accent)', cursor: 'pointer', padding: '4px 10px', background: 'var(--accent-dim)', border: '1px solid var(--accent-border)', borderRadius: 8 }}>+ Add note</div>
+            <div onClick={() => setLinkingNote(!linkingNote)} style={{ fontSize: 12, color: 'var(--text-dim)', cursor: 'pointer', padding: '4px 10px', background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 8 }}>Link existing</div>
+          </div>
+        </div>
+        {linkingNote && (
+          <div style={{ background: 'var(--bg-input)', border: '1px solid var(--border)', borderRadius: 12, padding: 12, marginBottom: 14 }}>
+            {allNotes.length === 0 && <div style={{ fontSize: 12, color: 'var(--text-dim)' }}>No unlinked notes available</div>}
+            {allNotes.map(n => (
+              <div key={n.id} onClick={() => linkNote(n.id)} style={{ padding: '8px 10px', borderRadius: 9, cursor: 'pointer', fontSize: 13, color: 'var(--text-secondary)', marginBottom: 4, background: 'var(--bg-card)', border: '1px solid var(--border)' }}>{n.title || 'Untitled'}</div>
+            ))}
+          </div>
+        )}
+        {notes.length === 0 && !linkingNote && <div style={{ textAlign: 'center', padding: '20px', color: 'var(--text-dim)', fontSize: 13, border: '1px dashed var(--border)', borderRadius: 12 }}>No notes linked yet</div>}
         {notes.map(n => (
-          <div key={n.id} onClick={() => navigate('/notes', { state: { openNoteId: n.id, from: '/goals' } })} style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 12, padding: 14, marginBottom: 6, cursor: 'pointer' }}>
+          <div key={n.id} onClick={() => navigate('/notes', { state: { openNoteId: n.id, from: `/goals?open=${goal.id}` } })} style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 12, padding: 14, marginBottom: 6, cursor: 'pointer' }}>
             <div style={{ fontSize: 14, color: 'var(--text-secondary)' }}>{n.title || 'Untitled'}</div>
             <div style={{ fontSize: 11, color: 'var(--text-dim)', fontFamily: "'DM Mono'", marginTop: 4 }}>{fmtDate(n.updated_at?.substring(0,10))}</div>
           </div>
@@ -901,8 +969,17 @@ export default function Goals() {
   const [selected, setSelected] = useState(null)
   const [addModal, setAddModal] = useState(false)
   const [activeTab, setActiveTab] = useState('All')
+  const [searchParams, setSearchParams] = useSearchParams()
 
   useEffect(() => { loadAll() }, [])
+
+  useEffect(() => {
+    const openId = searchParams.get('open')
+    if (openId && goals.length) {
+      const match = goals.find(g => String(g.id) === String(openId))
+      if (match) { setSelected(match); setSearchParams({}, { replace: true }) }
+    }
+  }, [searchParams, goals])
 
   const groupByGoal = (rows) => (rows || []).reduce((acc, row) => {
     if (!row.goal_id) return acc
@@ -911,11 +988,15 @@ export default function Goals() {
   }, {})
 
   const loadAll = async () => {
-    const { data: g } = await supabase.from('goals').select('*').order('created_at')
+    const { data: g, error: gErr } = await supabase.from('goals').select('*').order('created_at')
     const { data: s } = await supabase.from('sectors').select('*').order('sort_order').order('name')
-    const { data: p } = await supabase.from('projects').select('*, tasks(*)').not('goal_id', 'is', null)
-    const { data: t } = await supabase.from('tasks').select('*').not('goal_id', 'is', null)
-    const { data: n } = await supabase.from('notes').select('id, goal_id, updated_at').not('goal_id', 'is', null)
+    const { data: p, error: pErr } = await supabase.from('projects').select('*, tasks(*)').not('goal_id', 'is', null)
+    const { data: t, error: tErr } = await supabase.from('tasks').select('*').not('goal_id', 'is', null)
+    const { data: n, error: nErr } = await supabase.from('notes').select('id, goal_id, updated_at').not('goal_id', 'is', null)
+    if (gErr) console.error('Goals: failed to load goals', gErr)
+    if (pErr) console.error('Goals: failed to load linked projects', pErr)
+    if (tErr) console.error('Goals: failed to load linked tasks', tErr)
+    if (nErr) console.error('Goals: failed to load linked notes', nErr)
     let c = []
     try { const r = await supabase.from('goal_checkins').select('*').order('logged_at', { ascending: false }); c = r.data || [] } catch { /* migration not run yet */ }
 
