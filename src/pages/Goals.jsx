@@ -535,14 +535,16 @@ function GoalWizard({ sectors, onClose, onCreated }) {
                     style={{ flex: 1, minWidth: 120, background: 'var(--bg-input)', border: '1px solid var(--border)', borderRadius: 20, padding: '7px 14px', color: 'var(--text-primary)', fontSize: 13, fontFamily: "'DM Sans'" }} />
                 </div>
                 <div style={{ fontSize: 13, color: 'var(--text-dim)', marginBottom: 10 }}>I will…</div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
-                  <div style={{ display: 'flex', gap: 5 }}>
-                    {HABIT_ICONS.slice(0,5).map(ic => (
-                      <div key={ic} onClick={() => setNewHabitIcon(ic)} style={{ width: 34, height: 34, borderRadius: 9, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 17, cursor: 'pointer', background: newHabitIcon === ic ? 'var(--accent-dim)' : 'var(--bg-input)', border: `1px solid ${newHabitIcon === ic ? 'var(--accent-border)' : 'var(--border)'}` }}>{ic}</div>
-                    ))}
-                  </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+                  <input type="text" value={newHabitIcon} onChange={e => setNewHabitIcon(e.target.value)} maxLength={4}
+                    style={{ width: 44, height: 44, textAlign: 'center', fontSize: 20, background: 'var(--bg-input)', border: '1px solid var(--border)', borderRadius: 10, color: 'var(--text-primary)', fontFamily: "'DM Sans'", flexShrink: 0 }} />
                   <input type="text" value={newHabitName} onChange={e => setNewHabitName(e.target.value)} placeholder="meditate for one minute"
                     style={{ flex: 1, background: 'var(--bg-input)', border: '1px solid var(--border)', borderRadius: 10, padding: '9px 12px', color: 'var(--text-primary)', fontSize: 14, fontFamily: "'DM Sans'" }} />
+                </div>
+                <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap', marginBottom: 14 }}>
+                  {HABIT_ICONS.map(ic => (
+                    <div key={ic} onClick={() => setNewHabitIcon(ic)} style={{ width: 30, height: 30, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, cursor: 'pointer', background: newHabitIcon === ic ? 'var(--accent-dim)' : 'var(--bg-input)', border: `1px solid ${newHabitIcon === ic ? 'var(--accent-border)' : 'var(--border)'}` }}>{ic}</div>
+                  ))}
                 </div>
                 {newHabitName.trim() && (
                   <div style={{ fontSize: 13, color: 'var(--accent)', fontStyle: 'italic', lineHeight: 1.5 }}>

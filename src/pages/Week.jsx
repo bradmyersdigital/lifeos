@@ -147,10 +147,11 @@ export default function Week({ onAddTask, onEditTask }) {
         <div>
           <div style={{ fontSize: 22, fontWeight: 500 }}>{view === 'day' ? 'Day' : view === 'week' ? 'Week' : 'Month'}</div>
         </div>
-        <div style={{ display: 'flex', background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 10, overflow: 'hidden' }}>
+        <div style={{ display: 'flex', gap: 18 }}>
           {['day','week','month'].map(v => (
-            <div key={v} onClick={() => setView(v)} style={{ padding: '7px 14px', fontSize: 12, fontWeight: 500, cursor: 'pointer', background: view === v ? 'var(--accent-dim)' : 'transparent', color: view === v ? 'var(--accent)' : 'var(--text-muted)' }}>
-              {v.charAt(0).toUpperCase() + v.slice(1)}
+            <div key={v} onClick={() => setView(v)} style={{ cursor: 'pointer' }}>
+              <div style={{ fontSize: 14, fontWeight: view === v ? 600 : 400, color: view === v ? 'var(--text-primary)' : 'var(--text-dim)' }}>{v.charAt(0).toUpperCase() + v.slice(1)}</div>
+              <div style={{ width: 5, height: 5, borderRadius: '50%', background: view === v ? 'var(--accent)' : 'transparent', margin: '4px auto 0' }} />
             </div>
           ))}
         </div>
@@ -176,10 +177,11 @@ export default function Week({ onAddTask, onEditTask }) {
       </div>
 
       {/* Sector filters */}
-      <div style={{ display: 'flex', gap: 6, overflowX: 'auto', paddingBottom: 4, marginBottom: 10, WebkitOverflowScrolling: 'touch' }}>
+      <div style={{ display: 'flex', gap: 18, overflowX: 'auto', paddingBottom: 4, marginBottom: 14, WebkitOverflowScrolling: 'touch' }}>
         {filters.map(s => (
-          <div key={s} onClick={() => setActiveFilter(s)} style={{ padding: '8px 15px', borderRadius: 10, fontSize: 12.5, fontWeight: 500, cursor: 'pointer', border: '1px solid', whiteSpace: 'nowrap', background: activeFilter === s ? 'var(--accent-dim)' : 'var(--bg-card)', borderColor: activeFilter === s ? 'var(--accent-border)' : 'var(--border)', color: activeFilter === s ? 'var(--accent)' : 'var(--text-muted)' }}>
-            {s}
+          <div key={s} onClick={() => setActiveFilter(s)} style={{ cursor: 'pointer', flexShrink: 0 }}>
+            <div style={{ fontSize: 14, fontWeight: activeFilter === s ? 600 : 400, color: activeFilter === s ? 'var(--text-primary)' : 'var(--text-dim)', whiteSpace: 'nowrap' }}>{s}</div>
+            <div style={{ width: 5, height: 5, borderRadius: '50%', background: activeFilter === s ? 'var(--accent)' : 'transparent', margin: '4px auto 0' }} />
           </div>
         ))}
       </div>
