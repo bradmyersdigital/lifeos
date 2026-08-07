@@ -917,6 +917,30 @@ function GoalDetail({ goal, onBack, onSaved }) {
   )
 }
 
+// Lightweight photo card for picking/linking a goal from elsewhere in the app (Project/Sector
+// "link a goal" lists) — same visual language as the full GoalCard on the Goals page itself, so
+// a goal looks like the same goal everywhere instead of degrading to a plain text row.
+export function GoalPickerCard({ goal, onClick }) {
+  if (goal.image_url) {
+    return (
+      <div onClick={onClick} style={{ position: 'relative', height: 90, borderRadius: 12, overflow: 'hidden', marginBottom: 8, cursor: 'pointer', border: '1px solid var(--border)' }}>
+        <img src={goal.image_url} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
+        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, rgba(0,0,0,0.05) 0%, rgba(0,0,0,0.75) 100%)' }} />
+        <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '8px 12px' }}>
+          <div style={{ fontSize: 13, fontWeight: 600, color: 'white', textShadow: '0 1px 4px rgba(0,0,0,0.4)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{goal.goal_text}</div>
+          {goal.due_date && <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.8)', fontFamily: "'DM Mono'", marginTop: 2 }}>Due {fmtDate(goal.due_date)}</div>}
+        </div>
+      </div>
+    )
+  }
+  return (
+    <div onClick={onClick} style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 12, padding: 12, marginBottom: 8, cursor: 'pointer' }}>
+      <div style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{goal.goal_text}</div>
+      {goal.due_date && <div style={{ fontSize: 10, color: 'var(--text-dim)', fontFamily: "'DM Mono'", marginTop: 3 }}>Due {fmtDate(goal.due_date)}</div>}
+    </div>
+  )
+}
+
 function GoalCard({ goal, projects, tasks, checkins, notes, onClick }) {
   const progress = computeGoalProgress(goal, projects, tasks, checkins)
   const lastActivity = computeLastActivity(goal, tasks, checkins, notes)
@@ -972,14 +996,21 @@ export default function Goals() {
   const [addModal, setAddModal] = useState(false)
   const [activeTab, setActiveTab] = useState('All')
   const [searchParams, setSearchParams] = useSearchParams()
+  const [externalFrom, setExternalFrom] = useState(null)
+  const navigate = useNavigate()
 
   useEffect(() => { loadAll() }, [])
 
   useEffect(() => {
     const openId = searchParams.get('open')
+    const fromParam = searchParams.get('from')
     if (openId && goals.length) {
       const match = goals.find(g => String(g.id) === String(openId))
-      if (match) { setSelected(match); setSearchParams({}, { replace: true }) }
+      if (match) {
+        setSelected(match)
+        setExternalFrom(fromParam || null)
+        setSearchParams({}, { replace: true })
+      }
     }
   }, [searchParams, goals])
 
@@ -1011,7 +1042,10 @@ export default function Goals() {
   }
 
   if (selected) {
-    return <GoalDetail goal={selected} onBack={() => setSelected(null)} onSaved={() => { loadAll() }} />
+    return <GoalDetail goal={selected} onBack={() => {
+      if (externalFrom) { navigate(externalFrom); setExternalFrom(null); return }
+      setSelected(null)
+    }} onSaved={() => { loadAll() }} />
   }
 
   const nonArchived = goals.filter(g => g.status !== 'archived')

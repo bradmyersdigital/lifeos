@@ -456,9 +456,17 @@ export default function Habits() {
             <div style={{ fontSize: 15, fontWeight: 500 }}>{MONTH_NAMES[monthMonth]} {monthYear}</div>
             <div onClick={() => setCalMonth(o=>o+1)} style={{ width: 36, height: 36, borderRadius: 10, background: 'var(--bg-card)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: 18, color: 'var(--text-muted)' }}>›</div>
           </div>
-          <div style={{ display: 'flex', gap: 6, marginBottom: 14, overflowX: 'auto', paddingBottom: 4 }}>
-            <div onClick={() => setSelectedHabit(null)} style={{ padding: '5px 12px', borderRadius: 20, fontSize: 12, fontWeight: 500, cursor: 'pointer', border: '1px solid', whiteSpace: 'nowrap', background: !selectedHabit ? 'var(--accent-dim)' : 'var(--bg-card)', borderColor: !selectedHabit ? 'var(--accent-border)' : 'var(--border)', color: !selectedHabit ? 'var(--accent)' : 'var(--text-muted)' }}>All</div>
-            {habits.map(h => <div key={h.id} onClick={() => setSelectedHabit(h.id === selectedHabit ? null : h.id)} style={{ padding: '8px 15px', borderRadius: 10, fontSize: 12.5, fontWeight: 500, cursor: 'pointer', border: '1px solid', whiteSpace: 'nowrap', background: selectedHabit === h.id ? 'var(--accent-dim)' : 'var(--bg-card)', borderColor: selectedHabit === h.id ? 'var(--accent-border)' : 'var(--border)', color: selectedHabit === h.id ? 'var(--accent)' : 'var(--text-muted)' }}>{h.icon} {h.name}</div>)}
+          <div style={{ display: 'flex', gap: 16, marginBottom: 18, overflowX: 'auto', paddingBottom: 4 }}>
+            <div onClick={() => setSelectedHabit(null)} style={{ cursor: 'pointer', flexShrink: 0 }}>
+              <div style={{ fontSize: 14, fontWeight: !selectedHabit ? 600 : 400, color: !selectedHabit ? 'var(--text-primary)' : 'var(--text-dim)' }}>All</div>
+              <div style={{ width: 5, height: 5, borderRadius: '50%', background: !selectedHabit ? 'var(--accent)' : 'transparent', margin: '4px auto 0' }} />
+            </div>
+            {habits.map(h => (
+              <div key={h.id} onClick={() => setSelectedHabit(h.id === selectedHabit ? null : h.id)} style={{ cursor: 'pointer', flexShrink: 0 }}>
+                <div style={{ fontSize: 14, fontWeight: selectedHabit === h.id ? 600 : 400, color: selectedHabit === h.id ? 'var(--text-primary)' : 'var(--text-dim)', whiteSpace: 'nowrap' }}>{h.icon} {h.name}</div>
+                <div style={{ width: 5, height: 5, borderRadius: '50%', background: selectedHabit === h.id ? 'var(--accent)' : 'transparent', margin: '4px auto 0' }} />
+              </div>
+            ))}
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', gap: 2, marginBottom: 4 }}>
             {DAY_LABELS.map((d,i) => <div key={i} style={{ textAlign: 'center', fontSize: 11, fontWeight: 600, color: 'var(--text-dim)', padding: '4px 0' }}>{d}</div>)}

@@ -134,6 +134,7 @@ function SectorDetail({ sector, onEditTask: onEditTaskRaw, onAddTask, onEditNote
 
   if (selectedProject) {
     const onEditNoteHere = (opts) => onEditNote({ ...opts, from: `/sectors?open=${encodeURIComponent(sector.name)}&openProject=${selectedProject.id}` })
+    const onViewGoalHere = (goalId) => navigate(`/goals?open=${goalId}&from=${encodeURIComponent(`/sectors?open=${encodeURIComponent(sector.name)}&openProject=${selectedProject.id}`)}`)
     return (
       <ProjectDetail
         project={selectedProject}
@@ -141,6 +142,7 @@ function SectorDetail({ sector, onEditTask: onEditTaskRaw, onAddTask, onEditNote
         onAddTask={onAddTask}
         onEditTask={onEditTask}
         onEditNote={onEditNoteHere}
+        onViewGoal={onViewGoalHere}
         onRefresh={reload}
       />
     )

@@ -5,6 +5,7 @@ import { fmtDate , todayLocal } from '../utils'
 import FolderList, { FolderHeader } from '../components/FolderList'
 import FolderSheet from '../components/FolderSheet'
 import { firstPageSubtitle } from './Notes'
+import { GoalPickerCard } from './Goals'
 
 const IMPORTANCE = ['Low', 'Medium', 'High', 'Urgent']
 const IMP_STYLES = {
@@ -154,8 +155,7 @@ export function ProjectModal({ onClose, onSaved, project, defaultSector, default
   )
 }
 
-export function ProjectDetail({ project, onBack, onAddTask, onEditTask, onEditNote, onRefresh }) {
-  const navigate = useNavigate()
+export function ProjectDetail({ project, onBack, onAddTask, onEditTask, onEditNote, onViewGoal, onRefresh }) {
   const [tasks, setTasks] = useState([])
   const [notes, setNotes] = useState([])
   const [shopping, setShopping] = useState([])
@@ -184,7 +184,7 @@ export function ProjectDetail({ project, onBack, onAddTask, onEditTask, onEditNo
     } else {
       setLinkedGoal(null)
     }
-    supabase.from('goals').select('id, goal_text, due_date').order('created_at', { ascending: false }).then(({ data, error }) => setAllGoals(error ? [] : (data || [])))
+    supabase.from('goals').select('id, goal_text, due_date, image_url').order('created_at', { ascending: false }).then(({ data, error }) => setAllGoals(error ? [] : (data || [])))
   }
 
   const linkGoal = async (goalId) => {
@@ -243,24 +243,15 @@ export function ProjectDetail({ project, onBack, onAddTask, onEditTask, onEditNo
           Edit
         </div>
         {project.status !== 'completed' && (
-          <div onClick={async () => { if(window.confirm('Mark this project as completed?')) { await supabase.from('projects').update({status:'completed'}).eq('id',project.id); onRefresh(); onBack() } }} style={{ display: 'flex', alignItems: 'center', gap: 6, height: 34, padding: '0 14px', borderRadius: 11, background: 'var(--event-dim)', border: '1px solid var(--success)', color: 'var(--event-color)', fontSize: 13, fontWeight: 500, cursor: 'pointer', flexShrink: 0 }}>
-            <svg width="12" height="12" viewBox="0 0 11 11" fill="none"><polyline points="1,5.5 4,8.5 10,2.5" stroke="var(--event-color)" strokeWidth="1.7" fill="none" strokeLinecap="round"/></svg>
+          <div onClick={async () => { if(window.confirm('Mark this project as completed?')) { await supabase.from('projects').update({status:'completed'}).eq('id',project.id); onRefresh(); onBack() } }} style={{ display: 'flex', alignItems: 'center', gap: 6, height: 34, padding: '0 14px', borderRadius: 11, background: 'var(--bg-card)', border: '1px solid var(--border)', color: 'var(--text-muted)', fontSize: 13, fontWeight: 500, cursor: 'pointer', flexShrink: 0 }}>
+            <svg width="12" height="12" viewBox="0 0 11 11" fill="none"><polyline points="1,5.5 4,8.5 10,2.5" stroke="var(--text-muted)" strokeWidth="1.7" fill="none" strokeLinecap="round"/></svg>
             Complete
           </div>
         )}
       </div>
 
-      {/* ── Title block ───────────────────────────────────────────────────── */}
-      <div style={{ marginBottom: 18 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8, flexWrap: 'wrap' }}>
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 11, fontWeight: 600, padding: '3px 9px', borderRadius: 7, background: statusMeta.bg, border: `1px solid ${statusMeta.border}`, color: statusMeta.color }}>
-            <span style={{ width: 6, height: 6, borderRadius: '50%', background: statusMeta.color }} />
-            {statusMeta.label}
-          </span>
-          {imp && <span style={{ fontSize: 11, fontWeight: 600, padding: '3px 9px', borderRadius: 7, background: imp.bg, border: `1px solid ${imp.border}`, color: imp.color }}>{project.importance}</span>}
-          {project.sector && <span style={{ fontSize: 11, fontWeight: 500, padding: '3px 9px', borderRadius: 7, background: 'var(--bg-card)', border: '1px solid var(--border)', color: 'var(--text-muted)' }}>{project.sector}</span>}
-          {project.folder && <span style={{ fontSize: 11, fontWeight: 500, padding: '3px 9px', borderRadius: 7, background: 'var(--bg-card)', border: '1px solid var(--border)', color: 'var(--text-muted)' }}>📁 {project.folder}</span>}
-        </div>
+      {/* ── Title ─────────────────────────────────────────────────────────── */}
+      <div style={{ marginBottom: 14 }}>
         <div style={{ fontSize: 27, fontWeight: 600, letterSpacing: '-0.5px', lineHeight: 1.15, color: 'var(--text-primary)' }}>{project.name}</div>
       </div>
 
@@ -270,7 +261,18 @@ export function ProjectDetail({ project, onBack, onAddTask, onEditTask, onEditNo
           <div style={{ fontSize: 14.5, color: 'var(--text-secondary)', lineHeight: 1.55 }}>{project.goal}</div>
         </div>
       )}
-      {project.description && <div style={{ fontSize: 14, color: 'var(--text-muted)', marginBottom: 18, lineHeight: 1.55, padding: '13px 15px', background: 'var(--bg-card)', borderRadius: 14, border: '1px solid var(--border)' }}>{project.description}</div>}
+      {project.description && <div style={{ fontSize: 14, color: 'var(--text-muted)', marginBottom: 14, lineHeight: 1.55, padding: '13px 15px', background: 'var(--bg-card)', borderRadius: 14, border: '1px solid var(--border)' }}>{project.description}</div>}
+
+      {/* ── Metadata — status / priority / sector / folder, sleek inline, not chips ── */}
+      <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '4px 10px', marginBottom: 20, fontSize: 12.5, color: 'var(--text-dim)' }}>
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+          <span style={{ width: 6, height: 6, borderRadius: '50%', background: statusMeta.color }} />
+          <span style={{ color: 'var(--text-muted)' }}>{statusMeta.label}</span>
+        </span>
+        {imp && <><span style={{ color: 'var(--border-hover)' }}>·</span><span>{project.importance} priority</span></>}
+        {project.sector && <><span style={{ color: 'var(--border-hover)' }}>·</span><span>{project.sector}</span></>}
+        {project.folder && <><span style={{ color: 'var(--border-hover)' }}>·</span><span>📁 {project.folder}</span></>}
+      </div>
 
       {/* ── Progress hero ─────────────────────────────────────────────────── */}
       <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 16, padding: '18px 18px 20px', marginBottom: 20 }}>
@@ -356,22 +358,17 @@ export function ProjectDetail({ project, onBack, onAddTask, onEditTask, onEditNo
       {bodyTab === 'goals' && (<>
         <div className="section-label" style={{ margin:'0 0 10px' }}>Goal</div>
         {linkedGoal ? (
-          <div onClick={() => navigate(`/goals?open=${linkedGoal.id}`)} style={{ background:'var(--bg-card)', border:'1px solid var(--border)', borderRadius:12, padding:14, cursor:'pointer' }}>
-            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
-              <div style={{ fontSize:14, color:'var(--text-secondary)' }}>{linkedGoal.goal_text}</div>
-              <div onClick={e => { e.stopPropagation(); unlinkGoal() }} style={{ fontSize:11, color:'var(--text-dim)', cursor:'pointer', padding:'3px 8px', background:'var(--border)', borderRadius:6, flexShrink:0 }}>unlink</div>
-            </div>
-            {linkedGoal.due_date && <div style={{ fontSize:11, color:'var(--text-dim)', fontFamily:"'DM Mono'", marginTop:4 }}>Due {fmtDate(linkedGoal.due_date)}</div>}
+          <div style={{ position: 'relative' }}>
+            <GoalPickerCard goal={linkedGoal} onClick={() => onViewGoal ? onViewGoal(linkedGoal.id) : null} />
+            <div onClick={unlinkGoal} style={{ position: 'absolute', top: 8, right: 8, fontSize: 11, color: 'white', cursor: 'pointer', padding: '3px 8px', background: 'rgba(0,0,0,0.5)', borderRadius: 6 }}>unlink</div>
           </div>
         ) : (
           <>
             <div onClick={() => setLinkingGoal(!linkingGoal)} style={{ padding:14, borderRadius:12, border:'1px dashed var(--border)', textAlign:'center', fontSize:13, color:'var(--accent)', cursor:'pointer', marginBottom: linkingGoal ? 10 : 0 }}>+ Link a goal</div>
             {linkingGoal && (
-              <div style={{ background:'var(--bg-input)', border:'1px solid var(--border)', borderRadius:12, padding:12 }}>
+              <div>
                 {allGoals.length === 0 && <div style={{ fontSize:12, color:'var(--text-dim)' }}>No goals yet</div>}
-                {allGoals.map(g => (
-                  <div key={g.id} onClick={() => linkGoal(g.id)} style={{ padding:'8px 10px', borderRadius:9, cursor:'pointer', fontSize:13, color:'var(--text-secondary)', marginBottom:4, background:'var(--bg-card)', border:'1px solid var(--border)' }}>{g.goal_text}</div>
-                ))}
+                {allGoals.map(g => <GoalPickerCard key={g.id} goal={g} onClick={() => linkGoal(g.id)} />)}
               </div>
             )}
           </>
@@ -442,6 +439,7 @@ export function ProjectDetail({ project, onBack, onAddTask, onEditTask, onEditNo
 }
 
 export default function Projects({ onAddTask, onEditTask, onEditNote }) {
+  const navigate = useNavigate()
   const [projects, setProjects] = useState([])
   const [sectors, setSectors] = useState([])
   const [selected, setSelected] = useState(null)
@@ -501,7 +499,8 @@ export default function Projects({ onAddTask, onEditTask, onEditNote }) {
 
   if (selected) {
     const onEditNoteHere = (opts) => onEditNote({ ...opts, from: `/projects?open=${selected.id}` })
-    return <ProjectDetail project={selected} onBack={()=>setSelected(null)} onAddTask={onAddTask} onEditTask={onEditTask} onEditNote={onEditNoteHere} onRefresh={loadProjects} />
+    const onViewGoalHere = (goalId) => navigate(`/goals?open=${goalId}&from=${encodeURIComponent(`/projects?open=${selected.id}`)}`)
+    return <ProjectDetail project={selected} onBack={()=>setSelected(null)} onAddTask={onAddTask} onEditTask={onEditTask} onEditNote={onEditNoteHere} onViewGoal={onViewGoalHere} onRefresh={loadProjects} />
   }
 
   const inFolder = (p) => {
@@ -600,10 +599,11 @@ export default function Projects({ onAddTask, onEditTask, onEditNote }) {
         }
       />
 
-      <div style={{ display:'flex',background:'var(--bg-card)',border:'1px solid var(--border)',borderRadius:12,overflow:'hidden',marginBottom:18 }}>
+      <div style={{ display:'flex', gap:20, marginBottom:20 }}>
         {['all','active','backlog','completed'].map(f=>(
-          <div key={f} onClick={()=>setFilter(f)} style={{ flex:1,textAlign:'center',padding:'10px 4px',fontSize:13,fontWeight:500,cursor:'pointer',background:filter===f?'var(--accent-dim)':'transparent',color:filter===f?'var(--accent)':'var(--text-muted)',transition:'all 0.15s' }}>
-            {f.charAt(0).toUpperCase()+f.slice(1)}
+          <div key={f} onClick={()=>setFilter(f)} style={{ cursor:'pointer' }}>
+            <div style={{ fontSize:14, fontWeight: filter===f?600:400, color: filter===f?'var(--text-primary)':'var(--text-dim)' }}>{f.charAt(0).toUpperCase()+f.slice(1)}</div>
+            <div style={{ width:5, height:5, borderRadius:'50%', background: filter===f?'var(--accent)':'transparent', margin:'4px auto 0' }} />
           </div>
         ))}
       </div>
