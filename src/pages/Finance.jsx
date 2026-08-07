@@ -1150,14 +1150,15 @@ export default function Finance() {
             <div onClick={() => setModal({ type: 'bill' })} style={{ flex: 1, textAlign: 'center', padding: '11px', borderRadius: 12, fontSize: 14, fontWeight: 500, cursor: 'pointer', background: 'var(--bg-card)', border: '1px solid var(--border)', color: 'var(--text-secondary)' }}>+ Bill</div>
           </div>
 
-          <div style={{ display: 'flex', gap: 6, marginBottom: 16 }}>
-            {[['list', 'List'], ['calendar', 'Calendar']].map(([v, l]) => (
-              <div key={v} onClick={() => setRecurView(v)}
-                style={{ padding: '6px 14px', borderRadius: 18, fontSize: 12.5, fontWeight: 500, cursor: 'pointer',
-                  background: recurView === v ? 'var(--accent-dim)' : 'var(--bg-card)',
-                  border: `1px solid ${recurView === v ? 'var(--accent-border)' : 'var(--border)'}`,
-                  color: recurView === v ? 'var(--accent)' : 'var(--text-muted)' }}>{l}</div>
-            ))}
+          <div style={{ display: 'flex', alignItems: 'center', marginBottom: 18 }}>
+            <div style={{ display: 'flex', gap: 16 }}>
+              {[['list', 'List'], ['calendar', 'Calendar']].map(([v, l]) => (
+                <div key={v} onClick={() => setRecurView(v)} style={{ cursor: 'pointer' }}>
+                  <div style={{ fontSize: 14, fontWeight: recurView === v ? 600 : 400, color: recurView === v ? 'var(--text-primary)' : 'var(--text-dim)' }}>{l}</div>
+                  <div style={{ width: 5, height: 5, borderRadius: '50%', background: recurView === v ? 'var(--accent)' : 'transparent', margin: '4px auto 0' }} />
+                </div>
+              ))}
+            </div>
             {recurView === 'list' && (
               <div onClick={() => setSubSort(s => s === 'due' ? 'amount' : 'due')}
                 style={{ marginLeft: 'auto', padding: '6px 14px', borderRadius: 18, fontSize: 12.5, fontWeight: 500, cursor: 'pointer', background: 'var(--bg-card)', border: '1px solid var(--border)', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 5 }}>

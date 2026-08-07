@@ -132,21 +132,21 @@ export default function Tasks({ onAddTask, onEditTask }) {
 
       </div>
 
-      <div style={{ display: 'flex', gap: 20, marginBottom: 18 }}>
+      <div style={{ display: 'flex', justifyContent: 'center', gap: 26, marginBottom: 22 }}>
         {['all','today','upcoming','overdue','done'].map(f => (
-          <div key={f} onClick={() => setFilter(f)} style={{ cursor: 'pointer' }}>
-            <div style={{ fontSize: 14, fontWeight: filter === f ? 600 : 400, color: filter === f ? 'var(--text-primary)' : 'var(--text-dim)' }}>{f.charAt(0).toUpperCase() + f.slice(1)}</div>
-            <div style={{ width: 5, height: 5, borderRadius: '50%', background: filter === f ? 'var(--accent)' : 'transparent', margin: '4px auto 0' }} />
+          <div key={f} onClick={() => setFilter(f)} style={{ cursor: 'pointer', textAlign: 'center' }}>
+            <div style={{ fontSize: 16, fontWeight: filter === f ? 700 : 400, color: filter === f ? 'var(--text-primary)' : 'var(--text-dim)' }}>{f.charAt(0).toUpperCase() + f.slice(1)}</div>
+            <div style={{ width: 5, height: 5, borderRadius: '50%', background: filter === f ? 'var(--accent)' : 'transparent', margin: '5px auto 0' }} />
           </div>
         ))}
       </div>
 
       {sectorTabs.length > 1 && (
-        <div style={{ display: 'flex', gap: 18, marginBottom: 20, overflowX: 'auto', paddingBottom: 4, WebkitOverflowScrolling: 'touch' }}>
+        <div style={{ display: 'flex', gap: 16, marginBottom: 20, overflowX: 'auto', paddingBottom: 4, WebkitOverflowScrolling: 'touch' }}>
           {sectorTabs.map(s => (
             <div key={s} onClick={() => setSectorFilter(s)} style={{ cursor: 'pointer', flexShrink: 0 }}>
-              <div style={{ fontSize: 14, fontWeight: sectorFilter === s ? 600 : 400, color: sectorFilter === s ? 'var(--text-primary)' : 'var(--text-dim)', whiteSpace: 'nowrap' }}>{s}</div>
-              <div style={{ width: 5, height: 5, borderRadius: '50%', background: sectorFilter === s ? 'var(--accent)' : 'transparent', margin: '4px auto 0' }} />
+              <div style={{ fontSize: 12.5, fontWeight: sectorFilter === s ? 600 : 400, color: sectorFilter === s ? 'var(--text-secondary)' : 'var(--text-dim)', whiteSpace: 'nowrap' }}>{s}</div>
+              <div style={{ width: 4, height: 4, borderRadius: '50%', background: sectorFilter === s ? 'var(--accent)' : 'transparent', margin: '3px auto 0' }} />
             </div>
           ))}
         </div>
