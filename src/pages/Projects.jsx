@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
-import { useSearchParams } from 'react-router-dom'
+import { useSearchParams, useNavigate } from 'react-router-dom'
 import { fmtDate , todayLocal } from '../utils'
 import FolderList, { FolderHeader } from '../components/FolderList'
 import FolderSheet from '../components/FolderSheet'
@@ -155,13 +155,17 @@ export function ProjectModal({ onClose, onSaved, project, defaultSector, default
 }
 
 export function ProjectDetail({ project, onBack, onAddTask, onEditTask, onEditNote, onRefresh }) {
+  const navigate = useNavigate()
   const [tasks, setTasks] = useState([])
   const [notes, setNotes] = useState([])
   const [shopping, setShopping] = useState([])
   const [newShop, setNewShop] = useState('')
   const [editModal, setEditModal] = useState(false)
   const [taskTab, setTaskTab] = useState('active')  // 'active' | 'completed'
-  const [bodyTab, setBodyTab] = useState('tasks')    // 'tasks' | 'notes' | 'shopping'
+  const [bodyTab, setBodyTab] = useState('tasks')    // 'tasks' | 'goals' | 'notes' | 'shopping'
+  const [linkedGoal, setLinkedGoal] = useState(null)
+  const [allGoals, setAllGoals] = useState([])
+  const [linkingGoal, setLinkingGoal] = useState(false)
   const today = todayLocal()
   const color = SECTOR_COLORS[project.sector?.toLowerCase()] || 'var(--accent)'
 
@@ -174,6 +178,26 @@ export function ProjectDetail({ project, onBack, onAddTask, onEditTask, onEditNo
       supabase.from('grocery_items').select('*').eq('project_id', project.id).order('checked').order('created_at'),
     ])
     setTasks(t || []); setNotes(n || []); setShopping(g || [])
+    if (project.goal_id) {
+      const { data: lg, error } = await supabase.from('goals').select('*').eq('id', project.goal_id).single()
+      setLinkedGoal(error ? null : lg)
+    } else {
+      setLinkedGoal(null)
+    }
+    supabase.from('goals').select('id, goal_text, due_date').order('created_at', { ascending: false }).then(({ data, error }) => setAllGoals(error ? [] : (data || [])))
+  }
+
+  const linkGoal = async (goalId) => {
+    await supabase.from('projects').update({ goal_id: goalId }).eq('id', project.id)
+    setLinkingGoal(false)
+    onRefresh?.()
+    const { data } = await supabase.from('goals').select('*').eq('id', goalId).single()
+    setLinkedGoal(data || null)
+  }
+  const unlinkGoal = async () => {
+    await supabase.from('projects').update({ goal_id: null }).eq('id', project.id)
+    onRefresh?.()
+    setLinkedGoal(null)
   }
 
   const toggleTask = async (task) => {
@@ -273,10 +297,13 @@ export function ProjectDetail({ project, onBack, onAddTask, onEditTask, onEditNo
         </div>
       </div>
 
-      {/* Body tabs: Tasks · Notes · Shopping */}
-      <div style={{ display:'flex', gap:6, marginBottom:18, background:'var(--bg-card)', border:'1px solid var(--border)', borderRadius:12, padding:4 }}>
-        {[['tasks',`Tasks`],['notes',`Notes`],['shopping',`Shopping`]].map(([v,label])=>(
-          <div key={v} onClick={()=>setBodyTab(v)} style={{ flex:1, textAlign:'center', padding:'9px 4px', borderRadius:9, fontSize:13, fontWeight:500, cursor:'pointer', background:bodyTab===v?'var(--accent-dim)':'transparent', color:bodyTab===v?'var(--accent)':'var(--text-muted)', transition:'all 0.15s' }}>{label}</div>
+      {/* Body tabs: Tasks · Goals · Notes · Shopping */}
+      <div style={{ display:'flex', gap:20, marginBottom:18 }}>
+        {[['tasks',`Tasks`],['goals',`Goals`],['notes',`Notes`],['shopping',`Shopping`]].map(([v,label])=>(
+          <div key={v} onClick={()=>setBodyTab(v)} style={{ cursor:'pointer' }}>
+            <div style={{ fontSize:14, fontWeight: bodyTab===v?600:400, color: bodyTab===v?'var(--text-primary)':'var(--text-dim)' }}>{label}</div>
+            <div style={{ width:5, height:5, borderRadius:'50%', background: bodyTab===v?'var(--accent)':'transparent', margin:'4px auto 0' }} />
+          </div>
         ))}
       </div>
 
@@ -290,9 +317,12 @@ export function ProjectDetail({ project, onBack, onAddTask, onEditTask, onEditNo
 
       <div style={{ display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:10 }}>
         <div className="section-label" style={{ margin:0 }}>Tasks</div>
-        <div style={{ display:'flex',background:'var(--bg-card)',border:'1px solid var(--border)',borderRadius:9,overflow:'hidden' }}>
+        <div style={{ display:'flex', gap:14 }}>
           {[['active',`Active (${tasks.filter(t=>!t.completed).length})`],['completed',`Done (${tasks.filter(t=>t.completed).length})`]].map(([v,label])=>(
-            <div key={v} onClick={()=>setTaskTab(v)} style={{ padding:'6px 12px',fontSize:12,fontWeight:500,cursor:'pointer',background:taskTab===v?'var(--accent-dim)':'transparent',color:taskTab===v?'var(--accent)':'var(--text-muted)' }}>{label}</div>
+            <div key={v} onClick={()=>setTaskTab(v)} style={{ cursor:'pointer' }}>
+              <div style={{ fontSize:12.5, fontWeight: taskTab===v?600:400, color: taskTab===v?'var(--text-secondary)':'var(--text-dim)' }}>{label}</div>
+              <div style={{ width:4, height:4, borderRadius:'50%', background: taskTab===v?'var(--accent)':'transparent', margin:'3px auto 0' }} />
+            </div>
           ))}
         </div>
       </div>
@@ -321,6 +351,31 @@ export function ProjectDetail({ project, onBack, onAddTask, onEditTask, onEditNo
       </div>
         )
       })()}
+      </>)}
+
+      {bodyTab === 'goals' && (<>
+        <div className="section-label" style={{ margin:'0 0 10px' }}>Goal</div>
+        {linkedGoal ? (
+          <div onClick={() => navigate(`/goals?open=${linkedGoal.id}`)} style={{ background:'var(--bg-card)', border:'1px solid var(--border)', borderRadius:12, padding:14, cursor:'pointer' }}>
+            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+              <div style={{ fontSize:14, color:'var(--text-secondary)' }}>{linkedGoal.goal_text}</div>
+              <div onClick={e => { e.stopPropagation(); unlinkGoal() }} style={{ fontSize:11, color:'var(--text-dim)', cursor:'pointer', padding:'3px 8px', background:'var(--border)', borderRadius:6, flexShrink:0 }}>unlink</div>
+            </div>
+            {linkedGoal.due_date && <div style={{ fontSize:11, color:'var(--text-dim)', fontFamily:"'DM Mono'", marginTop:4 }}>Due {fmtDate(linkedGoal.due_date)}</div>}
+          </div>
+        ) : (
+          <>
+            <div onClick={() => setLinkingGoal(!linkingGoal)} style={{ padding:14, borderRadius:12, border:'1px dashed var(--border)', textAlign:'center', fontSize:13, color:'var(--accent)', cursor:'pointer', marginBottom: linkingGoal ? 10 : 0 }}>+ Link a goal</div>
+            {linkingGoal && (
+              <div style={{ background:'var(--bg-input)', border:'1px solid var(--border)', borderRadius:12, padding:12 }}>
+                {allGoals.length === 0 && <div style={{ fontSize:12, color:'var(--text-dim)' }}>No goals yet</div>}
+                {allGoals.map(g => (
+                  <div key={g.id} onClick={() => linkGoal(g.id)} style={{ padding:'8px 10px', borderRadius:9, cursor:'pointer', fontSize:13, color:'var(--text-secondary)', marginBottom:4, background:'var(--bg-card)', border:'1px solid var(--border)' }}>{g.goal_text}</div>
+                ))}
+              </div>
+            )}
+          </>
+        )}
       </>)}
 
       {bodyTab === 'notes' && (<>

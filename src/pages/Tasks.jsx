@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { todayLocal } from '../utils'
 import { IconOrEmoji } from '../components/Icons'
@@ -14,14 +15,22 @@ const URG_STYLE = {
 export default function Tasks({ onAddTask, onEditTask }) {
   const [tasks, setTasks] = useState([])
   const [sectors, setSectors] = useState([])
-  const [filter, setFilter] = useState('today')
-  const [sectorFilter, setSectorFilter] = useState('All')
+  const [searchParams, setSearchParams] = useSearchParams()
+  const [filter, setFilter] = useState(searchParams.get('filter') || 'today')
+  const [sectorFilter, setSectorFilter] = useState(searchParams.get('sector') || 'All')
   const [search, setSearch] = useState('')
   const dragItem = useRef(null)
   const dragOver = useRef(null)
   const today = todayLocal()
 
   useEffect(() => { loadAll() }, [])
+
+  // Keep the URL in sync so editing a task and coming back (via ?from=) restores these exact
+  // filters — a fresh visit via the nav bar always lands on a bare /tasks with no params, so it
+  // still resets normally; this only preserves state across an edit-and-return round trip.
+  useEffect(() => {
+    setSearchParams({ filter, sector: sectorFilter }, { replace: true })
+  }, [filter, sectorFilter])
 
   const loadAll = async () => {
     const [{ data: t }, { data: s }] = await Promise.all([

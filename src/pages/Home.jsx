@@ -230,7 +230,7 @@ const QUOTES = [
   { text: "Stop doubting yourself, work hard, and make it happen.", author: "Unknown" },
 ]
 
-export default function Home({ onAddTask, onEditTask, onAddEvent }) {
+export default function Home({ onAddTask, onEditTask, onAddEvent, onEditNote }) {
   const navigate = useNavigate()
   const [tasks, setTasks] = useState([])
   const [projects, setProjects] = useState([])
@@ -381,6 +381,10 @@ export default function Home({ onAddTask, onEditTask, onAddEvent }) {
         <div className="action-btn btn-event" onClick={() => onAddEvent && onAddEvent()}>
           <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><rect x="1.5" y="2.5" width="12" height="11" rx="2" stroke="var(--event-color)" strokeWidth="1.4"/><line x1="1.5" y1="6.5" x2="13.5" y2="6.5" stroke="var(--event-color)" strokeWidth="1.4"/><line x1="5" y1="1" x2="5" y2="4" stroke="var(--event-color)" strokeWidth="1.4" strokeLinecap="round"/><line x1="10" y1="1" x2="10" y2="4" stroke="var(--event-color)" strokeWidth="1.4" strokeLinecap="round"/></svg>
           Add Event
+        </div>
+        <div className="action-btn" style={{ background: 'var(--accent-dim)', border: '1px solid var(--accent-border)', color: 'var(--accent-text)' }} onClick={() => onEditNote && onEditNote({ newNoteBlank: true })}>
+          <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M2 2.5h11v10H2z" stroke="var(--accent-text)" strokeWidth="1.4"/><line x1="4.5" y1="5.5" x2="10.5" y2="5.5" stroke="var(--accent-text)" strokeWidth="1.4" strokeLinecap="round"/><line x1="4.5" y1="8" x2="10.5" y2="8" stroke="var(--accent-text)" strokeWidth="1.4" strokeLinecap="round"/><line x1="4.5" y1="10.5" x2="8" y2="10.5" stroke="var(--accent-text)" strokeWidth="1.4" strokeLinecap="round"/></svg>
+          Add Note
         </div>
       </div>
 

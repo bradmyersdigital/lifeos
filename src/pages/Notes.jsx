@@ -1277,7 +1277,7 @@ export default function Notes() {
       setOriginFrom(state.from || null)
       setActiveNote(note)
       setView('note')
-    } else if (state.newNoteProjectId || state.newNoteSector || state.newNoteGoalId) {
+    } else if (state.newNoteProjectId || state.newNoteSector || state.newNoteGoalId || state.newNoteBlank) {
       consumedNavState.current = state
       setOriginFrom(state.from || null)
       setActiveNote({ project_id: state.newNoteProjectId || null, sector: state.newNoteSector || null, goal_id: state.newNoteGoalId || null })

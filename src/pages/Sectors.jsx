@@ -8,6 +8,7 @@ import IconPicker from '../components/IconPicker'
 import { fmtDate } from '../utils'
 import TaskModal from '../components/TaskModal'
 import { ProjectDetail } from './Projects'
+import { firstPageSubtitle } from './Notes'
 
 const EMOJI_PICKS = ['💼','🏠','🏃','📚','🎨','❤️','💰','🌱','⚡','🎯','🔥','✨','🎵','🏋️','🧠','💡','🌍','🚀','📝','🎮','🏆','🛠️','📊','🎭','🧘','🍎','☀️','🌙','💎','🦁']
 const COLOR_PICKS = ['#d4520f','#3b82f6','#10b981','#f59e0b','#ec4899','#a78bfa','#f87171','#34d399','#60a5fa','#fbbf24','#e879f9','#2dd4bf']
@@ -73,6 +74,7 @@ function SectorDetail({ sector, onEditTask: onEditTaskRaw, onAddTask, onEditNote
   const [tasks, setTasks] = useState([])
   const [notes, setNotes] = useState([])
   const [projects, setProjects] = useState([])
+  const [goals, setGoals] = useState([])
   const [tab, setTab] = useState('projects')
   const [taskModal, setTaskModal] = useState(null)
   const [selectedProject, setSelectedProject] = useState(null)
@@ -89,8 +91,9 @@ function SectorDetail({ sector, onEditTask: onEditTaskRaw, onAddTask, onEditNote
 
   useEffect(() => {
     supabase.from('tasks').select('*, projects(name)').eq('sector', sector.name).order('start_date').order('time_block').then(({ data }) => setTasks(data || []))
-    supabase.from('notes').select('*').eq('category', sector.name).order('created_at', { ascending: false }).then(({ data }) => setNotes(data || []))
+    supabase.from('notes').select('*').eq('sector', sector.name).order('updated_at', { ascending: false }).then(({ data }) => setNotes(data || []))
     supabase.from('projects').select('*, tasks(*)').eq('sector', sector.name).order('created_at', { ascending: false }).then(({ data }) => setProjects(data || []))
+    supabase.from('goals').select('*').eq('sector', sector.name).order('created_at', { ascending: false }).then(({ data, error }) => setGoals(error ? [] : (data || [])))
   }, [sector.name])
 
   const toggleTask = async (task) => {
@@ -196,10 +199,11 @@ function SectorDetail({ sector, onEditTask: onEditTaskRaw, onAddTask, onEditNote
         ))}
       </div>
 
-      <div style={{ display: 'flex', background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 12, overflow: 'hidden', marginBottom: 16 }}>
-        {['projects','tasks','notes'].map(t => (
-          <div key={t} onClick={() => setTab(t)} style={{ flex: 1, textAlign: 'center', padding: '10px 4px', fontSize: 13, fontWeight: 500, cursor: 'pointer', background: tab === t ? 'var(--accent-dim)' : 'transparent', color: tab === t ? 'var(--accent)' : 'var(--text-muted)', transition: 'all 0.15s' }}>
-            {t.charAt(0).toUpperCase() + t.slice(1)}
+      <div style={{ display: 'flex', gap: 20, marginBottom: 18 }}>
+        {['projects','tasks','goals','notes'].map(t => (
+          <div key={t} onClick={() => setTab(t)} style={{ cursor: 'pointer' }}>
+            <div style={{ fontSize: 14, fontWeight: tab === t ? 600 : 400, color: tab === t ? 'var(--text-primary)' : 'var(--text-dim)' }}>{t.charAt(0).toUpperCase() + t.slice(1)}</div>
+            <div style={{ width: 5, height: 5, borderRadius: '50%', background: tab === t ? 'var(--accent)' : 'transparent', margin: '4px auto 0' }} />
           </div>
         ))}
       </div>
@@ -214,15 +218,34 @@ function SectorDetail({ sector, onEditTask: onEditTaskRaw, onAddTask, onEditNote
         </div>
       )}
 
+      {tab === 'goals' && (
+        <div>
+          {goals.length === 0 && <div style={{ textAlign: 'center', padding: '30px', color: 'var(--text-dim)', fontSize: 13 }}>No goals yet</div>}
+          {goals.map(g => {
+            const overdue = g.due_date && g.due_date < today && g.status === 'active'
+            return (
+              <div key={g.id} onClick={() => navigate(`/goals?open=${g.id}`)} style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 12, padding: 14, marginBottom: 8, cursor: 'pointer' }}>
+                <div style={{ fontSize: 14, fontWeight: 500, color: 'var(--text-primary)', marginBottom: g.due_date ? 4 : 0 }}>{g.goal_text}</div>
+                {g.due_date && <div style={{ fontSize: 11, fontFamily: "'DM Mono'", color: overdue ? 'var(--danger)' : 'var(--text-dim)' }}>{overdue ? 'Overdue' : `Due ${fmtDate(g.due_date)}`}</div>}
+              </div>
+            )
+          })}
+        </div>
+      )}
+
       {tab === 'notes' && (
         <div>
           {notes.length === 0 && <div style={{ textAlign: 'center', padding: '30px', color: 'var(--text-dim)', fontSize: 13 }}>No notes</div>}
-          {notes.map(note => (
-            <div key={note.id} style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 12, padding: 14, marginBottom: 8 }}>
-              <div style={{ fontSize: 14, color: 'var(--text-secondary)', lineHeight: 1.5 }}>{note.text}</div>
-              <div style={{ fontSize: 11, color: 'var(--text-dim)', fontFamily: "'DM Mono'", marginTop: 6 }}>{new Date(note.created_at).toLocaleDateString()}</div>
-            </div>
-          ))}
+          {notes.map(note => {
+            const subtitle = firstPageSubtitle(note.body_html)
+            return (
+              <div key={note.id} onClick={() => navigate('/notes', { state: { openNoteId: note.id, from: `/sectors?open=${encodeURIComponent(sector.name)}` } })} style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 12, padding: 14, marginBottom: 8, cursor: 'pointer' }}>
+                <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)', marginBottom: subtitle ? 2 : 4 }}>{note.title || 'Untitled'}</div>
+                {subtitle && <div style={{ fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.5, marginBottom: 4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{subtitle}</div>}
+                <div style={{ fontSize: 11, color: 'var(--text-dim)', fontFamily: "'DM Mono'" }}>{fmtDate((note.updated_at || note.created_at)?.substring(0,10))}</div>
+              </div>
+            )
+          })}
         </div>
       )}
 
